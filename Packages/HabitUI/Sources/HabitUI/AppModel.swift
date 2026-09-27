@@ -37,20 +37,25 @@ public final class AppModel {
     @ObservationIgnored private var laterHabitIDs: Set<UUID> = []
     @ObservationIgnored private var extraBudget = 0
     @ObservationIgnored private var shownQuestions: [UUID: Question] = [:]
+    /// False for widget timelines and intents: planning there is speculative, nobody sees the cards.
+    @ObservationIgnored private let logsPresentedQuestions: Bool
 
     static let dayOffsetKey = "debug.dayOffset"
 
     /// `baseClock` makes the real clock for a calendar (`SystemClock` in the app, `FixedClock` in tests);
-    /// `defaults` holds the debug day offset.
+    /// `defaults` holds the debug day offset (the App Group suite, so widgets see the same day).
+    /// `logsPresentedQuestions` logs each newly planned card to `Truth.questions` (§4.4).
     public init(
         store: TruthStore,
         timeZone: TimeZone,
         defaults: UserDefaults,
+        logsPresentedQuestions: Bool = true,
         baseClock: @escaping @Sendable (DayCalendar) -> any Clock
     ) throws {
         self.store = store
         self.timeZone = timeZone
         self.defaults = defaults
+        self.logsPresentedQuestions = logsPresentedQuestions
         self.baseClock = baseClock
         let truth = try store.load()
         let dayOffset = defaults.integer(forKey: Self.dayOffsetKey)
@@ -76,6 +81,21 @@ public final class AppModel {
         laterHabitIDs = []
         extraBudget = 0
         try refresh()
+    }
+
+    /// Re-reads truth, the day offset and the clock (other processes write the store: widgets, Siri, §6),
+    /// then starts a session.
+    public func reload() throws {
+        let truth = try store.load()
+        let dayOffset = defaults.integer(forKey: Self.dayOffsetKey)
+        let clock = try Self.makeClock(
+            timeZone: timeZone, settings: truth.settings, dayOffset: dayOffset, baseClock: baseClock
+        )
+        planner = try QuestionPlanner(settings: truth.settings)
+        self.truth = truth
+        self.dayOffset = dayOffset
+        self.clock = clock
+        try startSession()
     }
 
     /// Records an answer. A `.delayed` answer also pauses the habit from today (§4.6).
@@ -242,8 +262,10 @@ public final class AppModel {
             }
             var presented = question
             presented.presentedAt = clock.now()
-            try store.save(presented, at: clock.now())
-            truth.questions.append(presented)
+            if logsPresentedQuestions {
+                try store.save(presented, at: clock.now())
+                truth.questions.append(presented)
+            }
             shownQuestions[question.habitID] = presented
             shown.append(presented)
         }

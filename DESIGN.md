@@ -540,8 +540,19 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 - App Intents: `AnswerHabitIntent(questionID, value)`, `DelayHabitIntent(habitID, days)`,
   `ReviewHabitsIntent()` (opens Today). Expose to Siri/Shortcuts: "Log gym in Spaced Habits".
 - Widgets read/write the **shared App Group SwiftData store**. Widget writes append an `Answer`
-  and call `WidgetCenter.reloadAllTimelines()`; the app re-projects on foreground.
-- Timeline: one entry now + entries at the next day boundary and at each notification time.
+  and call `WidgetCenter.reloadAllTimelines()`; the app re-reads truth (`AppModel.reload`) when it
+  returns from the background. A fresh `TruthStore.load()` sees the other process's rows, so no
+  persistent-history tracking is needed. The debug day offset lives in the App Group's defaults so
+  widgets plan the same day as the app.
+- Widgets and intents plan with `AppModel(logsPresentedQuestions: false)`: a timeline is speculative,
+  so it doesn't log to `Truth.questions`. A Yes / No from a widget or Siri is
+  `AppModel.answerToday(habitID, done:, channel:)`, which logs a single-day question presented at the
+  tap. Like a notification action (§8) it goes through `checkAnswerable` and throws `AnswerRefusal`
+  if the habit is archived, paused or blocked today, or today is already covered.
+  Siri and Shortcuts answers use `Channel.shortcut`.
+- Timeline: one entry now + one at the next day boundary (`WidgetTimeline`). Within a day the plan
+  only changes when truth does, and every writer reloads the timelines then, so the notification
+  times add nothing.
 - watchOS: Smart Stack widget with the same intent; complications show "N due" or a checkmark.
 
 ---

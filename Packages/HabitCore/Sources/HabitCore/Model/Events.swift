@@ -72,8 +72,9 @@ public enum AnswerValue: Codable, Sendable, Hashable {
     case delayed(days: Int)
 }
 
-public enum Channel: String, Codable, Sendable, Hashable {
-    case app, widget, watch, notification, health
+/// Where an answer was given. `shortcut`: Siri or the Shortcuts app (§6).
+public enum Channel: String, Codable, Sendable, Hashable, CaseIterable {
+    case app, widget, watch, notification, health, shortcut
 }
 
 /// Pauses one or more habits over an inclusive day range (§4.6). Truth; `end` is edited to extend or

@@ -50,7 +50,7 @@ private struct PlanVacationView: View {
             }
             Section {
                 ForEach(model.activeHabits) { habit in
-                    Toggle([habit.emoji, habit.name].compactMap(\.self).joined(separator: " "), isOn: keep(habit.id))
+                    Toggle(habit.displayName, isOn: keep(habit.id))
                 }
             } header: {
                 Text("Keep asking")
@@ -150,7 +150,7 @@ private struct ManageVacationView: View {
             Section("Paused") {
                 ForEach(vacation.habitIDs, id: \.self) { id in
                     if let habit = model.habit(id) {
-                        Text([habit.emoji, habit.name].compactMap(\.self).joined(separator: " "))
+                        Text(habit.displayName)
                     }
                 }
             }

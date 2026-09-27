@@ -101,18 +101,10 @@ public struct NotificationContent: Sendable, Hashable {
         identifier = "slot-\(Int(fireAt.timeIntervalSince1970))"
         switch planned.kind {
         case let .question(question, dueCount):
-            let byID = Dictionary(habits.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            let habit = byID[question.habitID]
-            title = habit.map { [$0.emoji, $0.name].compactMap(\.self).joined(separator: " ") } ?? "Spaced Habits"
+            let text = QuestionText(question, habits: habits)
+            title = text.title
             subtitle = dueCount > 1 ? "\(dueCount) habits to review" : ""
-            let context = question.parentContext.map { context in
-                QuestionCard.contextLine(
-                    parentNames: context.parentIDs.compactMap { byID[$0]?.name },
-                    context: context,
-                    coverDays: question.covers.count
-                )
-            }
-            body = [context, QuestionCard.prompt(for: question)].compactMap(\.self).joined(separator: " ")
+            body = text.body
             categoryIdentifier = question.shape == .singleDay ? Self.questionCategory : ""
             payload = .question(question)
         case .reminder:
@@ -129,5 +121,32 @@ public struct NotificationContent: Sendable, Hashable {
             categoryIdentifier = ""
             payload = .silenceNudge(lastActiveDay: lastActiveDay)
         }
+    }
+}
+
+/// A question as plain text, for notifications and widgets: "🏋️ Gym" and "You did Gym today. Done today?".
+public struct QuestionText: Sendable, Hashable {
+    public let title: String
+    /// The parent context line (gated habits), then the prompt.
+    public let body: String
+
+    public init(_ question: Question, habits: [Habit]) {
+        let byID = Dictionary(habits.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        title = byID[question.habitID].map(\.displayName) ?? "Spaced Habits"
+        let context = question.parentContext.map { context in
+            QuestionCard.contextLine(
+                parentNames: context.parentIDs.compactMap { byID[$0]?.name },
+                context: context,
+                coverDays: question.covers.count
+            )
+        }
+        body = [context, QuestionCard.prompt(for: question)].compactMap(\.self).joined(separator: " ")
+    }
+}
+
+public extension Habit {
+    /// Emoji and name: "🏋️ Gym".
+    var displayName: String {
+        [emoji, name].compactMap(\.self).joined(separator: " ")
     }
 }

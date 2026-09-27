@@ -103,7 +103,7 @@ struct HabitEditorView: View {
                     let selected = draft.gateParentIDs.contains(parent.id)
                     Button { toggleParent(parent) } label: {
                         HStack {
-                            Text([parent.emoji, parent.name].compactMap(\.self).joined(separator: " "))
+                            Text(parent.displayName)
                             Spacer()
                             if selected {
                                 Image(systemName: "checkmark").foregroundStyle(Color.accentColor)

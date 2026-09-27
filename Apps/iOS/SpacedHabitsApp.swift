@@ -21,7 +21,7 @@ struct SpacedHabitsApp: App {
             let model = try AppModel(
                 store: TruthStore(container: StoreContainer.make(.appGroup)),
                 timeZone: .current,
-                defaults: .standard
+                defaults: StoreContainer.sharedDefaults()
             ) { SystemClock(calendar: $0) }
             #if DEBUG
                 // UI tests start from an empty store and today's real date.
@@ -69,9 +69,10 @@ struct SpacedHabitsApp: App {
     }
 
     private func sceneChanged(from old: ScenePhase, to new: ScenePhase, model: AppModel) {
-        // Returning from the background starts a new session (§4.4); launch already planned one.
+        // Returning from the background starts a new session (§4.4) on truth re-read from the store, which
+        // widgets and Siri write while the app is suspended (§6). Launch already planned one.
         if old == .background, new != .background {
-            errors.attempt { try model.startSession() }
+            errors.attempt { try model.reload() }
         }
         if new == .active, let notifier {
             Task { await errors.attemptAsync { try await notifier.appBecameActive() } }

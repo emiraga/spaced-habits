@@ -1,24 +1,6 @@
 import Foundation
 import HabitCore
 
-/// Why an answer from a notification was not recorded.
-public enum NotificationAnswerError: LocalizedError, Equatable {
-    /// The habit was deleted or archived since the notification was planned.
-    case habitGone(UUID)
-    /// The days it asked about were answered (or paused) since, e.g. in the app or on the watch.
-    case alreadyCovered(through: DayKey)
-    /// Only single-day questions have Yes / No actions.
-    case notSingleDay
-
-    public var errorDescription: String? {
-        switch self {
-        case .habitGone: "That habit no longer exists."
-        case let .alreadyCovered(day): "Already answered through \(day)."
-        case .notSingleDay: "This question needs the app to answer."
-        }
-    }
-}
-
 /// Everything `NotificationPlanner` needs, taken on the main actor so planning can run off it.
 public struct NotificationSnapshot: Sendable {
     let truth: Truth
@@ -48,18 +30,9 @@ public extension AppModel {
     }
 
     /// Yes / No / Later on a single-day question notification delivered at `deliveredAt`. The question is
-    /// logged as presented then. Throws `NotificationAnswerError` if the answer no longer fits: the
-    /// notification may be answered long after it was planned, and a stale answer would override a
-    /// newer one (the latest answer wins, §4.7).
+    /// logged as presented then. Throws `AnswerRefusal` if the answer no longer fits.
     func respond(to question: Question, deliveredAt: Date, with action: NotificationAction) throws {
-        try question.validate()
-        guard question.shape == .singleDay else { throw NotificationAnswerError.notSingleDay }
-        guard let habit = habit(question.habitID), !habit.isArchived else {
-            throw NotificationAnswerError.habitGone(question.habitID)
-        }
-        if let covered = state(of: habit.id).lastCoveredDay, covered >= question.covers.lowerBound {
-            throw NotificationAnswerError.alreadyCovered(through: covered)
-        }
+        try checkAnswerable(question)
         var presented = question
         presented.presentedAt = deliveredAt
         switch action {
@@ -78,21 +51,6 @@ public extension AppModel {
             var presented = question
             presented.presentedAt = deliveredAt
             try log(presented)
-        }
-    }
-
-    /// Saves a question unless one with its ID is already logged with the same content; a dismissal
-    /// updates the logged entry.
-    private func log(_ question: Question) throws {
-        let index = truth.questions.firstIndex { $0.id == question.id }
-        if let index, truth.questions[index].dismissedAt != nil || question.dismissedAt == nil {
-            return
-        }
-        try store.save(question, at: clock.now())
-        if let index {
-            truth.questions[index] = question
-        } else {
-            truth.questions.append(question)
         }
     }
 }

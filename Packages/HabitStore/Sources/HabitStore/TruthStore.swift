@@ -12,9 +12,21 @@ public enum StoreLocation: Sendable {
     case inMemory
 }
 
+public enum StoreError: Error, Equatable {
+    case appGroupDefaultsUnavailable(String)
+}
+
 /// Builds the `ModelContainer` (DESIGN.md §10). No CloudKit until M7.
 public enum StoreContainer {
     public static let appGroupID = "group.ga.emira.spacedhabits"
+
+    /// The App Group's defaults, shared by the app and its widget extension (the debug day offset, §6).
+    public static func sharedDefaults() throws -> UserDefaults {
+        guard let defaults = UserDefaults(suiteName: appGroupID) else {
+            throw StoreError.appGroupDefaultsUnavailable(appGroupID)
+        }
+        return defaults
+    }
 
     static let schema = Schema([TruthRecord.self])
 

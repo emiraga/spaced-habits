@@ -78,7 +78,7 @@ public struct QuestionCard: View {
 
     private var header: some View {
         HStack {
-            Text([habit.emoji, habit.name].compactMap(\.self).joined(separator: " "))
+            Text(habit.displayName)
                 .font(.headline)
             Spacer()
             Text("\(Self.importanceLabel(habit.importance)) · ~\(intervalDays)d")

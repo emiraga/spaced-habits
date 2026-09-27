@@ -183,6 +183,30 @@ struct TruthStoreTests {
         #expect(reloaded.answers == truth.answers)
     }
 
+    /// The app and the widget extension (or Siri) each hold a store on the App Group file (§6): a store
+    /// that has loaded already sees the other's new rows and in-place updates on its next load.
+    @Test func loadSeesWritesFromAnotherContainer() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("store")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let app = try TruthStore(container: StoreContainer.make(.file(url)))
+        let widget = try TruthStore(container: StoreContainer.make(.file(url)))
+        var settings = Settings.default
+        settings.sessionBudget = 4
+        try app.save(settings, at: now)
+        #expect(try app.load().settings.sessionBudget == 4)
+
+        let truth = try sampleTruth()
+        try write(truth, to: widget)
+        settings.sessionBudget = 5
+        try widget.save(settings, at: now.addingTimeInterval(1))
+
+        let loaded = try app.load()
+        #expect(loaded.answers == truth.answers)
+        #expect(loaded.settings.sessionBudget == 5)
+    }
+
     @Test func eraseAllRemovesEverything() throws {
         let store = try TruthStore(container: StoreContainer.make(.inMemory))
         try write(sampleTruth(), to: store)

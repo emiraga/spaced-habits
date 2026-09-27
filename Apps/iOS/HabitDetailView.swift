@@ -27,7 +27,7 @@ struct HabitDetailView: View {
                     }
                 }
             }
-            .navigationTitle([habit.emoji, habit.name].compactMap(\.self).joined(separator: " "))
+            .navigationTitle(habit.displayName)
             .toolbar {
                 Button("Edit") { editing = true }
             }

@@ -91,7 +91,7 @@ struct NotificationResponseTests {
         let planned = try question(model.notificationSnapshot().contents().first)
         try model.answer(#require(model.questions.first), with: .notDone)
 
-        #expect(throws: NotificationAnswerError.alreadyCovered(through: start)) {
+        #expect(throws: AnswerRefusal.alreadyCovered(through: start)) {
             try model.respond(to: planned, deliveredAt: eightPM, with: .done)
         }
         #expect(model.truth.answers.map(\.value) == [.notDone])
@@ -131,7 +131,7 @@ struct NotificationResponseTests {
             shape: .perDay(days: [start]),
             createdAt: noon
         )
-        #expect(throws: NotificationAnswerError.notSingleDay) {
+        #expect(throws: AnswerRefusal.notSingleDay) {
             try model.respond(to: question, deliveredAt: eightPM, with: .done)
         }
     }

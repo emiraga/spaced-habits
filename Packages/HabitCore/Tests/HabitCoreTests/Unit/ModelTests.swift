@@ -116,6 +116,12 @@ struct AnswerTests {
         #expect(try roundTrip(original) == original)
     }
 
+    /// Channels are exported by raw value (§11), so renaming one would break old exports.
+    @Test func channelsEncodeAsStableStrings() throws {
+        let encoded = try Channel.allCases.map(json)
+        #expect(encoded == [#""app""#, #""widget""#, #""watch""#, #""notification""#, #""health""#, #""shortcut""#])
+    }
+
     @Test func validationRejectsInconsistentValues() throws {
         let covers = try day("2026-09-25") ... day("2026-09-26")
         #expect(throws: Answer.ValidationError.countOutOfRange(done: 6, total: 5)) {

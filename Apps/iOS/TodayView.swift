@@ -190,7 +190,7 @@ private struct HabitRow: View {
                 .font(.title3)
                 .frame(width: 28)
                 .foregroundStyle(Color(hex: habit.colorHex))
-            Text([habit.emoji, habit.name].compactMap(\.self).joined(separator: " "))
+            Text(habit.displayName)
             Spacer()
             Text(resumes.map { "Resumes \($0)" } ?? "~\(intervalDays)d")
                 .font(.caption.monospacedDigit())
