@@ -83,11 +83,11 @@ public enum Simulator {
                 else { break }
                 asks[habit][dayIndex] = SimulatedAsk(question: question, reason: due.reason)
                 let value = answer(question, habit: habit, truth: truth, start: start)
-                log.answers.append(makeAnswer(
-                    question,
-                    value,
-                    at: clock.now().addingTimeInterval(TimeInterval(offset))
-                ))
+                let now = clock.now().addingTimeInterval(TimeInterval(offset))
+                var presented = question
+                presented.presentedAt = now
+                log.questions.append(presented)
+                log.answers.append(makeAnswer(question, value, at: now))
                 projected = try Projection.rebuild(log, clock: clock)
             }
             for (habit, value) in habits.enumerated() {

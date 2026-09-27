@@ -141,16 +141,40 @@ public enum DependencyMode: String, Codable, Sendable, Hashable {
     case sequence
 }
 
-/// Optional grouping ("Morning routine").
+/// A habit as it was right after one edit (§3.2). Truth: append-only; `Truth.habits` holds the current
+/// definition, revisions keep the history for export.
+public struct HabitRevision: Identifiable, Codable, Sendable, Hashable {
+    public let id: UUID
+    public let habit: Habit
+    public let editedAt: Date
+
+    public init(id: UUID = UUID(), habit: Habit, editedAt: Date) {
+        self.id = id
+        self.habit = habit
+        self.editedAt = editedAt
+    }
+}
+
+/// Optional grouping ("Morning routine"). Truth: synced, edited in place (last writer wins).
 public struct Cluster: Identifiable, Codable, Sendable, Hashable {
     public let id: UUID
     public var name: String
     public var colorHex: String
 
+    public enum ValidationError: Error, Equatable {
+        case emptyName
+    }
+
     public init(id: UUID = UUID(), name: String, colorHex: String) {
         self.id = id
         self.name = name
         self.colorHex = colorHex
+    }
+
+    public func validate() throws {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw ValidationError.emptyName
+        }
     }
 }
 

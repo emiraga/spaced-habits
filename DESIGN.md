@@ -167,8 +167,10 @@ Implemented in `HabitCore/Support/` (M1): `DayKey`, `DayCalendar` (day starts at
 
 The store is **event-sourced-lite**:
 
-- **Truth** (append-only, synced): `Habit` definitions and edits, `Answer`s, `PauseEvent`s,
-  `HealthObservation`s, `Settings`.
+- **Truth** (append-only, synced): `Habit` definitions, `HabitRevision`s (a snapshot after each
+  edit), `Cluster`s, presented `Question`s (including dismissed ones), `Answer`s, `PauseEvent`s,
+  `HealthObservation`s, `Settings`. Revisions, clusters and questions are record-keeping for history
+  and export (§11); the scheduler and projection never read them.
 - **Projection** (derived, rebuildable, local): `DayRecord`s and `SchedulerState`. A deterministic
   function `Projection.rebuild(events) -> (dayRecords, schedulerStates)` recomputes them.
 
@@ -184,7 +186,7 @@ Implemented in `HabitCore/Model/` (M1) as `Sendable`, `Codable`, `Hashable` valu
 the reference for fields and defaults:
 
 - `Habit.swift`: `Habit` (+ `HabitKind`, `Importance`, `VacationBehavior`, `HealthBinding`),
-  `Dependency` / `DependencyMode` (§4.5), `Cluster`.
+  `HabitRevision`, `Dependency` / `DependencyMode` (§4.5), `Cluster`.
 - `Question.swift`: `Question`, `QuestionShape` (`.singleDay` / `.perDay(days:)` / `.count(total:)`),
   `ParentContext`.
 - `Events.swift`: truth events `Answer` / `AnswerValue` / `Channel`, `PauseEvent` / `PauseReason`,
@@ -319,7 +321,9 @@ present top settings.sessionBudget (default 3); rest remain queued with a "More�
 
 Questions are created lazily at presentation time (so a habit answered from the watch does not
 leave a stale question on the phone). A `Question` that is dismissed ("Later") is discarded and
-re-planned next session; it is not carried as state.
+re-planned next session; it is not carried as scheduler state. Every presented question is still
+appended to `Truth.questions` with `presentedAt` (and `dismissedAt` on "Later") so history and export
+show what was asked; the planner never reads that log.
 
 ### 4.5 Dependencies
 
@@ -392,8 +396,9 @@ Both features are one primitive: `PauseEvent`.
 ### 4.7 Projection (`HabitCore/Projection`)
 
 `Projection.rebuild(truth, clock) -> Projected` (`Projection/Projection.swift`). `Truth`
-(`Model/Truth.swift`) bundles habits, answers, pauses, health observations and settings, and is
-validated first (including that every reference names a known habit). Habits are projected in
+(`Model/Truth.swift`) bundles habits, clusters, habit revisions, questions, answers, pauses, health
+observations and settings, and is validated first (including that every reference names a known
+habit or cluster). Projection ignores clusters, revisions and questions. Habits are projected in
 topological order so parents' records exist when their children are projected.
 
 1. For each habit, for each day from `createdDay` to `today`:
@@ -458,8 +463,9 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 ### 5.1 Screens
 
 1. **Today** (root). A stack of question cards (≤ session budget), then a compact list of all
-   active habits with today's status glyph (✓ observed, ≈ aggregated/inferred, ? unknown,
-   ⏸ paused, ⛔ blocked, · not due). Pull-to-refresh replans. Empty state: "Nothing to ask.
+   active habits with today's status glyph (✓ observed, ♥ Health, ◐ aggregated, ≈ inferred,
+   ? unknown, ⏸ paused, ⛔ blocked, · not due). Aggregated (answered as a count) and inferred
+   (no answer; filled in by the model) never share a glyph (§1.1). Pull-to-refresh replans. Empty state: "Nothing to ask.
    Next check-in: <habit> on <date>."
 2. **Habit detail.** Header with current ask interval ("Asking every ~9 days"), adherence 30d,
    Resumes-on banner if paused, charts (§10), history calendar, dependency list, edit button.
@@ -567,8 +573,8 @@ These are the acceptance tests for the engine. They must pass before UI work beg
     (`[Dependency]`, encoded by SwiftData as data), not as a relationship to other `Habit` rows.
     Give it a default of `[]`. Add a mapping test that a `.sequence` edge survives a
     store → CloudKit-shaped model → `HabitCore` round-trip unchanged.
-- Conflict policy: truth tables are append-only; edits to `Habit` and `PauseEvent` are
-  last-writer-wins per record, which is acceptable for single-user data. Projections are never
+- Conflict policy: truth tables are append-only; edits to `Habit`, `Cluster`, `PauseEvent` and a
+  `Question`'s `dismissedAt` are last-writer-wins per record, which is acceptable for single-user data. Projections are never
   synced.
 - On each remote change notification: re-project from the earliest changed day, reload widgets.
 - A "Sync status" row in Settings shows account state and last successful merge; a debug button
@@ -579,11 +585,12 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 ## 11. Export / import
 
 - **CSV** (zip of several files): `days.csv` (habit_id, habit_name, day, value, source,
-  confidence, conditional_denominator_excluded, question_id), `habits.csv`, `answers.csv`,
-  `questions.csv`, `pauses.csv` (with reason), `clusters.csv`, `dependencies.csv`
-  (habit_id, parent_id, mode).
-- **JSON**: one document `{ schemaVersion, exportedAt, settings, habits, clusters, answers,
-  questions, pauses, healthObservations }`. Each habit carries
+  confidence, conditional_denominator_excluded, question_id), `habits.csv`, `habit_revisions.csv`
+  (revision_id, habit_id, edited_at, then the habit's columns), `answers.csv`, `questions.csv`
+  (including dismissed ones, with presented_at and dismissed_at), `pauses.csv` (with reason),
+  `clusters.csv`, `dependencies.csv` (habit_id, parent_id, mode), `health_observations.csv`.
+- **JSON**: one document `{ schemaVersion, exportedAt, settings, habits, habitRevisions, clusters,
+  answers, questions, pauses, healthObservations }`, i.e. the full `Truth` (§4.7). Each habit carries
   `"dependencies": [{ "parentID": "...", "mode": "gate" }]`. This is the complete truth set;
   `DayRecord`s are omitted because they are derived (an optional `includeProjection` flag adds them).
 - **Import** (JSON only): merge by UUID, never delete, re-validate the dependency DAG (reject the
@@ -598,8 +605,8 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 
 Per habit:
 - **Ask interval over time** — line; the signature chart. Rising = becoming automatic.
-- Calendar heatmap — cell fill by value, hatched for inferred/aggregated, gray for paused,
-  striped for blocked, hollow for unknown.
+- Calendar heatmap — cell fill by value, dotted outline for aggregated, hatched for inferred, gray
+  for paused, striped for blocked, hollow for unknown. Aggregated and inferred always look different.
 - Rolling 7- and 30-day adherence — line, with a horizontal target line.
 - Model confidence — area of `mean ± sd`.
 - Delays count / paused days (small stat tiles).
@@ -799,8 +806,8 @@ documented manual checkpoint, not a flaky automated test.
 
 Decide during the relevant milestone, then move the answer into the section it governs.
 
-- O2. Should the "Later" dismissal count toward staleness, or be entirely stateless? Stateless
-  for M2; revisit if users report nagging.
+- O2. Should the "Later" dismissal count toward staleness, or be ignored by the scheduler? Ignored
+  for M2 (it is logged in `Truth.questions` but not read); revisit if users report nagging.
 - O3. Third vacation behavior "keep but relaxed" (reduced target). Not in v1.
 - O4. Import of Loop/Streaks CSVs. Not in v1; JSON import only.
 - O5. Whether to expose model parameters (decay, threshold) in Settings or keep them hidden

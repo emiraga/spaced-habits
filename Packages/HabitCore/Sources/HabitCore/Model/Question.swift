@@ -1,7 +1,8 @@
 import Foundation
 
 /// One question presented to the user (DESIGN.md §3.3). Created lazily by the planner at presentation
-/// time; a dismissed question is discarded and re-planned, never carried as state (§4.4).
+/// time; a dismissed question is re-planned, never carried as scheduler state (§4.4). Presented
+/// questions are logged in `Truth.questions` for history and export only.
 public struct Question: Identifiable, Codable, Sendable, Hashable {
     public let id: UUID
     public let habitID: UUID
@@ -33,6 +34,34 @@ public struct Question: Identifiable, Codable, Sendable, Hashable {
         self.presentedAt = presentedAt
         self.dismissedAt = dismissedAt
         self.parentContext = parentContext
+    }
+
+    public enum ValidationError: Error, Equatable {
+        case singleDayCoversSeveralDays(Int)
+        case perDayEmpty
+        case perDayOutsideCovers(DayKey)
+        case countOutOfRange(total: Int, coverDays: Int)
+        case negativeParentDoneDays(Int)
+    }
+
+    /// Checks `shape` is consistent with `covers`. Run on questions logged by widgets, watch and import.
+    public func validate() throws {
+        switch shape {
+        case .singleDay:
+            guard covers.count == 1 else { throw ValidationError.singleDayCoversSeveralDays(covers.count) }
+        case let .perDay(days):
+            guard !days.isEmpty else { throw ValidationError.perDayEmpty }
+            if let outside = days.first(where: { !covers.contains($0) }) {
+                throw ValidationError.perDayOutsideCovers(outside)
+            }
+        case let .count(total):
+            guard (1 ... covers.count).contains(total) else {
+                throw ValidationError.countOutOfRange(total: total, coverDays: covers.count)
+            }
+        }
+        if let parentContext, parentContext.parentDoneDays < 0 {
+            throw ValidationError.negativeParentDoneDays(parentContext.parentDoneDays)
+        }
     }
 }
 
