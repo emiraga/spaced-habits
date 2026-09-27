@@ -39,6 +39,8 @@ public final class AppModel {
     @ObservationIgnored private var shownQuestions: [UUID: Question] = [:]
     /// False for widget timelines and intents: planning there is speculative, nobody sees the cards.
     @ObservationIgnored private let logsPresentedQuestions: Bool
+    /// Where card answers come from: `.app` on the phone, `.watch` in the watch app.
+    @ObservationIgnored private let channel: Channel
 
     static let dayOffsetKey = "debug.dayOffset"
 
@@ -50,12 +52,14 @@ public final class AppModel {
         timeZone: TimeZone,
         defaults: UserDefaults,
         logsPresentedQuestions: Bool = true,
+        channel: Channel = .app,
         baseClock: @escaping @Sendable (DayCalendar) -> any Clock
     ) throws {
         self.store = store
         self.timeZone = timeZone
         self.defaults = defaults
         self.logsPresentedQuestions = logsPresentedQuestions
+        self.channel = channel
         self.baseClock = baseClock
         let truth = try store.load()
         let dayOffset = defaults.integer(forKey: Self.dayOffsetKey)
@@ -103,14 +107,22 @@ public final class AppModel {
         }
     }
 
+    /// Applies the other device's writes (the watch bridge, §7) and re-plans if anything changed. Not a new
+    /// session, like a CloudKit merge (§10).
+    public func merge(_ changes: [TruthChange]) throws {
+        if try store.merge(changes) {
+            try reload(newSession: false)
+        }
+    }
+
     /// Records an answer. A `.delayed` answer also pauses the habit from today (§4.6).
     public func answer(_ question: Question, with value: AnswerValue) throws {
-        try record(question, value, delayReason: .manual, channel: .app)
+        try record(question, value, delayReason: .manual, channel: channel)
     }
 
     /// "Delay…" on a card: pauses the habit for `days` days starting today, logged as a `.delayed` answer.
     public func delay(_ question: Question, days: Int, reason: PauseReason) throws {
-        try record(question, .delayed(days: days), delayReason: reason, channel: .app)
+        try record(question, .delayed(days: days), delayReason: reason, channel: channel)
     }
 
     func record(_ question: Question, _ value: AnswerValue, delayReason: PauseReason, channel: Channel) throws {

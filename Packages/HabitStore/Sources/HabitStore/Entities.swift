@@ -28,3 +28,22 @@ enum TruthKind: String, CaseIterable {
         self.updatedAt = updatedAt
     }
 }
+
+/// One written `TruthRecord`, as it travels between the phone and the watch (DESIGN.md §7).
+public struct TruthChange: Codable, Sendable, Hashable {
+    struct Key: Hashable {
+        let kind: String
+        let id: UUID
+    }
+
+    /// `TruthKind` raw value; a `String` so a newer device's kinds decode and are refused by `merge`.
+    public let kind: String
+    public let id: UUID
+    /// The value's `HabitCore` JSON.
+    public let payload: Data
+    public let updatedAt: Date
+
+    var key: Key {
+        Key(kind: kind, id: id)
+    }
+}

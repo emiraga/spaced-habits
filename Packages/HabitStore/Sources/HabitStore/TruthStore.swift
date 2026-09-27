@@ -16,6 +16,8 @@ public enum StoreLocation: Sendable {
 
 public enum StoreError: Error, Equatable {
     case appGroupDefaultsUnavailable(String)
+    /// A merged change names a collection this version doesn't know (§7).
+    case unknownKind(String)
 }
 
 /// Builds the `ModelContainer` (DESIGN.md §10).
@@ -141,6 +143,72 @@ public final class TruthStore {
         try upsert(.settings, id: Self.settingsID, settings, at: date)
     }
 
+    // MARK: Changes between devices
+
+    /// Every local write, as the watch bridge sends it to the other device (§7). Not called by `merge`,
+    /// so merged changes aren't echoed back.
+    public var onChange: (@MainActor (TruthChange) -> Void)?
+    /// Written but not yet saved; reported once the context saves.
+    private var unsaved: [TruthChange] = []
+
+    /// Every stored record, latest per `(kind, id)`: what a newly installed watch is sent (§7).
+    public func allChanges() throws -> [TruthChange] {
+        var latest: [TruthChange.Key: TruthChange] = [:]
+        for row in try context.fetch(FetchDescriptor<TruthRecord>()) {
+            let change = TruthChange(kind: row.kind, id: row.id, payload: row.payload, updatedAt: row.updatedAt)
+            if latest[change.key].map({ $0.updatedAt < change.updatedAt }) ?? true {
+                latest[change.key] = change
+            }
+        }
+        return latest.values.sorted { ($0.updatedAt, $0.id.uuidString) < ($1.updatedAt, $1.id.uuidString) }
+    }
+
+    /// Applies another device's writes, latest `updatedAt` wins per `(kind, id)`, so a change delivered
+    /// twice (WatchConnectivity and CloudKit) or late is harmless. Each value is decoded and validated like
+    /// a local write; references between values aren't checked, since changes can arrive out of order.
+    /// Returns whether anything changed.
+    @discardableResult
+    public func merge(_ changes: [TruthChange]) throws -> Bool {
+        var changed = false
+        for change in changes {
+            guard let kind = TruthKind(rawValue: change.kind) else { throw StoreError.unknownKind(change.kind) }
+            try validate(change.payload, as: kind)
+            let rawKind = change.kind
+            let id = change.id
+            let existing = try context.fetch(FetchDescriptor<TruthRecord>(
+                predicate: #Predicate { $0.kind == rawKind && $0.id == id }
+            ))
+            if existing.contains(where: { $0.updatedAt >= change.updatedAt }) {
+                continue
+            }
+            if existing.isEmpty {
+                context.insert(TruthRecord(kind: kind, id: id, payload: change.payload, updatedAt: change.updatedAt))
+            }
+            for row in existing {
+                row.payload = change.payload
+                row.updatedAt = change.updatedAt
+            }
+            changed = true
+        }
+        if changed {
+            try context.save()
+        }
+        return changed
+    }
+
+    private func validate(_ payload: Data, as kind: TruthKind) throws {
+        switch kind {
+        case .habit: try decoder.decode(Habit.self, from: payload).validate()
+        case .habitRevision: try decoder.decode(HabitRevision.self, from: payload).habit.validate()
+        case .cluster: try decoder.decode(Cluster.self, from: payload).validate()
+        case .question: try decoder.decode(Question.self, from: payload).validate()
+        case .answer: try decoder.decode(Answer.self, from: payload).validate()
+        case .pause: try decoder.decode(PauseEvent.self, from: payload).validate()
+        case .healthObservation: _ = try decoder.decode(HealthObservation.self, from: payload)
+        case .settings: try decoder.decode(Settings.self, from: payload).validate()
+        }
+    }
+
     /// Deletes all truth. Debug only (Settings → Debug → Erase all data).
     public func eraseAll() throws {
         try context.delete(model: TruthRecord.self)
@@ -160,8 +228,12 @@ public final class TruthStore {
             row.payload = payload
             row.updatedAt = date
         }
+        unsaved.append(TruthChange(kind: rawKind, id: id, payload: payload, updatedAt: date))
         if save {
+            let saved = unsaved
+            unsaved = []
             try context.save()
+            saved.forEach { onChange?($0) }
         }
     }
 }

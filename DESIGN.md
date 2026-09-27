@@ -585,9 +585,15 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 - Thin SwiftUI app using `HabitUI` cards sized for the wrist. Screens: Today (cards), habit list,
   a single-habit quick view. No editor, no charts beyond a 7-day sparkline.
 - Data: own SwiftData store with the same CloudKit container (truth), **plus** `WatchConnectivity`
-  for immediacy: the phone pushes the current planned question set via `updateApplicationContext`;
-  the watch sends answers via `transferUserInfo`. All events carry their UUID so duplicates from
-  both channels are idempotent.
+  for immediacy. Both sides send every local write as a `TruthChange` (kind, UUID, `HabitCore` JSON,
+  `updatedAt`; `TruthStore.onChange`, reported after the save) via `transferUserInfo`, which queues
+  while the other device is unreachable. The receiver calls `AppModel.merge`: latest `updatedAt` wins
+  per `(kind, id)`, each value is validated like a local write, merged changes aren't echoed back, and
+  a change delivered twice (WatchConnectivity and CloudKit) is stored once. The watch plans its own
+  session with the same `AppModel` (`channel: .watch`) rather than receiving the phone's plan: the plan
+  is a function of truth, so sending truth keeps one code path and works standalone. A watch with an
+  empty store asks the phone for `TruthStore.allChanges()` (sent as a file) instead of waiting for
+  CloudKit.
 - Runs standalone if the phone is unreachable; CloudKit catches up later.
 
 ---
