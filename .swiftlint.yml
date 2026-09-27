@@ -1,0 +1,25 @@
+excluded:
+  - SpacedHabits.xcodeproj
+  - .build
+  - Packages/HabitCore/.build
+  - Packages/HabitStore/.build
+  - Packages/HabitUI/.build
+  - DerivedData
+
+disabled_rules:
+  - line_length # SwiftFormat owns wrapping
+  - todo # TODOs are tracked in DESIGN.md §16
+  - trailing_comma # SwiftFormat owns trailing commas
+
+opt_in_rules:
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - explicit_init
+  - sorted_imports
+  - closure_end_indentation
+  - empty_count
+  - first_where
+  - contains_over_first_not_nil
+
+analyzer_rules:
+  - unused_import

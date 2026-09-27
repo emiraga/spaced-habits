@@ -1,0 +1,8 @@
+--swiftversion 6
+--indent 4
+--maxwidth 120
+--wraparguments before-first
+--stripunusedargs closure-only
+--self remove
+--header strip
+--exclude SpacedHabits.xcodeproj,.build,**/.build,DerivedData

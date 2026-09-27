@@ -106,10 +106,14 @@ SpacedHabits/
 │   ├── HabitStore/             # SwiftData models + CloudKit config + mapping to HabitCore types
 │   └── HabitUI/                # Shared SwiftUI views (question cards, habit rows, charts)
 ├── Apps/
-│   ├── iOS/                    # Spaced Habits (iOS app target)
+│   ├── iOS/                    # Spaced Habits (iOS app target) + Assets.xcassets
+│   ├── iOSTests/               # app-hosted unit tests (Swift Testing)
 │   ├── iOSWidgets/             # WidgetKit extension (iOS)
-│   ├── watchOS/                # Spaced Habits Watch app
+│   ├── watchOS/                # Spaced Habits Watch app (Assets.xcassets parked here until M7)
 │   └── watchOSWidgets/         # Complications / Smart Stack
+├── Docs/
+│   ├── Brand/                  # SVG marks, App Store 1024 icon
+│   └── checkpoints/            # milestone screenshots
 └── Scripts/                    # simulator picker, export fixtures, etc.
 ```
 
@@ -938,7 +942,7 @@ documented manual checkpoint, not a flaky CI test.
    checkpoint evidence (test output, simulation table, screenshot paths) in the milestone's final
    commit message.
 5. No force-unwraps outside tests; no `print` in production code (use `os.Logger` with
-   subsystem `com.example.spacedhabits`).
+   subsystem `com.emiraga.spacedhabits`).
 6. When an Apple API behaves differently from what this document assumes (deployment target,
    SwiftData/CloudKit constraints, WidgetKit limits), fix the document and the plan, not just the
    code.
@@ -961,6 +965,20 @@ Decided:
   only `.gate`; `.sequence` is reserved for habit stacking (ATOMIC_HABITS_IDEAS.md F2) and is
   inert everywhere except DAG validation, store/sync and export/import. Chosen so F2 becomes a
   UI-and-planner change with no data migration.
+- D9 (2026-09-27, M0). Toolchain pinned to Xcode 27.0 (`.xcode-version`); package manifests use
+  `swift-tools-version: 6.2` for `.treatAllWarnings(as: .error)` (warnings-as-errors without
+  `unsafeFlags`). `make test` runs `xcrun swift test` so SwiftPM uses the Xcode toolchain, not
+  whatever `swift` is first on `PATH` (a swiftly 6.3 toolchain failed against the macOS 28 SDK).
+- D10 (2026-09-27, M0). `make test` runs `swift test` for all three packages (on macOS, hence
+  `.macOS(.v14)` in their platforms) plus the app-hosted `SpacedHabitsTests` target via
+  xcodebuild; package test targets are not in the Xcode scheme.
+- D11 (2026-09-27, M0). Bundle ID prefix `com.emiraga.spacedhabits` replaces `com.example`.
+  Info.plist is generated from build settings (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`)
+  instead of a checked-in `Apps/iOS/Info.plist`. Entitlements (App Group, iCloud, HealthKit)
+  and the widget/watch targets are added in the milestones that need them (M2/M6/M7/M8),
+  not in M0.
+- D12 (2026-09-27, M0). SwiftLint `trailing_comma` is disabled: SwiftFormat owns trailing
+  commas (same reasoning as `line_length`).
 
 Open (decide during the relevant milestone and record here):
 - O1. Should aggregated answers be spread evenly (`value = N/K` per day) or placed on the days
@@ -976,3 +994,5 @@ Changelog:
 - 2026-09-27 — initial version.
 - 2026-09-27 — renamed to Spaced Habits; dependencies changed to typed edges with a mode (D8),
   M4 checkpoint extended, export/import formats updated.
+- 2026-09-27 — M0 scaffold landed; D9–D12 recorded; logging subsystem is
+  `com.emiraga.spacedhabits`.
