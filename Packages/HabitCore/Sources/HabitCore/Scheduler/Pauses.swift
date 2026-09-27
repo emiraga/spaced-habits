@@ -103,14 +103,18 @@ public enum Pauses {
     /// Habits with at least `frequentDelayThreshold` manual pauses starting in the last
     /// `frequentDelayWindowDays` days. Cancelled pauses don't count: the user took them back.
     public static func frequentlyDelayedHabitIDs(pauses: [PauseEvent], today: DayKey) -> Set<UUID> {
-        let since = today.adding(days: 1 - frequentDelayWindowDays)
+        let counts = delayCounts(pauses: pauses, startingIn: today.adding(days: 1 - frequentDelayWindowDays) ... today)
+        return Set(counts.filter { $0.value >= frequentDelayThreshold }.keys)
+    }
+
+    /// Manual, uncancelled pauses per habit that start in `days`: the "Delays" stat tile (§12) and the
+    /// delayed-often card.
+    public static func delayCounts(pauses: [PauseEvent], startingIn days: ClosedRange<DayKey>) -> [UUID: Int] {
         var counts: [UUID: Int] = [:]
-        let delays = pauses.filter {
-            $0.reason == .manual && !$0.isCancelled && (since ... today).contains($0.start)
-        }
+        let delays = pauses.filter { $0.reason == .manual && !$0.isCancelled && days.contains($0.start) }
         for habitID in delays.flatMap({ Set($0.habitIDs) }) {
             counts[habitID, default: 0] += 1
         }
-        return Set(counts.filter { $0.value >= frequentDelayThreshold }.keys)
+        return counts
     }
 }

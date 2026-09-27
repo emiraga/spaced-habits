@@ -42,6 +42,11 @@ public struct DayKey: Hashable, Comparable, Strideable, Sendable {
         Self.civil(fromDayNumber: dayNumber)
     }
 
+    /// ISO weekday: 1 is Monday, 7 is Sunday. 1970-01-01 was a Thursday.
+    public var weekday: Int {
+        ((dayNumber + 3) % 7 + 7) % 7 + 1
+    }
+
     public func adding(days: Int) -> DayKey {
         DayKey(dayNumber: dayNumber + days)
     }
