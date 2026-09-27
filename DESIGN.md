@@ -560,7 +560,9 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 ## 8. Notifications
 
 - Categories with actions: `HABIT_QUESTION` → *Yes*, *No*, *Later*. Actions are handled in
-  `UNUserNotificationCenterDelegate` (app launches in background) and append an `Answer`.
+  `UNUserNotificationCenterDelegate` (app launches in background) and append an `Answer`. The
+  conformance is `@MainActor`: with `nonisolated async` methods the completion handler ran on the
+  cooperative pool and UIKit aborted on every tap.
   Only `.singleDay` questions get the category; per-day and count questions need the card, so a tap
   opens the app. `Notifier` (app target) is created in `App.init` so it is the delegate before a
   background launch finishes. The notification carries its `Question` as JSON;
@@ -728,14 +730,18 @@ Checkpoint:
   `.sequence` edge that closes a cycle is rejected by `validate`. JSON export → import
   preserves the mode.
 
-### M5 — Notifications (1 day)
+### M5 — Notifications — done (2026-09-27)
 
-Implemented; the device checkpoint below is pending. Automated coverage: `HabitCore`
-`NotificationPlannerTests` (slots only while due, quiet hours, grouping, pauses, vacation quiet,
-nudge, cap) and `HabitUI` `NotificationCheckpointTests` (plan → answer "Yes" from a model launched just
-for the action → relaunch sees it; quiet hours skip the next slot). The notification center itself is
-checked by hand (§14): an XCUITest driving SpringBoard banners hung and was dropped. Debug builds have
-Settings → "Notify in 5 seconds" (the top card as a notification) and Reminders shows the next one.
+`HabitCore` `NotificationPlanner` (§8), `HabitUI` notification content/payloads and
+`AppModel.respond(to:deliveredAt:with:)`, the app's `Notifier` (delegate, categories, rescheduling,
+background refresh), Settings → Reminders, and the silence nudge opening a retroactive vacation.
+Automated: `NotificationPlannerTests`, `NotificationCheckpointTests` (answer from a model launched just
+for the action, seen after relaunch; quiet hours skip the next slot), `AppBundleTests` (background
+refresh keys). Physical iPhone 16 Pro: answered from the notification with the app killed and the answer
+appeared on launch. The first device run crashed on every tap: a `nonisolated async` delegate method
+completed the notification center's handler off the main thread, so the conformance is now
+`@MainActor` (§8). An XCUITest driving SpringBoard banners hung and was dropped; debug builds have
+Settings → "Notify in 5 seconds" for checking by hand.
 
 Deliver: permission flow, cadence UI (times per day / every N days), quiet hours, actionable
 notifications with Yes/No/Later, grouping, `onlyWhenQuestionsDue`, silence nudge, background
