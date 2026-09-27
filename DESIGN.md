@@ -970,7 +970,20 @@ Checkpoint:
   the "ask interval over time" chart visibly rises for the steady habit. Commit screenshots under `Docs/checkpoints/`.
 - Charts render in < 100 ms for a 3-year, 30-habit dataset (use a generated fixture).
 
-### M10 — Export / import (1 day)
+### M10 — Export / import — done (2026-09-28)
+
+§11 as implemented. Settings → Your data: Export JSON and Export CSV (share sheet, `SpacedHabits-<day>.json` /
+`-csv.zip`), Import JSON… (Files) with a summary. Found missing while building it: the store had no write for
+Health observations (the import writes them), the M9 debug fixture import dropped habit revisions and
+simulated fixtures had none, and every relaunch logged the open cards again as new questions (now reused).
+Automated: `HabitCore` `ExportTests` / `CSVExportTests` (goldens, date precision, schema and decode errors,
+merge, unzip), `HabitStore` import write, `HabitUI` `ExportImportTests.checkpointExportWipeImportReexportIsIdentical`,
+and `TodayFlowUITests` finding the export buttons. Checked in the simulator with `simulate dependent-pair
+--json`: import → `-exportData` → erase → import that export → `-exportData`. The JSON matched apart from
+`exportedAt`, the CSV zip and screenshots of Today, both habit details and Insights were byte-identical
+(`Docs/checkpoints/m10-reimported-*.png`), and eight relaunches later the export was still identical. The real
+export's `days.csv` opened in Numbers: 361 rows (header + 2 habits × 180 days), no empty `source` cell.
+
 
 Deliver: CSV zip and JSON export via `ShareLink`, JSON import with merge-by-UUID and
 re-projection, golden-fixture tests, `schemaVersion = 1`.
