@@ -1,6 +1,7 @@
-# Fade — Design Document
+# Spaced Habits — Design Document
 
-> Working name: **Fade** (the questions fade out as the habit takes hold). Rename freely.
+> Working name: **Spaced Habits**. Xcode targets and identifiers use `SpacedHabits` (no space);
+> user-facing strings use "Spaced Habits".
 >
 > Audience: the implementing engineer/agent. This document is the source of truth for scope,
 > architecture, and the milestone plan. Keep it updated when decisions change.
@@ -12,7 +13,7 @@
 Most habit trackers make you check off every habit every day, forever. That is measurement
 overhead that never goes away, and it creates dependence on the app instead of on the habit.
 
-Fade inverts this. It treats each habit check-in as a **measurement**, not a ritual, and uses an
+Spaced Habits inverts this. It treats each habit check-in as a **measurement**, not a ritual, and uses an
 adaptive scheduler (in the spirit of spaced-repetition software) to ask about a habit **only as
 often as needed to stay confident about it**:
 
@@ -80,7 +81,7 @@ interval is itself the progress metric.
 ### 2.1 Module layout
 
 ```
-Fade/
+SpacedHabits/
 ├── project.yml                 # XcodeGen spec
 ├── Makefile
 ├── Brewfile
@@ -105,9 +106,9 @@ Fade/
 │   ├── HabitStore/             # SwiftData models + CloudKit config + mapping to HabitCore types
 │   └── HabitUI/                # Shared SwiftUI views (question cards, habit rows, charts)
 ├── Apps/
-│   ├── iOS/                    # Fade (iOS app target)
+│   ├── iOS/                    # Spaced Habits (iOS app target)
 │   ├── iOSWidgets/             # WidgetKit extension (iOS)
-│   ├── watchOS/                # Fade Watch app
+│   ├── watchOS/                # Spaced Habits Watch app
 │   └── watchOSWidgets/         # Complications / Smart Stack
 └── Scripts/                    # simulator picker, export fixtures, etc.
 ```
@@ -121,9 +122,9 @@ swapped or tuned without touching the apps.
 `project.yml` (sketch — the agent should complete it):
 
 ```yaml
-name: Fade
+name: SpacedHabits
 options:
-  bundleIdPrefix: com.example.fade      # change
+  bundleIdPrefix: com.example.spacedhabits      # change
   deploymentTarget:
     iOS: "17.0"
     watchOS: "10.0"
@@ -140,7 +141,7 @@ packages:
   HabitStore: { path: Packages/HabitStore }
   HabitUI:    { path: Packages/HabitUI }
 targets:
-  Fade:
+  SpacedHabits:
     type: application
     platform: iOS
     sources: [Apps/iOS]
@@ -148,37 +149,37 @@ targets:
       - package: HabitCore
       - package: HabitStore
       - package: HabitUI
-      - target: FadeWidgets
-      - target: FadeWatch
+      - target: SpacedHabitsWidgets
+      - target: SpacedHabitsWatch
     entitlements:
-      path: Apps/iOS/Fade.entitlements
+      path: Apps/iOS/SpacedHabits.entitlements
       properties:
-        com.apple.security.application-groups: [group.com.example.fade]
+        com.apple.security.application-groups: [group.com.example.spacedhabits]
         com.apple.developer.icloud-services: [CloudKit]
-        com.apple.developer.icloud-container-identifiers: [iCloud.com.example.fade]
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.example.spacedhabits]
         com.apple.developer.healthkit: true
     info:
       path: Apps/iOS/Info.plist
       properties:
-        NSHealthShareUsageDescription: Fade reads workouts to auto-complete matching habits.
-  FadeWidgets:
+        NSHealthShareUsageDescription: Spaced Habits reads workouts to auto-complete matching habits.
+  SpacedHabitsWidgets:
     type: app-extension
     platform: iOS
     sources: [Apps/iOSWidgets]
     dependencies: [{ package: HabitCore }, { package: HabitStore }, { package: HabitUI }]
     # same app group + iCloud entitlements
-  FadeWatch:
+  SpacedHabitsWatch:
     type: application.watchapp2
     platform: watchOS
     sources: [Apps/watchOS]
-    dependencies: [{ package: HabitCore }, { package: HabitStore }, { package: HabitUI }, { target: FadeWatchWidgets }]
-  FadeWatchWidgets:
+    dependencies: [{ package: HabitCore }, { package: HabitStore }, { package: HabitUI }, { target: SpacedHabitsWatchWidgets }]
+  SpacedHabitsWatchWidgets:
     type: app-extension
     platform: watchOS
     sources: [Apps/watchOSWidgets]
 schemes:
-  Fade:
-    build: { targets: { Fade: all } }
+  SpacedHabits:
+    build: { targets: { SpacedHabits: all } }
     test:  { targets: [HabitCoreTests] }
 ```
 
@@ -191,16 +192,16 @@ setup:        ## install pinned tools
 	brew bundle
 	pre-commit install
 
-gen:          ## regenerate Fade.xcodeproj from project.yml
+gen:          ## regenerate SpacedHabits.xcodeproj from project.yml
 	xcodegen generate
 
 build: gen
-	set -o pipefail && xcodebuild -project Fade.xcodeproj -scheme Fade \
+	set -o pipefail && xcodebuild -project SpacedHabits.xcodeproj -scheme SpacedHabits \
 	  -destination 'generic/platform=iOS Simulator' build | xcbeautify
 
 test:         ## HabitCore package tests run via SwiftPM (fast); app tests via xcodebuild
 	swift test --package-path Packages/HabitCore
-	set -o pipefail && xcodebuild -project Fade.xcodeproj -scheme Fade \
+	set -o pipefail && xcodebuild -project SpacedHabits.xcodeproj -scheme SpacedHabits \
 	  -destination "$$(Scripts/simulator-destination.sh)" test | xcbeautify
 
 lint:
@@ -215,17 +216,17 @@ format-check:
 ci: gen format-check lint test
 
 clean:
-	rm -rf Fade.xcodeproj DerivedData .build Packages/*/.build
+	rm -rf SpacedHabits.xcodeproj DerivedData .build Packages/*/.build
 ```
 
 `.swiftformat` (starting point): `--swiftversion 6`, `--indent 4`, `--maxwidth 120`,
 `--wraparguments before-first`, `--stripunusedargs closure-only`, `--self remove`,
-`--header strip`. Exclude `Fade.xcodeproj`, `.build`, `DerivedData`.
+`--header strip`. Exclude `SpacedHabits.xcodeproj`, `.build`, `DerivedData`.
 
 `.swiftlint.yml` (starting point): `--strict` compatible; enable `opt_in_rules` such as
 `force_unwrapping`, `implicitly_unwrapped_optional`, `explicit_init`, `sorted_imports`,
 `unused_import`, `closure_end_indentation`, `empty_count`, `first_where`, `contains_over_first_not_nil`.
-Disable `line_length` (SwiftFormat owns it) and `todo`. `excluded: [Fade.xcodeproj, .build, DerivedData]`.
+Disable `line_length` (SwiftFormat owns it) and `todo`. `excluded: [SpacedHabits.xcodeproj, .build, DerivedData]`.
 
 `Brewfile`: `brew "xcodegen"`, `brew "swiftlint"`, `brew "swiftformat"`, `brew "xcbeautify"`, `brew "pre-commit"`.
 
@@ -283,10 +284,29 @@ struct Habit: Identifiable, Codable, Sendable {
     var targetAdherence: Double         // 0...1, default 0.8. Below this the scheduler asks daily.
     var maxRecallGapDays: Int           // default 7. Questions never cover more than this.
     var vacationBehavior: VacationBehavior  // .pause (default) | .keep — persisted, remembered
-    var dependsOn: [UUID]               // parent habit IDs. Must remain a DAG.
+    var dependencies: [Dependency]      // parent edges. Parent IDs must remain a DAG (all modes).
     var clusterID: UUID?                // optional grouping ("Morning routine", "Gym")
     var healthBinding: HealthBinding?   // e.g. .workout(minMinutes: 20)
     var notes: String?
+
+    /// Parents that gate this habit (§4.5). The only mode v1 creates.
+    var gateParentIDs: [UUID] { dependencies.filter { $0.mode == .gate }.map(\.parentID) }
+    /// All parents regardless of mode — used for DAG validation only.
+    var allParentIDs: [UUID] { dependencies.map(\.parentID) }
+}
+
+/// One edge from a habit to a parent habit.
+struct Dependency: Codable, Sendable, Hashable {
+    let parentID: UUID
+    var mode: DependencyMode
+}
+
+/// How a parent relates to its child. v1 creates `.gate` only; `.sequence` is reserved for
+/// habit stacking (see ATOMIC_HABITS_IDEAS.md F2) and must round-trip through store, sync and
+/// export without the planner or projection acting on it.
+enum DependencyMode: String, Codable, Sendable {
+    case gate       // child is measured as P(child | parent) and not asked while parent fails
+    case sequence   // child merely follows parent in a routine; no gating, no conditional metric
 }
 
 enum VacationBehavior: String, Codable { case pause, keep }
@@ -480,11 +500,19 @@ re-planned next session; it is not carried as state.
 
 ### 4.5 Dependencies
 
-`habit.dependsOn` forms a DAG. `Dependencies.validate` rejects cycles at edit time.
+`habit.dependencies` is a list of `Dependency { parentID, mode }`. The parent IDs (all modes)
+form a DAG; `Dependencies.validate` rejects cycles at edit time and on import.
 
-**Gating.** A dependent habit `B` with parent `A` is only due when, over `B`'s prospective
+**Edge modes.** Everything below — gating, the conditional metric, pause propagation, the
+parent-context line on cards — applies to **`.gate` edges only**. `.sequence` edges exist in the
+model so that habit stacking (ATOMIC_HABITS_IDEAS.md F2) needs no data migration; in v1 they are
+inert: the planner, projection and UI must read parents through `habit.gateParentIDs`, never
+`habit.allParentIDs`, so a `.sequence` edge (e.g. from a JSON import) changes nothing except
+cycle validation. The editor creates `.gate` edges only and does not expose the mode.
+
+**Gating.** A dependent habit `B` with gate-parent `A` is only due when, over `B`'s prospective
 `covers` window, `A`'s expected done-days ≥ 1 and `A.mean ≥ 0.5`. Otherwise asking about `B`
-produces noise. Multiple parents: all must pass (AND). Keep it AND in v1; document as a decision.
+produces noise. Multiple gate parents: all must pass (AND). Keep it AND in v1; document as a decision.
 
 **Conditional metric.** `B`'s adherence is `P(B | A)`, not `P(B)`:
 
@@ -496,8 +524,9 @@ produces noise. Multiple parents: all must pass (AND). Keep it AND in v1; docume
   with a flag `conditionalDenominatorExcluded = true` so charts can compute both `P(B)` and
   `P(B|A)`. (Add this flag to `DayRecord`; it defaults to false.)
 
-**Pause propagation.** If `A` is paused on a day, `B`'s DayRecord is `.blocked` (not `.paused`),
-so the user can distinguish "I paused protein" from "protein was moot because gym was paused".
+**Pause propagation.** If gate-parent `A` is paused on a day, `B`'s DayRecord is `.blocked` (not
+`.paused`), so the user can distinguish "I paused protein" from "protein was moot because gym was
+paused". A paused `.sequence` parent has no effect on its children.
 
 ### 4.6 Pauses and vacation
 
@@ -615,7 +644,7 @@ These are the acceptance tests for the engine. They must pass before UI work beg
   one `.perDay` card. After answering, the timeline refreshes to the next question.
 - **Status widget**: habits with today's glyphs; taps deep-link to habit detail.
 - App Intents: `AnswerHabitIntent(questionID, value)`, `DelayHabitIntent(habitID, days)`,
-  `ReviewHabitsIntent()` (opens Today). Expose to Siri/Shortcuts: "Log gym in Fade".
+  `ReviewHabitsIntent()` (opens Today). Expose to Siri/Shortcuts: "Log gym in Spaced Habits".
 - Widgets read/write the **shared App Group SwiftData store**. Widget writes append an `Answer`
   and call `WidgetCenter.reloadAllTimelines()`; the app re-projects on foreground.
 - Timeline: one entry now + entries at the next day boundary and at each notification time.
@@ -668,7 +697,10 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 - CloudKit-backed SwiftData constraints (enforce in `HabitStore`):
   - no `@Attribute(.unique)`; uniqueness is by UUID handled in code
   - every property has a default or is optional; every relationship is optional
-  - no ordered relationships; store `dependsOn` as `[UUID]`, not a relationship
+  - no ordered relationships; store `dependencies` as a `Codable` value attribute
+    (`[Dependency]`, encoded by SwiftData as data), not as a relationship to other `Habit` rows.
+    Give it a default of `[]`. Add a mapping test that a `.sequence` edge survives a
+    store → CloudKit-shaped model → `HabitCore` round-trip unchanged.
 - Conflict policy: truth tables are append-only; edits to `Habit` and `PauseEvent` are
   last-writer-wins per record, which is acceptable for single-user data. Projections are never
   synced.
@@ -682,12 +714,15 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 
 - **CSV** (zip of several files): `days.csv` (habit_id, habit_name, day, value, source,
   confidence, conditional_denominator_excluded, question_id), `habits.csv`, `answers.csv`,
-  `questions.csv`, `pauses.csv` (with reason), `clusters.csv`.
+  `questions.csv`, `pauses.csv` (with reason), `clusters.csv`, `dependencies.csv`
+  (habit_id, parent_id, mode).
 - **JSON**: one document `{ schemaVersion, exportedAt, settings, habits, clusters, answers,
-  questions, pauses, healthObservations }`. This is the complete truth set; `DayRecord`s are
-  omitted because they are derived (an optional `includeProjection` flag adds them).
-- **Import** (JSON only): merge by UUID, never delete, then re-project. Used for backup/restore
-  and for moving between test devices.
+  questions, pauses, healthObservations }`. Each habit carries
+  `"dependencies": [{ "parentID": "...", "mode": "gate" }]`. This is the complete truth set;
+  `DayRecord`s are omitted because they are derived (an optional `includeProjection` flag adds them).
+- **Import** (JSON only): merge by UUID, never delete, re-validate the dependency DAG (reject the
+  whole import on a cycle), then re-project. Unknown `mode` values fail the import with a clear
+  error rather than being coerced. Used for backup/restore and for moving between test devices.
 - Delivered via `ShareLink` / Files. All encoders live in `HabitCore/Export` and are unit-tested
   against golden fixtures; `schemaVersion` bumps require a migration note in this document.
 
@@ -729,7 +764,7 @@ build.
 Deliver: repo layout from §2.1, `project.yml`, `Makefile`, `Brewfile`, `.swiftformat`,
 `.swiftlint.yml`, `.gitignore`, `.xcode-version`, CI workflow, empty `HabitCore` /
 `HabitStore` / `HabitUI` packages with one trivial test each, empty iOS app showing
-"Fade" and a build number.
+"Spaced Habits" and a build number.
 
 Checkpoint:
 - `make setup && make gen && make ci` passes locally with zero warnings.
@@ -780,14 +815,21 @@ Checkpoint:
 
 ### M4 — Dependencies and clusters (1–2 days)
 
-Deliver: depends-on picker with cycle rejection, cluster editor, gating in the planner, parent
-context line on cards, conditional per-day toggles, `.blocked` propagation, `P(B|A)` in the
-projection.
+Deliver: `Dependency` / `DependencyMode` types and `gateParentIDs` / `allParentIDs` on `Habit`
+(if not already landed in M1), depends-on picker with cycle rejection (creates `.gate` edges;
+mode is not exposed), cluster editor, gating in the planner, parent context line on cards,
+conditional per-day toggles, `.blocked` propagation, `P(B|A)` in the projection. All dependency
+reads in planner, projection and UI go through `gateParentIDs`; `allParentIDs` is used only by
+`Dependencies.validate`.
 
 Checkpoint:
 - Gym → Protein. Answer Gym "no" for a week: Protein is never asked. Answer Gym 4/6: the Protein
   card says "of those 4". Pause Gym: Protein history shows `.blocked`.
 - Try to create A → B → A: editor refuses with a clear message.
+- `HabitCore` tests: a fixture with a `.sequence` edge Gym → Stretch behaves exactly like no
+  edge (Stretch is asked while Gym fails, never `.blocked`, no parent context) **and** a
+  `.sequence` edge that closes a cycle is rejected by `validate`. JSON export → import
+  preserves the mode.
 
 ### M5 — Notifications (1 day)
 
@@ -809,7 +851,7 @@ phrases, timeline refresh at day boundaries.
 Checkpoint:
 - Answer a question from the Home Screen widget without opening the app; the widget advances
   to the next question; the app shows the answer on next launch.
-- "Hey Siri, log gym in Fade" works.
+- "Hey Siri, log gym in Spaced Habits" works.
 
 ### M7 — CloudKit sync + Watch (2–3 days)
 
@@ -896,7 +938,7 @@ documented manual checkpoint, not a flaky CI test.
    checkpoint evidence (test output, simulation table, screenshot paths) in the milestone's final
    commit message.
 5. No force-unwraps outside tests; no `print` in production code (use `os.Logger` with
-   subsystem `com.example.fade`).
+   subsystem `com.example.spacedhabits`).
 6. When an Apple API behaves differently from what this document assumes (deployment target,
    SwiftData/CloudKit constraints, WidgetKit limits), fix the document and the plan, not just the
    code.
@@ -915,6 +957,10 @@ Decided:
 - D5. Recall cap default 7 days, per-habit adjustable; days beyond the cap are inferred, not asked.
 - D6. Event-sourced-lite store; projections are derived and never synced.
 - D7. Vacation checklist edits persist to `vacationBehavior` by default (toggle visible).
+- D8. Dependencies are `[Dependency { parentID, mode }]` from day one, not `[UUID]`. v1 creates
+  only `.gate`; `.sequence` is reserved for habit stacking (ATOMIC_HABITS_IDEAS.md F2) and is
+  inert everywhere except DAG validation, store/sync and export/import. Chosen so F2 becomes a
+  UI-and-planner change with no data migration.
 
 Open (decide during the relevant milestone and record here):
 - O1. Should aggregated answers be spread evenly (`value = N/K` per day) or placed on the days
@@ -928,3 +974,5 @@ Open (decide during the relevant milestone and record here):
 
 Changelog:
 - 2026-09-27 — initial version.
+- 2026-09-27 — renamed to Spaced Habits; dependencies changed to typed edges with a mode (D8),
+  M4 checkpoint extended, export/import formats updated.

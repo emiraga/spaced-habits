@@ -1,7 +1,7 @@
 # Atomic Habits–inspired features (optional backlog)
 
 Ideas drawn from habit-formation practice (largely as popularized by *Atomic Habits*) that fit
-Fade's model. **None of these are in scope for v1.** Each is written as a standalone feature
+Spaced Habits' model. **None of these are in scope for v1.** Each is written as a standalone feature
 with its own model changes, UI, scheduler impact, and rough effort, so any one can be picked up
 independently after the milestones in `DESIGN.md` are done. Where a feature builds on another,
 it says so.
@@ -20,7 +20,7 @@ about. An *anchor* is a cue that is assumed to happen and is never asked about.
 about it forever, which contradicts the whole app.
 
 **Model.** New `Habit.kind = .anchor` (or a separate `Anchor` type with `id`, `name`, `emoji`,
-`timeOfDay: TimeOfDay?`). Anchors are valid entries in `dependsOn`. Projection treats an anchor
+`timeOfDay: TimeOfDay?`). Anchors are valid `parentID`s in `dependencies` (default mode `.sequence`). Projection treats an anchor
 as done every non-paused day (`source = .assumed`, value 1, weight 0 — never feeds a model).
 Anchors have no `SchedulerState` and never appear on cards. Vacation: anchors are neither kept
 nor paused; they just exist.
@@ -36,25 +36,34 @@ seeds them. Habit rows never show anchors; the Today screen never asks about the
 
 ## F2. Dependency edge mode: `gate` vs `sequence`
 
-**What.** Today every `dependsOn` edge is a logical conditional: B is measured as P(B|A) and
-not asked when A is failing. A *sequence* edge means "B comes after A in my routine" without B
-being meaningless on its own.
+**Status: model prep done in v1** (DESIGN.md D8). `Habit.dependencies` is already
+`[Dependency { parentID, mode }]`, `DependencyMode` has both cases, `.sequence` edges already
+round-trip through store, sync and export, and the planner/projection already read only
+`gateParentIDs`. What remains is making `.sequence` edges *do* something and letting users create them.
+
+**What.** Today every edge the editor creates is a `.gate`: B is measured as P(B|A) and not
+asked when A is failing. A *sequence* edge means "B comes after A in my routine" without B being
+meaningless on its own.
 
 **Why.** Meditate-after-coffee is a sequence; protein-after-gym is a gate. Treating both as
 gates hides B's real adherence and blocks questions that should be asked.
 
-**Model.** Replace `dependsOn: [UUID]` with `dependencies: [Dependency]` where
-`Dependency { parentID: UUID; mode: .gate | .sequence }`. Migration: existing edges → `.gate`.
-Cycle validation unchanged (applies to both modes).
+**Model.** No change.
 
-**Projection / scheduler.** `.sequence` edges: no gating, no `.blocked` propagation, no
-conditional denominator; B is a normal habit. They only affect card ordering (F3) and phrasing
-(F4). `.gate` edges keep current behavior.
+**UI.** Expose the mode in the depends-on picker as a per-parent segmented control
+("Requires" / "Follows") with one line of help text; default `.gate` for backwards
+compatibility, or `.sequence` when the parent is an anchor (F1). Habit detail lists parents
+under two headings.
 
-**Charts.** For `.sequence` pairs still show P(B|A) vs P(B) side by side as an insight — a
-large difference means the stack is doing real work.
+**Projection / scheduler.** `.sequence` edges stay inert (no gating, no `.blocked`, no
+conditional denominator). They gain meaning only through card ordering (F3) and cue phrasing
+(F4), so implement F2 together with at least one of those or it is invisible.
 
-**Effort.** S. **Depends on:** nothing (works better with F1, F3, F4).
+**Charts.** For `.sequence` pairs show P(B|A) vs P(B) side by side as an insight — a large
+difference means the stack is doing real work. Needs the projection to compute the conditional
+for `.sequence` parents too (read-only, no gating).
+
+**Effort.** S. **Depends on:** nothing; pointless without F3 or F4.
 
 ---
 
@@ -200,7 +209,7 @@ commute, lunch, get home, dinner, bed) with time-of-day chips and a free-text ad
 shows total yes-days as *votes cast for that identity*, never reset by a miss.
 
 **Why.** Reframes progress as accumulation rather than streak maintenance, which matches
-Fade's no-streak stance. It is the same number as a completion count; only the framing differs.
+Spaced Habits' no-streak stance. It is the same number as a completion count; only the framing differs.
 
 **Model.** `Habit.identity: String?`. Votes = count of days with value ≥ 0.5 and source in
 {observed, aggregated, health} (minimal yeses count; inferred days do not).

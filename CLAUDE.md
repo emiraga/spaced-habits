@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Fade is a native iOS + watchOS habit tracker with an adaptive, spaced-repetition-style
+Spaced Habits is a native iOS + watchOS habit tracker with an adaptive, spaced-repetition-style
 check-in scheduler. **`DESIGN.md` is the source of truth** for scope, architecture, and the
 milestone plan. Read the relevant section before starting any task.
 
@@ -19,7 +19,7 @@ milestone plan. Read the relevant section before starting any task.
 
 ```
 make setup         # brew bundle + pre-commit install (once)
-make gen           # regenerate Fade.xcodeproj from project.yml (after any target/file-structure change)
+make gen           # regenerate SpacedHabits.xcodeproj from project.yml (after any target/file-structure change)
 make build         # iOS simulator build via xcodebuild + xcbeautify
 make test          # HabitCore via `swift test`, app targets via xcodebuild
 make lint          # swiftlint --strict
