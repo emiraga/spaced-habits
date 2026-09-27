@@ -35,6 +35,17 @@ public enum DayStatus: String, Sendable, Hashable, CaseIterable {
         }
     }
 
+    /// A history row's value: answers as stated, counts and estimates as percentages marked as such.
+    public static func historyText(_ record: DayRecord) -> String {
+        let status = DayStatus(record: record)
+        switch status {
+        case .aggregated: return "\(DayFormat.percent(record.value)) (from a count)"
+        case .inferred: return "~\(DayFormat.percent(record.value)) (estimated)"
+        case .notDone where record.conditionalDenominatorExcluded: return "Not done (parent not done)"
+        default: return status.label
+        }
+    }
+
     public var glyph: String {
         switch self {
         case .done: "✓"

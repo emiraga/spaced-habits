@@ -38,15 +38,15 @@ public extension AppModel {
     }
 
     /// When a habit that isn't due today will next be asked (§5.1 empty state). Nil if due or archived.
-    func nextCheckIn(of habit: Habit) throws -> DayKey? {
+    func nextCheckIn(of habit: Habit) -> DayKey? {
         guard !habit.isArchived, !dueHabitIDs.contains(habit.id) else { return nil }
-        return try planner.nextCheckIn(habit: habit, state: state(of: habit.id), today: today)
+        return planner.nextCheckIn(habit: habit, state: state(of: habit.id), today: today)
     }
 
     /// The soonest upcoming check-in across habits that aren't due; ties by name.
-    func nextCheckIn() throws -> (habit: Habit, day: DayKey)? {
-        try activeHabits
-            .compactMap { habit in try nextCheckIn(of: habit).map { (habit: habit, day: $0) } }
+    func nextCheckIn() -> (habit: Habit, day: DayKey)? {
+        activeHabits
+            .compactMap { habit in nextCheckIn(of: habit).map { (habit: habit, day: $0) } }
             .min { ($0.day, $0.habit.name) < ($1.day, $1.habit.name) }
     }
 }

@@ -116,7 +116,7 @@ public struct QuestionCard: View {
                 ForEach(Self.countChips(total: total), id: \.label) { chip in
                     Button(chip.label) { count = chip.value }
                         .buttonStyle(.bordered)
-                        .tint(count == chip.value ? .accentColor : .secondary)
+                        .tint(count == chip.value ? Color(hex: habit.colorHex) : .secondary)
                 }
             }
             primaryButton("Save") { onAnswer(.count(done: count, total: total)) }

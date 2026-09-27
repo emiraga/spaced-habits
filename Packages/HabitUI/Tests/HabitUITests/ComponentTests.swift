@@ -30,6 +30,13 @@ struct DayStatusTests {
         #expect(DayStatus.today(record: record(.observed), isDue: false) == .done)
     }
 
+    @Test func historyTextMarksCountsAndEstimates() {
+        #expect(DayStatus.historyText(record(.observed, value: 1)) == "Done")
+        #expect(DayStatus.historyText(record(.aggregated, value: 0.5)).hasSuffix("(from a count)"))
+        #expect(DayStatus.historyText(record(.inferred, value: 0.9)).hasSuffix("(estimated)"))
+        #expect(DayStatus.historyText(record(.paused, value: 0)) == "Paused")
+    }
+
     /// §1.1: aggregated (answered as a count) and inferred (no answer) never look alike.
     @Test func glyphsAreDistinct() {
         #expect(Set(DayStatus.allCases.map(\.glyph)).count == DayStatus.allCases.count)

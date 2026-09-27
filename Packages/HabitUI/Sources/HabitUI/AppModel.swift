@@ -25,6 +25,8 @@ public final class AppModel {
     /// Debug "advance day" offset (§13 M2); 0 in normal use.
     public private(set) var dayOffset: Int
     public private(set) var clock: ShiftedClock
+    /// Built from `truth.settings`, which is validated before it is stored.
+    public private(set) var planner: QuestionPlanner
 
     @ObservationIgnored private let store: TruthStore
     @ObservationIgnored private let timeZone: TimeZone
@@ -56,6 +58,7 @@ public final class AppModel {
         self.truth = truth
         self.dayOffset = dayOffset
         self.clock = clock
+        planner = try QuestionPlanner(settings: truth.settings)
         projected = try Projection.rebuild(truth, clock: clock)
         try refresh()
     }
@@ -129,11 +132,13 @@ public final class AppModel {
     }
 
     public func save(_ settings: Settings) throws {
+        let planner = try QuestionPlanner(settings: settings)
         let clock = try Self.makeClock(
             timeZone: timeZone, settings: settings, dayOffset: dayOffset, baseClock: baseClock
         )
         try store.save(settings, at: clock.now())
         truth.settings = settings
+        self.planner = planner
         self.clock = clock
         try refresh()
     }
@@ -186,10 +191,6 @@ public final class AppModel {
     }
 
     // MARK: Planning
-
-    var planner: QuestionPlanner {
-        get throws { try QuestionPlanner(settings: truth.settings) }
-    }
 
     /// Re-projects and re-plans; logs newly shown questions to `Truth.questions` (§4.4).
     private func refresh() throws {

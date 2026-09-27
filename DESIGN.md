@@ -108,6 +108,7 @@ SpacedHabits/
 ├── Apps/
 │   ├── iOS/                    # Spaced Habits (iOS app target) + Assets.xcassets
 │   ├── iOSTests/               # app-hosted unit tests (Swift Testing)
+│   ├── iOSUITests/             # XCUITest smoke flows; the app erases its data on `-resetData` (debug builds)
 │   ├── iOSWidgets/             # WidgetKit extension (iOS)
 │   ├── watchOS/                # Spaced Habits Watch app (Assets.xcassets parked here until M7)
 │   └── watchOSWidgets/         # Complications / Smart Stack
@@ -134,7 +135,9 @@ The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swif
   (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`); there is no checked-in Info.plist.
 
 Still to add to `project.yml` in later milestones:
-- App Group `group.ga.emira.spacedhabits` entitlement on the app (M2) and widget extension (M6).
+- App Group `group.ga.emira.spacedhabits` entitlement on the widget extension (M6); the app has it
+  since M2 (`Apps/iOS/SpacedHabits.entitlements`, written by `make gen`). A device build needs a
+  `DEVELOPMENT_TEAM` with the group registered.
 - `SpacedHabitsWidgets` iOS app extension from `Apps/iOSWidgets` (M6).
 - iCloud/CloudKit entitlement `iCloud.ga.emira.spacedhabits` (M7) on app, widgets and watch.
 - `SpacedHabitsWatch` (`application.watchapp2`, `Apps/watchOS`) and `SpacedHabitsWatchWidgets`
@@ -662,6 +665,13 @@ Checkpoint:
   answers are too little evidence to skip day 4); a habit answered "no" is asked daily; a four-day
   gap produces a `count` card.
 - Kill and relaunch: state persists. Cold launch < 400 ms measured with Instruments or `os_signpost`.
+
+Status (2026-09-27): implemented; simulator-verified, physical-device pass pending. `AppModelTests.
+checkpointEightDays` drives the day 1–8 expectations through `advanceDay` and passes;
+`TodayFlowUITests` answers, relaunches and finds the answer, and gets count cards after a gap
+(screenshots `Docs/checkpoints/m2-*.png`). `LaunchMetrics` logs first-screen time: Release build,
+iPhone 18 Pro simulator, empty store: ~430 ms from process start, of which ~150 ms is after
+`App.init`. The < 400 ms target must be measured on a device.
 
 ### M3 — Pauses and vacation (1–2 days)
 

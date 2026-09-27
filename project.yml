@@ -26,6 +26,11 @@ targets:
     type: application
     platform: iOS
     sources: [Apps/iOS]
+    entitlements:
+      path: Apps/iOS/SpacedHabits.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.ga.emira.spacedhabits
     dependencies:
       - package: HabitCore
       - package: HabitStore
@@ -52,10 +57,20 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
+  SpacedHabitsUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Apps/iOSUITests]
+    dependencies:
+      - target: SpacedHabits
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: SpacedHabits
 schemes:
   SpacedHabits:
     build:
       targets:
         SpacedHabits: all
     test:
-      targets: [SpacedHabitsTests]
+      targets: [SpacedHabitsTests, SpacedHabitsUITests]

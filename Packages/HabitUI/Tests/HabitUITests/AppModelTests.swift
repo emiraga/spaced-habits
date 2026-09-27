@@ -149,10 +149,10 @@ struct AppModelTests {
     @Test func notDueHabitShowsNextCheckIn() throws {
         let model = try Harness().model()
         let gym = try addHabit(model, "Gym")
-        #expect(try model.nextCheckIn() == nil)
+        #expect(model.nextCheckIn() == nil)
         try model.answer(#require(model.questions.first), with: .done)
         #expect(model.todayStatus(of: gym.id) == .done)
-        let next = try #require(try model.nextCheckIn())
+        let next = try #require(model.nextCheckIn())
         #expect(next.habit.id == gym.id)
         #expect(next.day == start.adding(days: 1))
     }
