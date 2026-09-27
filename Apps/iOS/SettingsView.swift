@@ -79,6 +79,14 @@ struct SettingsView: View {
                 Button("Notify in 5 seconds") {
                     Task { await errors.attemptAsync { try await notifier.fireSoon() } }
                 }
+                // No public API backgrounds an app; quitting also exercises the cold-launch tap path.
+                Button("Notify in 5 seconds and quit") {
+                    Task {
+                        if await errors.attemptAsync({ try await notifier.fireSoon() }) {
+                            exit(0)
+                        }
+                    }
+                }
                 Button("Add sample habits") { errors.attempt { try model.addSampleHabits() } }
                 Button("Erase all data", role: .destructive) { confirmingErase = true }
                     .confirmationDialog("Erase all habits and answers?", isPresented: $confirmingErase) {

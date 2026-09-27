@@ -741,7 +741,7 @@ refresh keys). Physical iPhone 16 Pro: answered from the notification with the a
 appeared on launch. The first device run crashed on every tap: a `nonisolated async` delegate method
 completed the notification center's handler off the main thread, so the conformance is now
 `@MainActor` (§8). An XCUITest driving SpringBoard banners hung and was dropped; debug builds have
-Settings → "Notify in 5 seconds" for checking by hand.
+Settings → "Notify in 5 seconds" (and "… and quit", which exits once it is scheduled) for checking by hand.
 
 Deliver: permission flow, cadence UI (times per day / every N days), quiet hours, actionable
 notifications with Yes/No/Later, grouping, `onlyWhenQuestionsDue`, silence nudge, background
