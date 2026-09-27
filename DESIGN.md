@@ -680,7 +680,11 @@ These are the acceptance tests for the engine. They must pass before UI work beg
     with associated values (`AnswerValue`, `QuestionShape`, `PauseReason`, `HealthBinding`) are never
     SwiftData composite attributes, which mishandle such enums. One table also avoids eight identical
     `@Model` classes (no shared base class on iOS 17). `TruthStore` upserts by `(kind, id)`; if sync
-    ever yields duplicate rows, `load()` keeps the latest `updatedAt`. Settings are one record under a
+    ever yields duplicate rows, `load()` keeps the latest `updatedAt`. CloudKit imports (and watch
+    messages) arrive in no particular order, so an answer can land before its habit, or a habit before
+    its cluster or parent: `load()` holds back every value naming a record that hasn't arrived
+    (`Truth.withoutPendingReferences`, cascading to children) instead of failing validation, and
+    shows it once the reference resolves. Settings are one record under a
     fixed ID. `TruthStoreTests` checks the schema against these rules by reflection and that a
     `.sequence` edge round-trips unchanged.
 - Conflict policy: truth tables are append-only; edits to `Habit`, `Cluster`, `PauseEvent` and a

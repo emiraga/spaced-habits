@@ -70,4 +70,31 @@ public struct Truth: Codable, Sendable, Hashable {
         }
         try healthObservations.map(\.habitID).forEach(check)
     }
+
+    /// Holds back every value that names a habit or cluster not (yet) present: sync delivers records out of
+    /// order (§10), so an answer can land before its habit, or a habit before its cluster or parent. A held
+    /// back habit holds back its children and records too. Nothing is dropped from the store; the values
+    /// come back once what they name arrives. Hiding a habit rather than stripping its reference keeps an
+    /// edit on this device from saving the stripped copy.
+    public func withoutPendingReferences() -> Truth {
+        let clusterIDs = Set(clusters.map(\.id))
+        var kept = habits.filter { habit in habit.clusterID.map(clusterIDs.contains) ?? true }
+        while true {
+            let ids = Set(kept.map(\.id))
+            let next = kept.filter { $0.allParentIDs.allSatisfy(ids.contains) }
+            if next.count == kept.count {
+                break
+            }
+            kept = next
+        }
+        let ids = Set(kept.map(\.id))
+        var truth = self
+        truth.habits = kept
+        truth.habitRevisions = habitRevisions.filter { ids.contains($0.habit.id) }
+        truth.questions = questions.filter { ids.contains($0.habitID) }
+        truth.answers = answers.filter { ids.contains($0.habitID) }
+        truth.pauses = pauses.filter { $0.habitIDs.allSatisfy(ids.contains) }
+        truth.healthObservations = healthObservations.filter { ids.contains($0.habitID) }
+        return truth
+    }
 }

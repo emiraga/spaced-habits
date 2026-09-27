@@ -101,4 +101,46 @@ struct TruthRecordKeepingTests {
         #expect(try JSONDecoder().decode(Truth.self, from: encoder.encode(full)) == full)
         #expect(try Projection.rebuild(full, clock: clock()) == Projection.rebuild(bare, clock: clock()))
     }
+
+    /// Sync delivers records out of order (§10): whatever names a missing habit, cluster or parent waits.
+    @Test func pendingReferencesAreHeldBackUntilTheyResolve() throws {
+        let routine = Cluster(name: "Morning", colorHex: "#FFAA00")
+        let gym = habit("Gym")
+        let stray = habit("Stray")
+        let clustered = habit("Stretch", clusterID: routine.id)
+        var shake = habit("Shake")
+        shake.dependencies = [Dependency(parentID: stray.id)]
+        var smoothie = habit("Smoothie")
+        smoothie.dependencies = [Dependency(parentID: shake.id)]
+        let pending = Truth(
+            habits: [gym, clustered, shake, smoothie],
+            habitRevisions: [HabitRevision(habit: stray, editedAt: noon), HabitRevision(habit: gym, editedAt: noon)],
+            questions: [question(stray, 0, .singleDay), question(gym, 0, .singleDay)],
+            answers: [
+                Answer(
+                    questionID: UUID(), habitID: smoothie.id, covers: today ... today, value: .done,
+                    answeredAt: noon, timezone: "UTC", channel: .watch
+                ),
+            ],
+            pauses: [
+                PauseEvent(habitIDs: [gym.id, stray.id], start: today, end: today, reason: .manual, createdAt: noon),
+            ],
+            healthObservations: [HealthObservation(habitID: stray.id, day: today, sampleID: "s")]
+        )
+
+        let held = pending.withoutPendingReferences()
+        #expect(held.habits == [gym])
+        #expect(held.habitRevisions.map(\.habit.id) == [gym.id])
+        #expect(held.questions.map(\.habitID) == [gym.id])
+        #expect(held.answers.isEmpty)
+        #expect(held.pauses.isEmpty)
+        #expect(held.healthObservations.isEmpty)
+        try held.validate()
+
+        var arrived = pending
+        arrived.habits.append(stray)
+        arrived.clusters.append(routine)
+        #expect(arrived.withoutPendingReferences() == arrived)
+        try arrived.validate()
+    }
 }

@@ -66,6 +66,24 @@ struct TruthChangeTests {
         #expect(try phone.store.load().habitRevisions.count == 2)
     }
 
+    /// CloudKit imports in batches: an answer can arrive before its habit. Loading must not fail meanwhile.
+    @Test func answerMergedBeforeItsHabitWaitsForIt() throws {
+        let watch = try Recording()
+        let gym = gym()
+        try watch.store.save(gym, editedAt: now)
+        try watch.store.append(answer(gym, .done, at: now))
+
+        let phone = try Recording()
+        try phone.store.merge(watch.changes.filter { $0.kind == "answer" })
+        let early = try phone.store.load()
+        #expect(early == Truth(habits: []))
+        try early.validate()
+
+        try phone.store.merge(watch.changes)
+        #expect(try phone.store.load() == watch.store.load())
+        #expect(try phone.store.load().answers.count == 1)
+    }
+
     /// A newly installed watch gets every record at once.
     @Test func allChangesRebuildTheSameTruth() throws {
         let phone = try Recording()

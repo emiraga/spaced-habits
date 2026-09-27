@@ -80,7 +80,13 @@ public final class TruthStore {
     // MARK: Reading
 
     /// All truth, each collection ordered by last write then ID. Missing settings are `Settings.default`.
+    /// Values naming a habit or cluster that hasn't synced yet are held back
+    /// (`Truth.withoutPendingReferences`).
     public func load() throws -> Truth {
+        try loadAll().withoutPendingReferences()
+    }
+
+    private func loadAll() throws -> Truth {
         let rows = try context.fetch(FetchDescriptor<TruthRecord>())
         var latest: [String: [UUID: TruthRecord]] = [:]
         for row in rows where latest[row.kind]?[row.id].map({ $0.updatedAt < row.updatedAt }) ?? true {
