@@ -127,7 +127,7 @@ swapped or tuned without touching the apps.
 ```yaml
 name: SpacedHabits
 options:
-  bundleIdPrefix: com.example.spacedhabits      # change
+  bundleIdPrefix: ga.emira.spacedhabits
   deploymentTarget:
     iOS: "17.0"
     watchOS: "10.0"
@@ -157,9 +157,9 @@ targets:
     entitlements:
       path: Apps/iOS/SpacedHabits.entitlements
       properties:
-        com.apple.security.application-groups: [group.com.example.spacedhabits]
+        com.apple.security.application-groups: [group.ga.emira.spacedhabits]
         com.apple.developer.icloud-services: [CloudKit]
-        com.apple.developer.icloud-container-identifiers: [iCloud.com.example.spacedhabits]
+        com.apple.developer.icloud-container-identifiers: [iCloud.ga.emira.spacedhabits]
         com.apple.developer.healthkit: true
     info:
       path: Apps/iOS/Info.plist
@@ -939,7 +939,7 @@ documented manual checkpoint, not a flaky automated test.
    checkpoint evidence (test output, simulation table, screenshot paths) in the milestone's final
    commit message.
 5. No force-unwraps outside tests; no `print` in production code (use `os.Logger` with
-   subsystem `com.emiraga.spacedhabits`).
+   subsystem `ga.emira.spacedhabits`).
 6. When an Apple API behaves differently from what this document assumes (deployment target,
    SwiftData/CloudKit constraints, WidgetKit limits), fix the document and the plan, not just the
    code.
@@ -969,7 +969,7 @@ Decided:
 - D10 (2026-09-27, M0). `make test` runs `swift test` for all three packages (on macOS, hence
   `.macOS(.v14)` in their platforms) plus the app-hosted `SpacedHabitsTests` target via
   xcodebuild; package test targets are not in the Xcode scheme.
-- D11 (2026-09-27, M0). Bundle ID prefix `com.emiraga.spacedhabits` replaces `com.example`.
+- D11 (2026-09-27, M0). Bundle ID prefix `ga.emira.spacedhabits` replaces `com.example`.
   Info.plist is generated from build settings (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`)
   instead of a checked-in `Apps/iOS/Info.plist`. Entitlements (App Group, iCloud, HealthKit)
   and the widget/watch targets are added in the milestones that need them (M2/M6/M7/M8),
@@ -994,5 +994,5 @@ Changelog:
 - 2026-09-27 — renamed to Spaced Habits; dependencies changed to typed edges with a mode (D8),
   M4 checkpoint extended, export/import formats updated.
 - 2026-09-27 — M0 scaffold landed; D9–D12 recorded; logging subsystem is
-  `com.emiraga.spacedhabits`.
+  `ga.emira.spacedhabits`.
 - 2026-09-27 — hosted CI dropped (D13).
