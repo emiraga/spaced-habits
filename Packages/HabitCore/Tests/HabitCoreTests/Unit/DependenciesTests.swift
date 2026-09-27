@@ -86,6 +86,20 @@ struct DependenciesValidationTests {
             try Dependencies.validate([first, second, third])
         }
     }
+
+    @Test func cycleIfAddingReportsTheLoopItWouldClose() {
+        let gym = habit("Gym")
+        let shake = habit("Shake", parents: [gym.id])
+        let log = habit("Log", parents: [shake.id], mode: .sequence)
+        let stretch = habit("Stretch")
+        let habits = [gym, shake, log, stretch]
+        #expect(Dependencies.cycle(ifAdding: shake.id, to: gym.id, in: habits) == [gym.id, shake.id, gym.id])
+        #expect(Dependencies.cycle(ifAdding: log.id, to: gym.id, in: habits) == [gym.id, log.id, shake.id, gym.id])
+        #expect(Dependencies.cycle(ifAdding: gym.id, to: gym.id, in: habits) == [gym.id, gym.id])
+        #expect(Dependencies.cycle(ifAdding: gym.id, to: stretch.id, in: habits) == nil)
+        #expect(Dependencies.cycle(ifAdding: gym.id, to: log.id, in: habits) == nil)
+        #expect(Dependencies.cycle(ifAdding: UUID(), to: gym.id, in: habits) == nil)
+    }
 }
 
 struct DependenciesGateTests {

@@ -61,6 +61,7 @@ struct TruthStoreTests {
         for (offset, habit) in truth.habits.enumerated() {
             try store.save(habit, editedAt: now.addingTimeInterval(TimeInterval(offset)))
         }
+        try truth.clusters.forEach { try store.save($0, at: now) }
         try truth.questions.forEach { try store.save($0, at: now) }
         try truth.answers.forEach(store.append)
         try truth.pauses.forEach { try store.save($0, at: now) }
@@ -78,6 +79,7 @@ struct TruthStoreTests {
         try write(truth, to: store)
         let loaded = try store.load()
         #expect(loaded.habits == truth.habits)
+        #expect(loaded.clusters == truth.clusters)
         #expect(loaded.questions == truth.questions)
         #expect(loaded.answers == truth.answers)
         #expect(loaded.pauses == truth.pauses)
@@ -107,6 +109,15 @@ struct TruthStoreTests {
         let loaded = try store.load()
         #expect(loaded.habits == [gym])
         #expect(loaded.habitRevisions.map(\.habit.name) == ["Gym", "Gym (weights)"])
+    }
+
+    @Test func renamingAClusterUpdatesItInPlace() throws {
+        let store = try TruthStore(container: StoreContainer.make(.inMemory))
+        var morning = Cluster(name: "Morning", colorHex: "#FF9900")
+        try store.save(morning, at: now)
+        morning.name = "Mornings"
+        try store.save(morning, at: now.addingTimeInterval(60))
+        #expect(try store.load().clusters == [morning])
     }
 
     @Test func dismissingAQuestionUpdatesTheLoggedQuestion() throws {
@@ -153,6 +164,9 @@ struct TruthStoreTests {
         #expect(throws: Answer.ValidationError.countOutOfRange(done: 4, total: 3)) {
             try store.append(answer)
         }
+        #expect(throws: Cluster.ValidationError.emptyName) {
+            try store.save(Cluster(name: " ", colorHex: "#FF9900"), at: now)
+        }
         #expect(try store.load() == Truth(habits: []))
     }
 
@@ -173,6 +187,9 @@ struct TruthStoreTests {
         let store = try TruthStore(container: StoreContainer.make(.inMemory))
         try write(sampleTruth(), to: store)
         try store.eraseAll()
+        #expect(throws: Cluster.ValidationError.emptyName) {
+            try store.save(Cluster(name: " ", colorHex: "#FF9900"), at: now)
+        }
         #expect(try store.load() == Truth(habits: []))
     }
 

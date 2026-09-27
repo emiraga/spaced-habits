@@ -98,6 +98,12 @@ public final class TruthStore {
         return revision
     }
 
+    /// Creates or renames a cluster (last writer wins, §10).
+    public func save(_ cluster: Cluster, at date: Date) throws {
+        try cluster.validate()
+        try upsert(.cluster, id: cluster.id, cluster, at: date)
+    }
+
     /// Logs a presented question, or updates it (e.g. `dismissedAt` on "Later").
     public func save(_ question: Question, at date: Date) throws {
         try question.validate()

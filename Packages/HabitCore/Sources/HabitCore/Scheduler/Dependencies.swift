@@ -46,6 +46,27 @@ public enum Dependencies {
         return sorter.order
     }
 
+    /// The loop that making `habitID` depend on `parentID` (any mode) would close, or nil if the edge is
+    /// safe. Starts and ends at `habitID`; each habit depends on the next: `[Shake, Gym, Shake]` means Shake
+    /// would depend on Gym, which already depends on Shake. For the editor's picker, before `validate`.
+    public static func cycle(ifAdding parentID: UUID, to habitID: UUID, in habits: [Habit]) -> [UUID]? {
+        let byID = Dictionary(habits.map { ($0.id, $0) }) { first, _ in first }
+        var visited: Set<UUID> = []
+        func path(from id: UUID) -> [UUID]? {
+            if id == habitID {
+                return [id]
+            }
+            guard visited.insert(id).inserted, let habit = byID[id] else { return nil }
+            for next in habit.allParentIDs {
+                if let rest = path(from: next) {
+                    return [id] + rest
+                }
+            }
+            return nil
+        }
+        return path(from: parentID).map { [habitID] + $0 }
+    }
+
     /// Habits keyed by ID; throws on duplicates.
     public static func index(_ habits: [Habit]) throws -> [UUID: Habit] {
         try Dictionary(habits.map { ($0.id, $0) }) { first, _ in
