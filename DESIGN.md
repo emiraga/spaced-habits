@@ -482,10 +482,12 @@ up to `sessionBudget` questions truthfully and re-plans after each answer, as th
 
 These are the acceptance tests for the engine. They must pass before UI work begins (Milestone 1).
 
-`simulate <scenario> --json` prints the run's `Truth` instead of the table, and `--end yyyy-MM-dd` moves the
-run to end on that day. A debug build launched with `-importFixture <path>` writes such a file into its
-store (`AppModel.importFixture`; the simulator app reads host paths). Pass the app's current day as `--end`:
-before `dayStartHour` that is still yesterday. M10's JSON import replaces this debug path for real data.
+`simulate <scenario> --json` prints the run as a §11 JSON export instead of the table (with the creation
+revision the app stores for each habit), and `--end yyyy-MM-dd` moves the run to end on that day. Settings →
+Import reads it; a debug build launched with `-importFixture <path>` imports it through the same
+`AppModel.importJSON` (the simulator app reads host paths), and `-exportData <folder>` writes `export.json`
+and `export-csv.zip` there. Pass the app's current day as `--end`: before `dayStartHour` that is still
+yesterday.
 
 ---
 
@@ -608,7 +610,8 @@ before `dayStartHour` that is still yesterday. M10's JSON import replaces this d
   Today says to add them on the iPhone.
 - Data: own SwiftData store with the same CloudKit container (truth), **plus** `WatchConnectivity`
   for immediacy. Both sides send every local write as `TruthChange`s (kind, UUID, `HabitCore` JSON,
-  `updatedAt`; `TruthStore.onChange`, reported after the save): by `sendMessage` (50 per message, under
+  `updatedAt`; `TruthStore.onChange`, reported once per save with all its changes, so an import of thousands
+of records is chunked rather than sent one message each): by `sendMessage` (50 per message, under
   the ~64 KB limit) while the other device is reachable, else by `transferUserInfo`, which queues while
   it's unreachable and is also the fallback when a message fails. (Simulators deliver messages but not
   user-info or file transfers, so only the message path can be checked there.) The `WatchBridge` hooks the
@@ -617,7 +620,9 @@ before `dayStartHour` that is still yesterday. M10's JSON import replaces this d
   per `(kind, id)`, each value is validated like a local write, merged changes aren't echoed back, and
   a change delivered twice (WatchConnectivity and CloudKit) is stored once. The watch plans its own
   session with the same `AppModel` (`channel: .watch`) rather than receiving the phone's plan: the plan
-  is a function of truth, so sending truth keeps one code path and works standalone. A watch with an
+  is a function of truth, so sending truth keeps one code path and works standalone. A card whose open
+  question (logged, not dismissed, not answered) arrived from the phone reuses that question instead of
+  logging another (§11), so phone and watch show one question per card. A watch with an
   empty store asks the phone for `TruthStore.allChanges()` on activation and whenever the phone becomes
   reachable, instead of waiting for CloudKit; the phone replies by messages if reachable, else as a file.
 - Runs standalone if the phone is unreachable; CloudKit catches up later.
@@ -728,6 +733,37 @@ Health binding and Settings shows no Health permissions row. See O7.
   error rather than being coerced. Used for backup/restore and for moving between test devices.
 - Delivered via `ShareLink` / Files. All encoders live in `HabitCore/Export` and are unit-tested
   against golden fixtures; `schemaVersion` bumps require a migration note in this document.
+
+Implemented in M10 (`schemaVersion = 1`, no migrations yet):
+- `HabitCore/Export`: `DataExport` (a `Sendable` snapshot of truth and projection; the share sheet encodes it off
+  the main actor), `ExportDocument` + `ExportCodec` (JSON), `CSVColumns` (the CSV columns, the reference for
+  their names and value formats), `ZipArchive` (stored entries, fixed timestamps: same files, same bytes; no
+  dependency), `TruthImport` (the merge). Golden files: `Tests/HabitCoreTests/Fixtures/Export`, rewritten by
+  `RECORD_GOLDENS=1 swift test` (which then fails, so a recording run never passes).
+- Dates are UTC ISO 8601 with milliseconds (`2026-09-27T12:00:00.000Z`), in JSON and CSV. Export rounds to the
+  millisecond, and a parsed date formats back to itself. JSON keys are sorted, and each collection is in a
+  canonical order that doesn't depend on store write order (habits and questions by creation, revisions by edit,
+  answers by answer time, pauses by creation, clusters by name, Health observations by day, ties by ID; times
+  compared at export precision). Together these make export → import → export byte-identical apart from
+  `exportedAt`. Enums with associated values use Swift's synthesized coding, the store's own format
+  (`{"count":{"done":2,"total":3}}`).
+- The export holds the loaded truth, so it leaves out records held back for a missing reference (§10).
+- CSV: RFC 4180 quoting, `\n` line ends, UTF-8, `;` between list items inside a field. `days.csv` has one row
+  per habit per day from `createdDay` through today (the projection's records), each with a `source`.
+  `answers.csv` splits the value into `value, done, total, per_day, delay_days`, `questions.csv` splits the
+  shape into `shape, days, total`, `pauses.csv` has `reason, reason_text`, and `habit_revisions.csv` ends
+  with the snapshot's `dependencies` (`parentID:mode;…`).
+- Import (`AppModel.importJSON`, Settings → Your data → Import JSON…): the schema version must be 1, and a
+  value that doesn't decode fails with its path (`habits[3].dependencies[0].mode: … chain`). Only the merged
+  truth is validated, so a file may reference local records. A cycle names its habits, like an edit does.
+  An imported record that is new, or differs from the local one with its ID, is written as it is (no new
+  revision) in one save, stamped with the import time, so on other devices the import wins as an edit
+  would. Imported settings replace local ones when they differ. Both sides compare at export precision,
+  so importing a device's own export writes nothing. The app then reloads, which starts a new session.
+- Re-exports stay stable because a planned card reuses the latest logged question for that habit asking the same
+  thing that was neither dismissed nor answered (`AppModel.reusableQuestion`). Otherwise the session after an
+  import, a relaunch, or the watch receiving the phone's question would log a duplicate. A card shown again
+  after "Later" is still a new question (§12).
 
 ---
 
@@ -917,7 +953,7 @@ Checkpoint:
 `HabitCore/Insights`, `HabitUI/Charts`, the Insights screen (Today toolbar, `spacedhabits://insights`) and a
 charts section in habit detail (§12). Automated: `HabitCore` `InsightsTests` / `OverviewTests`, `HabitUI`
 `ChartTests.checkpointSteadyAskIntervalRises` (steady run exported as a fixture, imported through
-`importFixture`: 1 day for the first 4 days, ≥ 7 over the last 30) and
+`importJSON` since M10: 1 day for the first 4 days, ≥ 7 over the last 30) and
 `ChartTests.checkpointChartsRenderFastForThreeYearsOfThirtyHabits` (`LargeFixture`, debug build, best of 3
 runs: data plus drawing < 100 ms for habit detail, for the Insights screen's first screenful and for each
 further cluster section; measured 65, 51 and ~10 ms on an M-series Mac), and `TodayFlowUITests` opening

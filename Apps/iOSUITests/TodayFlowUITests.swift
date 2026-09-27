@@ -1,6 +1,6 @@
 import XCTest
 
-/// Minimal app flow (DESIGN.md §14): answer a card, relaunch, see it persisted, open Insights. Count cards
+/// Minimal app flow (DESIGN.md §14): answer a card, relaunch, see it persisted, open Insights, find export. Count cards
 /// after a gap are `HabitUI` `AppModelTests.checkpointEightDays`; chart content is `HabitUI` `ChartTests`.
 final class TodayFlowUITests: UITestCase {
     func testAnswerPersistsAcrossRelaunch() {
@@ -25,5 +25,12 @@ final class TodayFlowUITests: UITestCase {
         app.buttons["Insights"].tap()
         XCTAssertTrue(appears(app.switches["Include paused days"]))
         XCTAssertTrue(appears(app.staticTexts["Charts appear after 7 days that aren't paused (1 so far)."]))
+
+        // Export and import live in Settings (§11); their content is `HabitUI` `ExportImportTests`.
+        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["Settings"].tap()
+        XCTAssertTrue(scrollTo(app.buttons["Export JSON"]).exists)
+        XCTAssertTrue(app.buttons["Export CSV"].exists)
+        XCTAssertTrue(app.buttons["Import JSON…"].exists)
     }
 }

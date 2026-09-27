@@ -14,13 +14,31 @@ struct RootView: View {
                 .navigationDestination(for: UUID.self) { HabitDetailView(habitID: $0) }
                 .navigationDestination(for: InsightsDestination.self) { _ in InsightsView() }
         }
-        .onOpenURL { url in
-            switch DeepLink(url: url) {
-            case .today: path = NavigationPath()
-            case let .habit(id): path = NavigationPath([id])
-            case .insights: path = NavigationPath([InsightsDestination()])
-            case nil: logger.error("Unknown URL \(url, privacy: .public)")
+        .onOpenURL(perform: open)
+        #if DEBUG
+            // Checkpoint screenshots (§13 M10): `simctl openurl` stops at a confirmation prompt.
+            .onAppear {
+                if let url = Self.launchURL {
+                    open(url)
+                }
             }
+        #endif
+    }
+
+    #if DEBUG
+        private static var launchURL: URL? {
+            let arguments = ProcessInfo.processInfo.arguments
+            guard let flag = arguments.firstIndex(of: "-openURL"), flag + 1 < arguments.count else { return nil }
+            return URL(string: arguments[flag + 1])
+        }
+    #endif
+
+    private func open(_ url: URL) {
+        switch DeepLink(url: url) {
+        case .today: path = NavigationPath()
+        case let .habit(id): path = NavigationPath([id])
+        case .insights: path = NavigationPath([InsightsDestination()])
+        case nil: logger.error("Unknown URL \(url, privacy: .public)")
         }
     }
 }

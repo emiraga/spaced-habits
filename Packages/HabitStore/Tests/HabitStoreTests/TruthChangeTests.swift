@@ -17,7 +17,7 @@ struct TruthChangeTests {
 
         init() throws {
             store = try TruthStore(container: StoreContainer.make(.inMemory))
-            store.onChange = { [unowned self] in changes.append($0) }
+            store.onChange = { [unowned self] in changes.append(contentsOf: $0) }
         }
     }
 
@@ -43,6 +43,35 @@ struct TruthChangeTests {
         #expect(try phone.store.merge(watch.changes))
         #expect(try phone.store.load() == watch.store.load())
         #expect(phone.changes.isEmpty, "merged changes must not be echoed back")
+    }
+
+    /// A JSON import (§11) is written as it is, in one save reported as one batch: no new revisions, Health
+    /// observations included, and the other device ends up with the same truth.
+    @Test func importedRecordsAreWrittenAsTheyAreInOneBatch() throws {
+        let phone = try Recording()
+        var batches = 0
+        phone.store.onChange = { [unowned phone] in
+            batches += 1
+            phone.changes.append(contentsOf: $0)
+        }
+        let gym = gym()
+        var settings = Settings.default
+        settings.sessionBudget = 5
+        let imported = Truth(
+            habits: [gym],
+            habitRevisions: [HabitRevision(habit: gym, editedAt: now)],
+            answers: [answer(gym, .done, at: now)],
+            healthObservations: [HealthObservation(habitID: gym.id, day: day, sampleID: "HK-1")],
+            settings: settings
+        )
+        try phone.store.save(imported: imported, includingSettings: true, at: now.addingTimeInterval(60))
+        #expect(batches == 1)
+        #expect(phone.changes.map(\.kind) == ["habit", "habitRevision", "answer", "healthObservation", "settings"])
+        #expect(try phone.store.load() == imported)
+
+        let watch = try Recording()
+        try watch.store.merge(phone.changes)
+        #expect(try watch.store.load() == imported)
     }
 
     /// The same answer by WatchConnectivity and again by CloudKit, or late: stored once, newest kept.

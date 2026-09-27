@@ -32,8 +32,8 @@ make ci            # gen + format-check + lint + test + test-ui — must pass be
 
 Fast inner loop for engine work: `xcrun swift test --package-path Packages/HabitCore`.
 Engine simulation table (§4.8): `xcrun swift run --package-path Packages/HabitCore simulate <steady|flaky|collapsing|vacation|dependent-pair>`.
-Add `--json --end <app's today>` to export the run as a fixture; a debug app launched with
-`-importFixture <path>` loads it (§4.8).
+Add `--json --end <app's today>` to export the run as a §11 JSON export; a debug app launched with
+`-importFixture <path>` imports it, and `-exportData <folder>` writes its own export there (§4.8).
 Always use `xcrun swift`, not bare `swift`: a swiftly toolchain on `PATH` fails to build the
 packages (`unknown argument: '-target-arch-variant'`). The Makefile already uses `xcrun`.
 

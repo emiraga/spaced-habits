@@ -41,10 +41,17 @@ struct SpacedHabitsApp: App {
                 if ProcessInfo.processInfo.arguments.contains("-sampleHabits"), model.truth.habits.isEmpty {
                     try model.addSampleHabits()
                 }
-                // §13 M9 checkpoint: chart a simulated history (`simulate <scenario> --json`).
+                // §13 M9/M10 checkpoints: import an export (`simulate <scenario> --json` makes one), and
+                // export into a folder as Settings → Your data would (export.json, export-csv.zip).
                 let arguments = ProcessInfo.processInfo.arguments
                 if let flag = arguments.firstIndex(of: "-importFixture"), flag + 1 < arguments.count {
-                    try model.importFixture(at: URL(filePath: arguments[flag + 1]))
+                    try model.importJSON(Data(contentsOf: URL(filePath: arguments[flag + 1])))
+                }
+                if let flag = arguments.firstIndex(of: "-exportData"), flag + 1 < arguments.count {
+                    let folder = URL(filePath: arguments[flag + 1])
+                    let export = model.dataExport()
+                    try export.json().write(to: folder.appending(path: "export.json"))
+                    try export.csvArchive().write(to: folder.appending(path: "export-csv.zip"))
                 }
                 // UI tests skip animations: every sheet and push otherwise costs an idle wait.
                 if ProcessInfo.processInfo.arguments.contains("-disableAnimations") {

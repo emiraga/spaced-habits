@@ -58,7 +58,7 @@ final class WatchBridge: NSObject {
         self.errors = errors
         session = WCSession.isSupported() ? .default : nil
         super.init()
-        store.onChange = { [weak self] in self?.send([$0]) }
+        store.onChange = { [weak self] in self?.send($0) }
         session?.delegate = self
         session?.activate()
     }

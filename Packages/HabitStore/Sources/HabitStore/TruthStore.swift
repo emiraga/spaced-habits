@@ -149,11 +149,34 @@ public final class TruthStore {
         try upsert(.settings, id: Self.settingsID, settings, at: date)
     }
 
+    /// Writes the records of a JSON import as they are (§11), in one save: no new revisions, IDs and values
+    /// kept. `date` is the write time, so an imported record also wins on other devices. `changes` must be
+    /// validated first (`TruthImport`); its settings are written when `includingSettings`.
+    public func save(imported changes: Truth, includingSettings: Bool, at date: Date) throws {
+        func write(_ kind: TruthKind, _ values: [some Encodable & Identifiable<UUID>]) throws {
+            for value in values {
+                try upsert(kind, id: value.id, value, at: date, save: false)
+            }
+        }
+        try write(.habit, changes.habits)
+        try write(.cluster, changes.clusters)
+        try write(.habitRevision, changes.habitRevisions)
+        try write(.question, changes.questions)
+        try write(.answer, changes.answers)
+        try write(.pause, changes.pauses)
+        try write(.healthObservation, changes.healthObservations)
+        if includingSettings {
+            try upsert(.settings, id: Self.settingsID, changes.settings, at: date, save: false)
+        }
+        try commit()
+    }
+
     // MARK: Changes between devices
 
-    /// Every local write, as the watch bridge sends it to the other device (§7). Not called by `merge`,
-    /// so merged changes aren't echoed back.
-    public var onChange: (@MainActor (TruthChange) -> Void)?
+    /// Every local write, as the watch bridge sends it to the other device (§7): once per save, with all
+    /// its changes (an import saves thousands at once). Not called by `merge`, so merged changes aren't
+    /// echoed back.
+    public var onChange: (@MainActor ([TruthChange]) -> Void)?
     /// Written but not yet saved; reported once the context saves.
     private var unsaved: [TruthChange] = []
 
@@ -236,10 +259,17 @@ public final class TruthStore {
         }
         unsaved.append(TruthChange(kind: rawKind, id: id, payload: payload, updatedAt: date))
         if save {
-            let saved = unsaved
-            unsaved = []
-            try context.save()
-            saved.forEach { onChange?($0) }
+            try commit()
+        }
+    }
+
+    /// Saves the context and reports what was written.
+    private func commit() throws {
+        let saved = unsaved
+        unsaved = []
+        try context.save()
+        if !saved.isEmpty {
+            onChange?(saved)
         }
     }
 }

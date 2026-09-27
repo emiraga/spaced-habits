@@ -30,6 +30,8 @@ let package = Package(
         .testTarget(
             name: "HabitCoreTests",
             dependencies: ["HabitCore", "HabitSimulation"],
+            // Golden export files, read by path (`ExportTests`).
+            exclude: ["Fixtures"],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
     ]

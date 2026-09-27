@@ -52,12 +52,13 @@ public extension AppModel {
     }
 
     /// Maps a cycle from `Dependencies.validate` to the editor's message.
-    internal func describingCycles(_ action: () throws -> Void) throws {
+    /// `habits` name the cycle's members: the current habits unless the action adds some (an import).
+    internal func describingCycles<Value>(in habits: [Habit]? = nil, _ action: () throws -> Value) throws -> Value {
         do {
-            try action()
+            return try action()
         } catch let Dependencies.ValidationError.cycle(ids) {
             // Each ID is a parent of the one before it, so the loop reads forward as "needs".
-            throw DependencyCycleError(names: (ids + ids.prefix(1)).map { name(of: $0, in: truth.habits) })
+            throw DependencyCycleError(names: (ids + ids.prefix(1)).map { name(of: $0, in: habits ?? truth.habits) })
         }
     }
 

@@ -214,29 +214,6 @@ public final class AppModel {
         try setDayOffset(0)
     }
 
-    private struct SampleHabit {
-        let name: String
-        let emoji: String
-        let importance: Importance
-    }
-
-    private static let sampleHabits = [
-        SampleHabit(name: "Gym", emoji: "🏋️", importance: .high),
-        SampleHabit(name: "Read", emoji: "📚", importance: .normal),
-        SampleHabit(name: "Meditate", emoji: "🧘", importance: .low),
-    ]
-
-    /// Three sample habits, created today.
-    public func addSampleHabits() throws {
-        for sample in Self.sampleHabits {
-            var habit = newHabitDraft()
-            habit.name = sample.name
-            habit.emoji = sample.emoji
-            habit.importance = sample.importance
-            try save(habit)
-        }
-    }
-
     private func setDayOffset(_ offset: Int) throws {
         clock = try Self.makeClock(
             timeZone: timeZone, settings: truth.settings, dayOffset: offset, baseClock: baseClock
@@ -265,7 +242,8 @@ public final class AppModel {
         )
         var shown: [Question] = []
         for question in plan.questions {
-            if let previous = shownQuestions[question.habitID], Self.asksTheSame(previous, question) {
+            if let previous = reusableQuestion(like: question) {
+                shownQuestions[question.habitID] = previous
                 shown.append(previous)
                 continue
             }
@@ -283,6 +261,20 @@ public final class AppModel {
         queuedCount = plan.queued.count
         dueHabitIDs = Set(due.map(\.habitID))
         onRefresh?()
+    }
+
+    /// The card already shown for this habit, else one logged before a relaunch or an import that was neither
+    /// dismissed nor answered: showing it again logs nothing new, so a re-export matches (§13 M10). A card
+    /// shown again after "Later" is a new question.
+    private func reusableQuestion(like question: Question) -> Question? {
+        if let shown = shownQuestions[question.habitID], Self.asksTheSame(shown, question) {
+            return shown
+        }
+        guard let logged = truth.questions.last(where: {
+            $0.habitID == question.habitID && $0.dismissedAt == nil && Self.asksTheSame($0, question)
+        }), !truth.answers.contains(where: { $0.questionID == logged.id })
+        else { return nil }
+        return logged
     }
 
     /// Same card content, ignoring ID and timestamps.

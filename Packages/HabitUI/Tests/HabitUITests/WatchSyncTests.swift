@@ -23,7 +23,7 @@ struct WatchSyncTests {
             store: watchHarness.store, timeZone: .gmt, defaults: watchHarness.defaults, channel: .watch
         ) { FixedClock(date: noon, calendar: $0) }
         var outbox: [TruthChange] = []
-        watchHarness.store.onChange = { outbox.append($0) }
+        watchHarness.store.onChange = { outbox.append(contentsOf: $0) }
 
         let question = try #require(watch.questions.first)
         #expect(question.habitID == gym.id)
@@ -46,12 +46,13 @@ struct WatchSyncTests {
         _ = try addHabit(phone, "Gym")
         let watchHarness = try Harness()
         var echoed: [TruthChange] = []
-        watchHarness.store.onChange = { echoed.append($0) }
+        watchHarness.store.onChange = { echoed.append(contentsOf: $0) }
         let watch = try watchHarness.model()
         try watch.merge(phoneHarness.store.allChanges())
         #expect(watch.activeHabits.map(\.name) == ["Gym"])
-        // Planning the merged habit logs its question, which is a write of the watch's own.
-        #expect(Set(echoed.map(\.kind)) == ["question"])
+        // The phone's open card arrived with it, so the watch shows that question and writes nothing.
+        #expect(watch.questions.map(\.id) == phone.questions.map(\.id))
+        #expect(echoed.isEmpty)
     }
 
     /// The watch's 7-day strip: from the habit's first day, today as in the habit list. After one answer the

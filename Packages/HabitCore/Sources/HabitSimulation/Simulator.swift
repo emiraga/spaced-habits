@@ -61,7 +61,13 @@ public enum Simulator {
         let habits = try makeHabits(scenario, start: start)
         let planner = try QuestionPlanner(settings: settings)
         let calendar = try DayCalendar(timeZone: utc())
-        var log = Truth(habits: habits, pauses: makePauses(scenario, habits: habits, start: start), settings: settings)
+        var log = Truth(
+            habits: habits,
+            // Creating a habit in the app stores its first revision (§3.2).
+            habitRevisions: habits.map { HabitRevision(habit: $0, editedAt: $0.createdAt) },
+            pauses: makePauses(scenario, habits: habits, start: start),
+            settings: settings
+        )
         var asks = habits.map { _ in [SimulatedAsk?](repeating: nil, count: scenario.days) }
         var live = habits.map { _ in [ModelPoint?](repeating: nil, count: scenario.days) }
         let index = Dictionary(uniqueKeysWithValues: habits.enumerated().map { ($1.id, $0) })
@@ -177,7 +183,7 @@ public enum Simulator {
         ))
     }
 
-    static func noon(of day: DayKey) -> Date {
+    public static func noon(of day: DayKey) -> Date {
         Date(timeIntervalSince1970: TimeInterval(day.dayNumber) * 86400 + 12 * 3600)
     }
 

@@ -42,6 +42,10 @@ public enum LargeFixture {
                 reason: .vacation, createdAt: Simulator.noon(of: first)
             ))
         }
+        // Last, so the history above draws the same numbers as before revisions were added.
+        truth.habitRevisions = habits.map { habit in
+            HabitRevision(id: Simulator.seededID(&random), habit: habit, editedAt: createdAt)
+        }
         try truth.validate()
         return truth
     }

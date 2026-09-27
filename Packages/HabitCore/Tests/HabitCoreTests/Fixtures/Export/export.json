@@ -1,0 +1,445 @@
+{
+  "answers" : [
+    {
+      "answeredAt" : "2026-09-23T12:00:00.123Z",
+      "channel" : "app",
+      "covers" : [
+        "2026-09-23",
+        "2026-09-23"
+      ],
+      "habitID" : "00000000-0000-0000-0000-00000000000D",
+      "id" : "00000000-0000-0000-0000-00000000002C",
+      "questionID" : "00000000-0000-0000-0000-000000000036",
+      "timezone" : "Europe/Sarajevo",
+      "value" : {
+        "dontRemember" : {
+
+        }
+      }
+    },
+    {
+      "answeredAt" : "2026-09-25T12:00:00.123Z",
+      "channel" : "app",
+      "covers" : [
+        "2026-09-25",
+        "2026-09-25"
+      ],
+      "habitID" : "00000000-0000-0000-0000-00000000000A",
+      "id" : "00000000-0000-0000-0000-000000000029",
+      "questionID" : "00000000-0000-0000-0000-000000000033",
+      "timezone" : "Europe/Sarajevo",
+      "value" : {
+        "notDone" : {
+
+        }
+      }
+    },
+    {
+      "answeredAt" : "2026-09-26T12:00:00.123Z",
+      "channel" : "app",
+      "covers" : [
+        "2026-09-26",
+        "2026-09-26"
+      ],
+      "habitID" : "00000000-0000-0000-0000-00000000000A",
+      "id" : "00000000-0000-0000-0000-000000000028",
+      "questionID" : "00000000-0000-0000-0000-000000000032",
+      "timezone" : "Europe/Sarajevo",
+      "value" : {
+        "done" : {
+
+        }
+      }
+    },
+    {
+      "answeredAt" : "2026-09-26T12:00:00.123Z",
+      "channel" : "app",
+      "covers" : [
+        "2026-09-24",
+        "2026-09-26"
+      ],
+      "habitID" : "00000000-0000-0000-0000-00000000000C",
+      "id" : "00000000-0000-0000-0000-00000000002A",
+      "questionID" : "00000000-0000-0000-0000-000000000034",
+      "timezone" : "Europe/Sarajevo",
+      "value" : {
+        "perDay" : {
+          "_0" : {
+            "2026-09-24" : true,
+            "2026-09-26" : false
+          }
+        }
+      }
+    },
+    {
+      "answeredAt" : "2026-09-26T12:00:00.123Z",
+      "channel" : "app",
+      "covers" : [
+        "2026-09-21",
+        "2026-09-26"
+      ],
+      "habitID" : "00000000-0000-0000-0000-00000000000B",
+      "id" : "00000000-0000-0000-0000-00000000002B",
+      "questionID" : "00000000-0000-0000-0000-000000000035",
+      "timezone" : "Europe/Sarajevo",
+      "value" : {
+        "count" : {
+          "done" : 2,
+          "total" : 3
+        }
+      }
+    },
+    {
+      "answeredAt" : "2026-09-27T12:00:00.123Z",
+      "channel" : "app",
+      "covers" : [
+        "2026-09-27",
+        "2026-09-27"
+      ],
+      "habitID" : "00000000-0000-0000-0000-00000000000C",
+      "id" : "00000000-0000-0000-0000-00000000002D",
+      "questionID" : "00000000-0000-0000-0000-000000000037",
+      "timezone" : "Europe/Sarajevo",
+      "value" : {
+        "delayed" : {
+          "days" : 2
+        }
+      }
+    }
+  ],
+  "clusters" : [
+    {
+      "colorHex" : "#109618",
+      "id" : "00000000-0000-0000-0000-000000000001",
+      "name" : "Morning"
+    }
+  ],
+  "exportedAt" : "2026-09-27T12:00:00.123Z",
+  "habitRevisions" : [
+    {
+      "editedAt" : "2026-09-17T12:00:00.123Z",
+      "habit" : {
+        "clusterID" : "00000000-0000-0000-0000-000000000001",
+        "colorHex" : "#3366CC",
+        "createdAt" : "2026-09-17T12:00:00.123Z",
+        "createdDay" : "2026-09-17",
+        "dependencies" : [
+
+        ],
+        "emoji" : "🏋️",
+        "healthBinding" : {
+          "workout" : {
+            "minMinutes" : 30
+          }
+        },
+        "id" : "00000000-0000-0000-0000-00000000000A",
+        "importance" : 3,
+        "kind" : "boolean",
+        "maxRecallGapDays" : 7,
+        "name" : "Gym",
+        "targetAdherence" : 0.8,
+        "vacationBehavior" : "pause"
+      },
+      "id" : "00000000-0000-0000-0000-000000000014"
+    },
+    {
+      "editedAt" : "2026-09-17T12:00:00.123Z",
+      "habit" : {
+        "archivedAt" : "2026-09-25T12:00:00.123Z",
+        "colorHex" : "#990099",
+        "createdAt" : "2026-09-17T12:00:00.123Z",
+        "createdDay" : "2026-09-17",
+        "dependencies" : [
+
+        ],
+        "id" : "00000000-0000-0000-0000-00000000000D",
+        "importance" : 2,
+        "kind" : "boolean",
+        "maxRecallGapDays" : 7,
+        "name" : "Old",
+        "targetAdherence" : 0.8,
+        "vacationBehavior" : "pause"
+      },
+      "id" : "00000000-0000-0000-0000-000000000017"
+    },
+    {
+      "editedAt" : "2026-09-18T12:00:00.123Z",
+      "habit" : {
+        "clusterID" : "00000000-0000-0000-0000-000000000001",
+        "colorHex" : "#DC3912",
+        "createdAt" : "2026-09-18T12:00:00.123Z",
+        "createdDay" : "2026-09-18",
+        "dependencies" : [
+          {
+            "mode" : "gate",
+            "parentID" : "00000000-0000-0000-0000-00000000000A"
+          }
+        ],
+        "id" : "00000000-0000-0000-0000-00000000000B",
+        "importance" : 2,
+        "kind" : "boolean",
+        "maxRecallGapDays" : 7,
+        "name" : "Shake",
+        "targetAdherence" : 0.8,
+        "vacationBehavior" : "pause"
+      },
+      "id" : "00000000-0000-0000-0000-000000000015"
+    },
+    {
+      "editedAt" : "2026-09-19T12:00:00.123Z",
+      "habit" : {
+        "colorHex" : "#FF9900",
+        "createdAt" : "2026-09-19T12:00:00.123Z",
+        "createdDay" : "2026-09-19",
+        "dependencies" : [
+          {
+            "mode" : "sequence",
+            "parentID" : "00000000-0000-0000-0000-00000000000B"
+          }
+        ],
+        "id" : "00000000-0000-0000-0000-00000000000C",
+        "importance" : 2,
+        "kind" : "boolean",
+        "maxRecallGapDays" : 5,
+        "name" : "Stretch, \"daily\"",
+        "notes" : "After shake,\nbefore bed",
+        "targetAdherence" : 0.6,
+        "vacationBehavior" : "keep"
+      },
+      "id" : "00000000-0000-0000-0000-000000000016"
+    }
+  ],
+  "habits" : [
+    {
+      "clusterID" : "00000000-0000-0000-0000-000000000001",
+      "colorHex" : "#3366CC",
+      "createdAt" : "2026-09-17T12:00:00.123Z",
+      "createdDay" : "2026-09-17",
+      "dependencies" : [
+
+      ],
+      "emoji" : "🏋️",
+      "healthBinding" : {
+        "workout" : {
+          "minMinutes" : 30
+        }
+      },
+      "id" : "00000000-0000-0000-0000-00000000000A",
+      "importance" : 3,
+      "kind" : "boolean",
+      "maxRecallGapDays" : 7,
+      "name" : "Gym",
+      "targetAdherence" : 0.8,
+      "vacationBehavior" : "pause"
+    },
+    {
+      "archivedAt" : "2026-09-25T12:00:00.123Z",
+      "colorHex" : "#990099",
+      "createdAt" : "2026-09-17T12:00:00.123Z",
+      "createdDay" : "2026-09-17",
+      "dependencies" : [
+
+      ],
+      "id" : "00000000-0000-0000-0000-00000000000D",
+      "importance" : 2,
+      "kind" : "boolean",
+      "maxRecallGapDays" : 7,
+      "name" : "Old",
+      "targetAdherence" : 0.8,
+      "vacationBehavior" : "pause"
+    },
+    {
+      "clusterID" : "00000000-0000-0000-0000-000000000001",
+      "colorHex" : "#DC3912",
+      "createdAt" : "2026-09-18T12:00:00.123Z",
+      "createdDay" : "2026-09-18",
+      "dependencies" : [
+        {
+          "mode" : "gate",
+          "parentID" : "00000000-0000-0000-0000-00000000000A"
+        }
+      ],
+      "id" : "00000000-0000-0000-0000-00000000000B",
+      "importance" : 2,
+      "kind" : "boolean",
+      "maxRecallGapDays" : 7,
+      "name" : "Shake",
+      "targetAdherence" : 0.8,
+      "vacationBehavior" : "pause"
+    },
+    {
+      "colorHex" : "#FF9900",
+      "createdAt" : "2026-09-19T12:00:00.123Z",
+      "createdDay" : "2026-09-19",
+      "dependencies" : [
+        {
+          "mode" : "sequence",
+          "parentID" : "00000000-0000-0000-0000-00000000000B"
+        }
+      ],
+      "id" : "00000000-0000-0000-0000-00000000000C",
+      "importance" : 2,
+      "kind" : "boolean",
+      "maxRecallGapDays" : 5,
+      "name" : "Stretch, \"daily\"",
+      "notes" : "After shake,\nbefore bed",
+      "targetAdherence" : 0.6,
+      "vacationBehavior" : "keep"
+    }
+  ],
+  "healthObservations" : [
+    {
+      "day" : "2026-09-22",
+      "habitID" : "00000000-0000-0000-0000-00000000000A",
+      "id" : "00000000-0000-0000-0000-00000000003C",
+      "sampleID" : "HK-1"
+    }
+  ],
+  "pauses" : [
+    {
+      "createdAt" : "2026-09-19T12:00:00.123Z",
+      "end" : "2026-09-20",
+      "habitIDs" : [
+        "00000000-0000-0000-0000-00000000000A"
+      ],
+      "id" : "00000000-0000-0000-0000-000000000035",
+      "quietAllNotifications" : false,
+      "reason" : {
+        "other" : {
+          "_0" : "Flu, \"again\""
+        }
+      },
+      "start" : "2026-09-19"
+    },
+    {
+      "cancelledAt" : "2026-09-23T12:00:00.123Z",
+      "createdAt" : "2026-09-22T12:00:00.123Z",
+      "end" : "2026-10-01",
+      "habitIDs" : [
+        "00000000-0000-0000-0000-00000000000D"
+      ],
+      "id" : "00000000-0000-0000-0000-000000000034",
+      "quietAllNotifications" : false,
+      "reason" : {
+        "sick" : {
+
+        }
+      },
+      "start" : "2026-09-30"
+    },
+    {
+      "createdAt" : "2026-09-24T12:00:00.123Z",
+      "end" : "2026-10-06",
+      "habitIDs" : [
+        "00000000-0000-0000-0000-00000000000A",
+        "00000000-0000-0000-0000-00000000000B"
+      ],
+      "id" : "00000000-0000-0000-0000-000000000033",
+      "quietAllNotifications" : true,
+      "reason" : {
+        "vacation" : {
+
+        }
+      },
+      "start" : "2026-10-02"
+    },
+    {
+      "createdAt" : "2026-09-27T12:00:00.123Z",
+      "end" : "2026-09-28",
+      "habitIDs" : [
+        "00000000-0000-0000-0000-00000000000C"
+      ],
+      "id" : "00000000-0000-0000-0000-000000000032",
+      "quietAllNotifications" : false,
+      "reason" : {
+        "manual" : {
+
+        }
+      },
+      "start" : "2026-09-27"
+    }
+  ],
+  "questions" : [
+    {
+      "covers" : [
+        "2026-09-26",
+        "2026-09-26"
+      ],
+      "createdAt" : "2026-09-26T12:00:00.123Z",
+      "habitID" : "00000000-0000-0000-0000-00000000000A",
+      "id" : "00000000-0000-0000-0000-00000000001E",
+      "presentedAt" : "2026-09-26T12:00:00.123Z",
+      "shape" : {
+        "singleDay" : {
+
+        }
+      }
+    },
+    {
+      "covers" : [
+        "2026-09-24",
+        "2026-09-26"
+      ],
+      "createdAt" : "2026-09-26T12:00:00.123Z",
+      "dismissedAt" : "2026-09-27T00:00:00.123Z",
+      "habitID" : "00000000-0000-0000-0000-00000000000C",
+      "id" : "00000000-0000-0000-0000-00000000001F",
+      "presentedAt" : "2026-09-26T12:00:00.123Z",
+      "shape" : {
+        "perDay" : {
+          "days" : [
+            "2026-09-24",
+            "2026-09-26"
+          ]
+        }
+      }
+    },
+    {
+      "covers" : [
+        "2026-09-21",
+        "2026-09-26"
+      ],
+      "createdAt" : "2026-09-26T12:00:00.123Z",
+      "habitID" : "00000000-0000-0000-0000-00000000000B",
+      "id" : "00000000-0000-0000-0000-000000000020",
+      "parentContext" : {
+        "parentDoneDays" : 3,
+        "parentIDs" : [
+          "00000000-0000-0000-0000-00000000000A"
+        ]
+      },
+      "presentedAt" : "2026-09-26T12:00:00.123Z",
+      "shape" : {
+        "count" : {
+          "total" : 3
+        }
+      }
+    }
+  ],
+  "schemaVersion" : 1,
+  "settings" : {
+    "dayStartHour" : 4,
+    "decayPerDay" : 0.92,
+    "maxIntervalDays" : 14,
+    "notifications" : {
+      "cadence" : {
+        "everyNDays" : {
+          "_0" : 2,
+          "time" : {
+            "hour" : 8,
+            "minute" : 30
+          }
+        }
+      },
+      "nudgeAfterSilentDays" : 5,
+      "onlyWhenQuestionsDue" : false,
+      "quietHours" : {
+        "endHour" : 7,
+        "startHour" : 22
+      }
+    },
+    "sessionBudget" : 4,
+    "spotCheckRate" : 0.05,
+    "uncertaintyThreshold" : 0.15
+  }
+}

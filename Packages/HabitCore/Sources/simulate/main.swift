@@ -3,7 +3,8 @@ import HabitCore
 import HabitSimulation
 
 /// `swift run simulate <scenario> [--end yyyy-MM-dd] [--json]`: prints the 180-day table for one §4.8
-/// synthetic user, or with `--json` the `Truth` it produced, as a fixture the debug app imports (§13 M9).
+/// synthetic user, or with `--json` the `Truth` it produced as an export (§11), which the app imports: Settings →
+/// Import, or `-importFixture <path>` in a debug build (§13 M9).
 /// `--end` moves the run so its last day is that day (default: it starts on `Simulator.defaultStart`).
 let names = Scenario.all.keys.sorted()
 let usage = "usage: simulate <\(names.joined(separator: "|"))> [--end yyyy-MM-dd] [--json]\n"
@@ -28,9 +29,9 @@ guard arguments.count == 1, let scenario = Scenario.all[arguments[0]] else { fai
 let start = end.map { $0.adding(days: 1 - scenario.days) } ?? Simulator.defaultStart
 let result = try Simulator.run(scenario, start: start)
 if json {
-    let encoder = JSONEncoder()
-    encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
-    try FileHandle.standardOutput.write(encoder.encode(result.log))
+    let lastDay = start.adding(days: scenario.days - 1)
+    let export = DataExport(truth: result.log, projected: result.projected, exportedAt: Simulator.noon(of: lastDay))
+    try FileHandle.standardOutput.write(export.json())
 } else {
     print(SimulationTable.render(result))
 }

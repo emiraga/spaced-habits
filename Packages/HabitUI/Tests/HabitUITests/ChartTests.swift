@@ -11,12 +11,10 @@ struct ChartTests {
     /// ask interval that rises from daily to over a week.
     @Test func checkpointSteadyAskIntervalRises() throws {
         let run = try Simulator.run(.steady(), start: start.adding(days: 1 - Scenario.steady().days))
-        let url = FileManager.default.temporaryDirectory.appending(path: "steady-\(UUID().uuidString).json")
-        try JSONEncoder().encode(run.log).write(to: url)
-        defer { try? FileManager.default.removeItem(at: url) }
+        let fixture = try DataExport(truth: run.log, projected: run.projected, exportedAt: noon).json()
 
         let model = try Harness().model()
-        try model.importFixture(at: url)
+        try model.importJSON(fixture)
         let habit = try #require(model.activeHabits.first)
         #expect(model.activeHabits.count == 1)
         let insights = model.insights(of: habit, filter: AdherenceFilter())

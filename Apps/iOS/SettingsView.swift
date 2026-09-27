@@ -3,7 +3,8 @@ import HabitStore
 import HabitUI
 import SwiftUI
 
-/// Session budget, day start hour and reminders (DESIGN.md §5.1), plus debug controls in debug builds.
+/// Session budget, day start hour, reminders, sync and data export (DESIGN.md §5.1, §11), plus debug controls
+/// in debug builds.
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(ErrorPresenter.self) private var errors
@@ -42,6 +43,7 @@ struct SettingsView: View {
                 }
             }
             syncSection
+            DataSection()
             Section("About") {
                 LabeledContent("Version", value: buildInfo.displayString)
             }
