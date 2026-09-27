@@ -846,7 +846,17 @@ Checkpoint:
   to the next question; the app shows the answer on next launch.
 - "Hey Siri, log gym in Spaced Habits" works.
 
-### M7 — CloudKit sync + Watch (2–3 days)
+### M7 — CloudKit sync + Watch — done (2026-09-27)
+
+CloudKit-backed store in the app and watch app, `SyncMonitor` re-projection and Settings → Sync (§10),
+`TruthChange` feed with idempotent latest-wins `merge`, `WatchBridge`, the watch app and its Smart Stack
+widget and complications (§7). Automated: `HabitUI` `WatchSyncTests.checkpointWatchAnswerReachesThePhoneExactlyOnce`,
+`HabitStore` `TruthChangeTests` (idempotent merge, `allChanges`, out-of-order arrival),
+`TruthStoreTests.schemaMeetsCloudKitConstraints`. Physical iPhone + Apple Watch: answered on the watch
+with the phone in airplane mode, the watch showed it at once, and after reconnecting it appeared on the
+phone exactly once. Hardware testing found that out-of-order sync failed `load()` with `unknownHabit`; fixed
+by holding back pending references (§10). The second-iPhone check was **waived** (no second device);
+see O6.
 
 Deliver: CloudKit configuration and `HabitStore` constraint audit (§10), remote-change
 re-projection, sync status row; watchOS app (Today cards, list, sparkline), watch Smart Stack
@@ -951,4 +961,7 @@ Decide during the relevant milestone, then move the answer into the section it g
 - O4. Import of Loop/Streaks CSVs. Not in v1; JSON import only.
 - O5. Whether to expose model parameters (decay, threshold) in Settings or keep them hidden
   behind an "advanced" section. Advanced section for v1.
+- O6. The M7 two-iPhone check (§13) is unverified: no second device was available. Run it once one
+  is (a TestFlight tester's phone would do): habits and history appear, an answer on one shows on
+  the other, no duplicates in `answers.csv`.
 
