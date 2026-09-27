@@ -470,17 +470,24 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 
 1. **Today** (root). A stack of question cards (≤ session budget), then a compact list of all
    active habits with today's status glyph (✓ observed done, ✗ observed not done, ♥ Health,
-   ◐ aggregated, ≈ inferred, ? unknown, ⏸ paused, ⛔ blocked). Until today is answered its record is
+   ◐ aggregated, ≈ inferred, ? unknown, ⏸ paused, ⛔ blocked), grouped by cluster (clusters by name,
+   then "Other"; one "Habits" group without clusters). Until today is answered its record is
    only the model's guess, so the list shows ○ due or · not due instead (`DayStatus.today`); history
    rows show ≈ / ? for such days. Aggregated (answered as a count) and inferred (no answer; filled in
    by the model) never share a glyph (§1.1). Pull-to-refresh replans. Empty state: "Nothing to ask.
    Next check-in: <habit> on <date>." (`QuestionPlanner.nextCheckIn`: today + ask interval, capped by
    `maxIntervalDays` since the last covered day).
-2. **Habit detail.** Header with current ask interval ("Asking every ~9 days"), adherence 30d,
-   Resumes-on banner if paused, charts (§10), history calendar, dependency list, edit button.
+2. **Habit detail.** Header with current ask interval ("Asking every ~9 days"), adherence 30d (for a
+   gated habit both `P(B|A)` "On Gym days" and `P(B)` "All days"), Resumes-on banner if paused (a
+   blocked banner if a parent is), charts (§10), history calendar, dependency list (cluster, depends on,
+   needed by), edit button.
 3. **Habit editor.** Name, emoji, color, importance, target adherence and max recall gap (both in a
    collapsed "Advanced" group, each with a plain-language explanation), vacation
-   behavior, depends-on picker (with cycle rejection), cluster, Health binding, archive.
+   behavior, depends-on picker (with cycle rejection), cluster, Health binding, archive. The picker
+   lists every other active habit; a pick that would close a loop (`Dependencies.cycle(ifAdding:)`) is
+   refused on the spot with the loop spelled out ("Gym would need Protein, which needs Gym"), and
+   `AppModel.save` maps a `validate` cycle to the same message. Clusters are created and renamed from
+   the editor (name, color); v1 has no cluster deletion, since an empty cluster simply isn't listed.
 4. **Pause sheet.** Presented from a question card ("Delay…") or habit detail. Duration presets
    (1, 3, 7, 14 days, custom), start date (default today; can be backdated or scheduled; from habit
    detail only, since a card delay always starts today), reason.
@@ -675,7 +682,14 @@ over answered days, vacation with one kept habit remembered) are `HabitUI` `Paus
 driven through `AppModel` and "Advance one day". They're not XCUITests because those took ~20 s per
 advanced day and hung the simulator.
 
-### M4 — Dependencies and clusters (1–2 days)
+### M4 — Dependencies and clusters — done (2026-09-27)
+
+Gating, `.blocked` and `P(B|A)` landed in the M1 engine; M4 added the editor's depends-on picker and
+cluster editor, the card's parent context line ("You did Gym on 4 of the last 6 days." / "On how many of
+those 4?"), the detail dependency list with `P(B|A)` and `P(B)`, and the cluster-grouped Today list.
+The checkpoints are `HabitUI` `DependencyTests.checkpoint*` (through `AppModel` and "Advance one day"),
+`HabitCore` `SequenceEdgeTests`, and `DependencyFlowUITests` for the picker, the gated card and the
+refused loop (screenshots `Docs/checkpoints/m4-*.png`).
 
 Deliver: depends-on picker with cycle rejection (creates `.gate` edges;
 mode is not exposed), cluster editor, gating in the planner, parent context line on cards,
