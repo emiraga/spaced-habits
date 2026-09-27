@@ -784,7 +784,17 @@ Checkpoint:
   from the notification with the app killed; open the app and see the answer recorded.
 - Enable quiet hours spanning the next slot; confirm it is skipped.
 
-### M6 — Interactive widgets and App Intents (1–2 days)
+### M6 — Interactive widgets and App Intents — done (2026-09-27)
+
+`SpacedHabitsWidgets` extension (question widget small/medium/Lock Screen, status widget with Lock
+Screen variants and deep links), `AnswerHabitIntent` (widget buttons), `LogHabitIntent` /
+`DelayHabitIntent` / `ReviewHabitsIntent` with App Shortcuts, `AppModel.answerToday` / `reload` and
+`WidgetTimeline` (§6). Automated: `HabitUI` `WidgetTests.checkpointAnswerFromWidgetAdvancesToNextQuestion`
+(widget and app as two models on one store file), `IntentTests` (each intent's `perform()` in the app),
+`AppBundleTests` (appex, URL scheme, App Shortcuts metadata), `TruthStoreTests.loadSeesWritesFromAnotherContainer`.
+Physical iPhone: answered from the Home Screen widget without opening the app, the widget moved to the
+next question and the app showed the answer on launch; "Hey Siri, log gym in Spaced Habits" logged it.
+
 
 Deliver: iOS widget extension (question widget small/medium, status widget, Lock Screen
 variants), App Intents (`AnswerHabitIntent`, `DelayHabitIntent`, `ReviewHabitsIntent`), Siri
