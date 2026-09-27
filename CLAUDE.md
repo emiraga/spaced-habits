@@ -22,11 +22,12 @@ milestone plan. Read the relevant section before starting any task.
 make setup         # brew bundle + pre-commit install (once)
 make gen           # regenerate SpacedHabits.xcodeproj from project.yml (after any target/file-structure change)
 make build         # iOS simulator build via xcodebuild + xcbeautify
-make test          # HabitCore via `swift test`, app targets via xcodebuild
+make test          # packages via `swift test`, app unit tests via xcodebuild (no UI tests)
+make test-ui       # XCUITest smoke flows (~35 s); run when touching app screens
 make lint          # swiftlint --strict
 make format        # swiftformat . (run this, don't hand-format)
 make format-check  # what `make ci` runs
-make ci            # gen + format-check + lint + test — must pass before push
+make ci            # gen + format-check + lint + test + test-ui — must pass before push
 ```
 
 Fast inner loop for engine work: `xcrun swift test --package-path Packages/HabitCore`.

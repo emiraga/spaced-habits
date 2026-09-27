@@ -130,7 +130,8 @@ The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swif
 - Package manifests use `swift-tools-version: 6.2` for `.treatAllWarnings(as: .error)`
   (warnings-as-errors without `unsafeFlags`), and list `.macOS(.v14)` so `swift test` runs on the Mac.
 - `make test` runs `swift test` for all three packages plus the app-hosted `SpacedHabitsTests`
-  target via xcodebuild; package test targets are not in the Xcode scheme.
+  target via xcodebuild; package test targets are not in the Xcode scheme. The XCUITests
+  (`SpacedHabitsUITests`, ~35 s) run only in `make test-ui`, which `make ci` includes.
 - Bundle ID prefix `ga.emira.spacedhabits`. Info.plist is generated from build settings
   (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`), merged with `Apps/iOS/Info.plist`, which
   `make gen` writes from `project.yml`'s `info.properties` for keys that have no `INFOPLIST_KEY_*`
@@ -691,7 +692,7 @@ harness with the `simulate` executable (§4.8). Checkpoint evidence is in the fi
 cards, Today / habit detail / editor / Settings screens, debug "Advance one day" and seed data.
 `AppModelTests.checkpointEightDays` drives the §4.8 `steady` day 1–8 expectations, including the count
 card after a gap; `TodayFlowUITests` covers relaunch persistence (screenshots `Docs/checkpoints/m2-*.png`).
-The count-card XCUITest was dropped as a duplicate: it cost ~18 s per `make test`. UI tests launch with
+The count-card XCUITest was dropped as a duplicate: it cost ~18 s. UI tests launch with
 `-disableAnimations` (debug builds) so sheets don't hold up every tap. Physical
 iPhone 16 Pro: "yes" habits fade, "no" habits are asked daily, a 4+ day gap gives a count card, and
 answers survive kill and relaunch. `LaunchMetrics` cold launch on that device: 80–82 ms from process
@@ -834,7 +835,7 @@ the app described in §1; M5–M8 make it frictionless; M9–M11 make it shippab
 | App | XCTest UI tests, minimal | launch → answer a card → relaunch → state persisted |
 | Manual | checkpoints above | anything involving notifications, widgets, Health, CloudKit, Watch |
 
-All tests run in `make ci`. Anything that needs a physical device or an iCloud account is a
+All tests run in `make ci`; `make test` skips the UI tests, which run in `make test-ui`. Anything that needs a physical device or an iCloud account is a
 documented manual checkpoint, not a flaky automated test.
 
 ---
@@ -843,7 +844,8 @@ documented manual checkpoint, not a flaky automated test.
 
 1. Read this document before each milestone; when a decision changes, update the section it
    governs (not a separate log).
-2. Run `make format && make lint && make test` before declaring any task done; `make ci` must be green before pushing.
+2. Run `make format && make lint && make test` before declaring any task done (add `make test-ui` when
+   the change touches app screens); `make ci` must be green before pushing.
 3. `HabitCore` stays dependency-free and UI-free. If you need a platform API in the engine, you
    are in the wrong module — pass the value in instead.
 4. Commit directly to `main` in small, atomic commits; no branches or pull requests. Include the
