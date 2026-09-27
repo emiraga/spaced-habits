@@ -21,6 +21,9 @@ public struct SimulationResult: Sendable {
     public let live: [[ModelPoint?]]
     /// Projection as of the last day, after its answers: the retrospective view of every day.
     public let projected: Projected
+    /// Everything the simulated user did, as the app would have stored it: `simulate --json` exports it as
+    /// a fixture (§13 M9).
+    public let log: Truth
 
     public func day(_ index: Int) -> DayKey {
         start.adding(days: index)
@@ -98,7 +101,7 @@ public enum Simulator {
         let projected = try Projection.rebuild(log, clock: FixedClock(date: noon(of: lastDay), calendar: calendar))
         return SimulationResult(
             scenario: scenario.name, start: start, habits: habits, truth: truth, asks: asks, live: live,
-            projected: projected
+            projected: projected, log: log
         )
     }
 
@@ -165,7 +168,7 @@ public enum Simulator {
         }
     }
 
-    private static func seededID(_ random: inout SeededRandomSource) -> UUID {
+    static func seededID(_ random: inout SeededRandomSource) -> UUID {
         let (high, low) = (random.next(), random.next())
         let bytes = (0 ..< 16).map { UInt8(truncatingIfNeeded: ($0 < 8 ? high : low) >> (8 * UInt64(7 - $0 % 8))) }
         return UUID(uuid: (

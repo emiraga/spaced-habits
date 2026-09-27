@@ -7,6 +7,8 @@ let package = Package(
     platforms: [.iOS(.v17), .watchOS(.v10), .macOS(.v14)],
     products: [
         .library(name: "HabitCore", targets: ["HabitCore"]),
+        // For HabitUI's chart tests (generated fixtures); not linked by the apps.
+        .library(name: "HabitSimulation", targets: ["HabitSimulation"]),
         .executable(name: "simulate", targets: ["simulate"]),
     ],
     targets: [
