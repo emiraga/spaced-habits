@@ -74,7 +74,7 @@ interval is itself the progress metric.
 | Build output | **xcbeautify** | |
 | Tool pinning | `Brewfile` (+ optional `mise`) | Everyone builds with the same tool versions |
 | Task runner | `Makefile` | `make gen / build / test / lint / format / ci` |
-| CI | GitHub Actions on macOS | Runs `make ci` on every PR |
+| CI | GitHub Actions on macOS | Runs `make ci` on every push to `main` |
 | Git hooks | `pre-commit` (or `lefthook`) | format + lint on staged files |
 
 ### 2.1 Module layout
@@ -733,7 +733,7 @@ Deliver: repo layout from §2.1, `project.yml`, `Makefile`, `Brewfile`, `.swiftf
 
 Checkpoint:
 - `make setup && make gen && make ci` passes locally with zero warnings.
-- CI is green on the first PR.
+- CI is green on the first push.
 - App launches on an iOS simulator.
 
 ### M1 — Engine (2–3 days)
@@ -747,7 +747,7 @@ Deliver in `HabitCore`: all types in §3.3, `DayKey` + calendar helpers, `Adhere
 Checkpoint:
 - `swift test --package-path Packages/HabitCore` passes, including all five simulations.
 - Running the simulator executable shows ask intervals growing for the steady user and staying
-  at 1 for the flaky user. Paste that table into the PR description.
+  at 1 for the flaky user. Paste that table into the commit message.
 - Projection determinism test passes (same input → identical output, twice).
 
 ### M2 — Daily driver, single device (2–3 days)
@@ -839,7 +839,7 @@ regressions, autonomy score), data-source legends, pause bands, "include paused 
 
 Checkpoint:
 - With the M1 simulation exported as fixtures and imported (M10 import can land first if easier),
-  the "ask interval over time" chart visibly rises for the steady habit. Screenshots in the PR.
+  the "ask interval over time" chart visibly rises for the steady habit. Commit screenshots under `Docs/checkpoints/`.
 - Charts render in < 100 ms for a 3-year, 30-habit dataset (use a generated fixture).
 
 ### M10 — Export / import (1 day)
@@ -892,8 +892,9 @@ documented manual checkpoint, not a flaky CI test.
 2. Run `make format && make lint && make test` before declaring any task done. CI must be green.
 3. `HabitCore` stays dependency-free and UI-free. If you need a platform API in the engine, you
    are in the wrong module — pass the value in instead.
-4. Prefer small, reviewable PRs per milestone. Include the checkpoint evidence (test output,
-   simulation table, screenshots) in the PR description.
+4. Commit directly to `main` in small, atomic commits; no branches or pull requests. Include the
+   checkpoint evidence (test output, simulation table, screenshot paths) in the milestone's final
+   commit message.
 5. No force-unwraps outside tests; no `print` in production code (use `os.Logger` with
    subsystem `com.example.fade`).
 6. When an Apple API behaves differently from what this document assumes (deployment target,
