@@ -88,12 +88,14 @@ public final class TruthStore {
 
     // MARK: Writing
 
-    /// Creates or edits a habit and appends the `HabitRevision` snapshot (§3.2).
-    public func save(_ habit: Habit, editedAt: Date) throws {
+    /// Creates or edits a habit and appends the `HabitRevision` snapshot (§3.2), which it returns.
+    @discardableResult
+    public func save(_ habit: Habit, editedAt: Date) throws -> HabitRevision {
         try habit.validate()
         try upsert(.habit, id: habit.id, habit, at: editedAt, save: false)
         let revision = HabitRevision(habit: habit, editedAt: editedAt)
         try upsert(.habitRevision, id: revision.id, revision, at: editedAt)
+        return revision
     }
 
     /// Logs a presented question, or updates it (e.g. `dismissedAt` on "Later").

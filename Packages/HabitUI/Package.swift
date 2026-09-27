@@ -10,11 +10,12 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../HabitCore"),
+        .package(path: "../HabitStore"),
     ],
     targets: [
         .target(
             name: "HabitUI",
-            dependencies: ["HabitCore"],
+            dependencies: ["HabitCore", "HabitStore"],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         .testTarget(

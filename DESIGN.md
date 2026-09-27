@@ -104,7 +104,7 @@ SpacedHabits/
 │   │       ├── Unit/
 │   │       └── Simulation/     # §4.8 acceptance tests
 │   ├── HabitStore/             # SwiftData models + CloudKit config + mapping to HabitCore types
-│   └── HabitUI/                # Shared SwiftUI views (question cards, habit rows, charts)
+│   └── HabitUI/                # AppModel (session, answers, edits; shared with watch/widgets later) + SwiftUI components (cards, glyphs, charts)
 ├── Apps/
 │   ├── iOS/                    # Spaced Habits (iOS app target) + Assets.xcassets
 │   ├── iOSTests/               # app-hosted unit tests (Swift Testing)
@@ -463,10 +463,13 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 ### 5.1 Screens
 
 1. **Today** (root). A stack of question cards (≤ session budget), then a compact list of all
-   active habits with today's status glyph (✓ observed, ♥ Health, ◐ aggregated, ≈ inferred,
-   ? unknown, ⏸ paused, ⛔ blocked, · not due). Aggregated (answered as a count) and inferred
-   (no answer; filled in by the model) never share a glyph (§1.1). Pull-to-refresh replans. Empty state: "Nothing to ask.
-   Next check-in: <habit> on <date>."
+   active habits with today's status glyph (✓ observed done, ✗ observed not done, ♥ Health,
+   ◐ aggregated, ≈ inferred, ? unknown, ⏸ paused, ⛔ blocked). Until today is answered its record is
+   only the model's guess, so the list shows ○ due or · not due instead (`DayStatus.today`); history
+   rows show ≈ / ? for such days. Aggregated (answered as a count) and inferred (no answer; filled in
+   by the model) never share a glyph (§1.1). Pull-to-refresh replans. Empty state: "Nothing to ask.
+   Next check-in: <habit> on <date>." (`QuestionPlanner.nextCheckIn`: today + ask interval, capped by
+   `maxIntervalDays` since the last covered day).
 2. **Habit detail.** Header with current ask interval ("Asking every ~9 days"), adherence 30d,
    Resumes-on banner if paused, charts (§10), history calendar, dependency list, edit button.
 3. **Habit editor.** Name, emoji, color, importance, target adherence, max recall gap, vacation
