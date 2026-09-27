@@ -2,8 +2,8 @@ import HabitUI
 import SwiftUI
 import WidgetKit
 
-/// Every habit with today's glyph (DESIGN.md §6); a row opens the habit's detail. On the Lock Screen,
-/// how many habits are due.
+/// Every habit with today's glyph (DESIGN.md §6); a row opens the habit's detail. On the Lock Screen and
+/// as a watch complication, how many habits are due.
 struct StatusWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "StatusWidget", provider: SnapshotProvider()) { entry in
@@ -11,7 +11,12 @@ struct StatusWidget: Widget {
         }
         .configurationDisplayName("Today")
         .description("Your habits and today's status.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryInline])
+        #if os(watchOS)
+            // Complications (§6).
+            .supportedFamilies([.accessoryCircular, .accessoryInline])
+        #else
+            .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryInline])
+        #endif
     }
 }
 
@@ -43,7 +48,7 @@ struct StatusWidgetView: View {
             if let failure = entry.failure {
                 Text(failure).font(.caption)
             } else {
-                list(snapshot.habits.prefix(family == .systemSmall ? 5 : 6))
+                list(snapshot.habits.prefix(family.isSystemSmall ? 5 : 6))
             }
         }
     }

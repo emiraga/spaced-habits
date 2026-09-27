@@ -109,11 +109,12 @@ SpacedHabits/
 │   ├── iOS/                    # Spaced Habits (iOS app target) + Assets.xcassets
 │   ├── iOSTests/               # app-hosted unit tests (Swift Testing)
 │   ├── iOSUITests/             # XCUITest smoke flows; the app erases its data on `-resetData` (debug builds)
-│   ├── iOSWidgets/             # WidgetKit extension (iOS): question + status widgets
+│   ├── iOSWidgets/             # iOS widget extension's Info.plist and entitlements
+│   ├── Widgets/                # question + status widgets, compiled into both widget extensions
 │   ├── Shared/                 # compiled into app and widget extension: AnswerHabitIntent, IntentModel
 │   ├── watchOS/                # Spaced Habits Watch app: Today cards, habit list, habit quick view
 │   ├── WatchBridge/            # WatchConnectivity (§7), compiled into the iOS and watch apps
-│   └── watchOSWidgets/         # Complications / Smart Stack
+│   └── watchOSWidgets/         # watch widget extension's Info.plist and entitlements
 ├── Docs/
 │   ├── Brand/                  # SVG marks, App Store 1024 icon
 │   └── checkpoints/            # milestone screenshots
@@ -155,8 +156,10 @@ registered under the team (Xcode → Signing & Capabilities → iCloud creates i
 pair), bundle ID `ga.emira.spacedhabits.watchkitapp`, embedded in the iOS app's `Watch/` folder, so the
 iOS scheme builds it. It has the same App Group and iCloud entitlements as the app.
 
+`SpacedHabitsWatchWidgets` (`ga.emira.spacedhabits.watchkitapp.widgets`, App Group only) is embedded in
+the watch app and compiles the same `Apps/Widgets` sources as the iOS extension.
+
 Still to add to `project.yml` in later milestones:
-- `SpacedHabitsWatchWidgets` (`Apps/watchOSWidgets`), embedded in the watch app (M7).
 - HealthKit entitlement and `NSHealthShareUsageDescription`: "Spaced Habits reads workouts to
   auto-complete matching habits." (M8).
 
@@ -579,7 +582,11 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 - Timeline: one entry now + one at the next day boundary (`WidgetTimeline`). Within a day the plan
   only changes when truth does, and every writer reloads the timelines then, so the notification
   times add nothing.
-- watchOS: Smart Stack widget with the same intent; complications show "N due" or a checkmark.
+- watchOS: the same widget sources (`Apps/Widgets`) in `SpacedHabitsWatchWidgets`, reading the watch's
+  own App Group store: the question widget as the Smart Stack card (`.accessoryRectangular`, Yes / No via
+  `AnswerHabitIntent`: `Button(intent:)` is available in watchOS widgets), and the status widget as
+  complications (`.accessoryCircular` "N due" or a checkmark, `.accessoryInline`). The watch app reloads
+  them on every `AppModel.onRefresh`.
 
 ---
 

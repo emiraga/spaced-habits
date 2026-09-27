@@ -30,7 +30,8 @@ struct AppBundleTests {
         #expect(types?.flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] } == [DeepLink.scheme])
     }
 
-    /// §7: the watch app ships inside the iOS app and names it as its companion.
+    /// §7: the watch app ships inside the iOS app and names it as its companion; §6: it carries the
+    /// Smart Stack and complication widgets.
     @Test func watchAppIsEmbedded() throws {
         let url = Bundle.main.bundleURL.appendingPathComponent("Watch/SpacedHabitsWatch.app")
         let watch = try #require(Bundle(url: url))
@@ -38,6 +39,9 @@ struct AppBundleTests {
         #expect(watch.object(forInfoDictionaryKey: "WKCompanionAppBundleIdentifier") as? String == Bundle.main
             .bundleIdentifier)
         #expect(watch.object(forInfoDictionaryKey: "WKApplication") as? Bool == true)
+        let plugIns = try #require(watch.builtInPlugInsURL)
+        let widgets = try #require(Bundle(url: plugIns.appendingPathComponent("SpacedHabitsWatchWidgets.appex")))
+        #expect(widgets.bundleIdentifier == "ga.emira.spacedhabits.watchkitapp.widgets")
     }
 
     /// §6: App Shortcuts (Siri phrases) are extracted into the app's App Intents metadata.

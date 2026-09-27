@@ -53,3 +53,22 @@ struct SnapshotProvider: TimelineProvider {
         }
     }
 }
+
+/// Home Screen sizes, which watchOS doesn't have: the widget views are shared with the watch (§6).
+extension WidgetFamily {
+    var isSystemSmall: Bool {
+        #if os(watchOS)
+            false
+        #else
+            self == .systemSmall
+        #endif
+    }
+
+    var isSystemMedium: Bool {
+        #if os(watchOS)
+            false
+        #else
+            self == .systemMedium
+        #endif
+    }
+}

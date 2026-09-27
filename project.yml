@@ -70,8 +70,9 @@ targets:
   SpacedHabitsWidgets:
     type: app-extension
     platform: iOS
-    # Apps/Shared: AnswerHabitIntent runs in whichever process the button's widget lives in.
-    sources: [Apps/iOSWidgets, Apps/Shared]
+    # Apps/Widgets: the widgets, shared with the watch's extension. Apps/Shared: AnswerHabitIntent runs in
+    # whichever process the button's widget lives in.
+    sources: [Apps/iOSWidgets, Apps/Widgets, Apps/Shared]
     info:
       path: Apps/iOSWidgets/Info.plist
       properties:
@@ -121,6 +122,7 @@ targets:
       - package: HabitCore
       - package: HabitStore
       - package: HabitUI
+      - target: SpacedHabitsWatchWidgets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ga.emira.spacedhabits.watchkitapp
@@ -130,6 +132,36 @@ targets:
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: ga.emira.spacedhabits
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: YES
+  SpacedHabitsWatchWidgets:
+    type: app-extension
+    platform: watchOS
+    sources: [Apps/watchOSWidgets, Apps/Widgets, Apps/Shared]
+    info:
+      path: Apps/watchOSWidgets/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+    entitlements:
+      path: Apps/watchOSWidgets/SpacedHabitsWatchWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.ga.emira.spacedhabits
+    dependencies:
+      - package: HabitCore
+      - package: HabitStore
+      - package: HabitUI
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ga.emira.spacedhabits.watchkitapp.widgets
+        PRODUCT_NAME: SpacedHabitsWatchWidgets
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Spaced Habits
         TARGETED_DEVICE_FAMILY: "4"
         SKIP_INSTALL: YES
   SpacedHabitsTests:

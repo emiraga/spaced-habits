@@ -3,8 +3,8 @@ import HabitUI
 import SwiftUI
 import WidgetKit
 
-/// The top question with Yes / No (DESIGN.md §6): small and Lock Screen show one, medium two. Per-day and
-/// count questions need the card, so they open the app.
+/// The top question with Yes / No (DESIGN.md §6): small, Lock Screen and the watch's Smart Stack show one,
+/// medium two. Per-day and count questions need the card, so they open the app.
 struct QuestionWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "QuestionWidget", provider: SnapshotProvider()) { entry in
@@ -12,7 +12,12 @@ struct QuestionWidget: Widget {
         }
         .configurationDisplayName("Check-in")
         .description("Answer the next question without opening the app.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
+        #if os(watchOS)
+            // The Smart Stack card (§6).
+            .supportedFamilies([.accessoryRectangular])
+        #else
+            .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
+        #endif
     }
 }
 
@@ -32,7 +37,7 @@ struct QuestionWidgetView: View {
             Text(failure).font(.caption)
         } else if snapshot.cards.isEmpty {
             NothingDue(nextCheckIn: snapshot.nextCheckIn)
-        } else if family == .systemMedium {
+        } else if family.isSystemMedium {
             HStack(alignment: .top, spacing: 12) {
                 ForEach(snapshot.cards.prefix(2)) { CardView(card: $0, compact: false) }
             }
