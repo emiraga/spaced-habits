@@ -185,30 +185,26 @@ enum NotifierError: LocalizedError {
     }
 }
 
-extension Notifier: UNUserNotificationCenterDelegate {
-    nonisolated func userNotificationCenter(
+/// Main-actor isolated (not `nonisolated async`): the notification center hands each method an ObjC
+/// completion handler, and a `nonisolated async` method calls it from the cooperative pool when it
+/// finishes. UIKit asserts that the response handler completes on the main thread (it snapshots the
+/// scene), which crashed every tap on a notification.
+extension Notifier: @MainActor UNUserNotificationCenterDelegate {
+    func userNotificationCenter(
         _: UNUserNotificationCenter,
         willPresent _: UNNotification
     ) async -> UNNotificationPresentationOptions {
         [.banner, .list, .sound]
     }
 
-    nonisolated func userNotificationCenter(
-        _: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
+    func userNotificationCenter(_: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         let action = response.actionIdentifier
-        let deliveredAt = response.notification.date
-        let logger = Logger(subsystem: "ga.emira.spacedhabits", category: "notifications")
         do {
             let payload = try NotificationPayload(userInfo: response.notification.request.content.userInfo)
-            try await handle(action: action, payload: payload, deliveredAt: deliveredAt)
+            try await handle(action: action, payload: payload, deliveredAt: response.notification.date)
         } catch {
             // Nobody to show it to: the app may have been launched in the background just for this.
-            logger
-                .error(
-                    "Notification response \(action, privacy: .public) failed: \(String(describing: error), privacy: .public)"
-                )
+            logger.error("Response \(action, privacy: .public) failed: \(String(describing: error), privacy: .public)")
         }
     }
 }
