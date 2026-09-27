@@ -122,6 +122,23 @@ struct DayCalendarTests {
         let clock = try FixedClock(date: date("2026-09-27T02:00:00", "UTC"), calendar: calendar("UTC"))
         #expect(clock.today().description == "2026-09-26")
     }
+
+    @Test func shiftedClockMovesDayAndInstant() throws {
+        let base = try FixedClock(date: date("2026-09-27T02:00:00", "UTC"), calendar: calendar("UTC"))
+        let shifted = ShiftedClock(base: base, days: 3)
+        #expect(shifted.today().description == "2026-09-29")
+        #expect(try shifted.now() == date("2026-09-30T02:00:00", "UTC"))
+        #expect(ShiftedClock(base: base, days: 0).today() == base.today())
+    }
+
+    @Test func shiftedClockKeepsDayAcrossDST() throws {
+        // 03:30 on the day before spring-forward belongs to 2026-03-06 (day starts 04:00); +1 day is
+        // 2026-03-07 even though 24 hours later the wall clock reads 03:30 on a 23-hour day.
+        let base = try FixedClock(
+            date: date("2026-03-07T03:30:00", "America/New_York"), calendar: calendar("America/New_York")
+        )
+        #expect(ShiftedClock(base: base, days: 1).today().description == "2026-03-07")
+    }
 }
 
 struct RandomSourceTests {

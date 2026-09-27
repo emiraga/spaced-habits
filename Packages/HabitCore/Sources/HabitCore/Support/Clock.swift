@@ -23,6 +23,27 @@ public struct SystemClock: Clock {
     }
 }
 
+/// `base` moved `days` whole days ahead, for the debug "advance day" control (DESIGN.md §13 M2).
+/// `today()` shifts the base's day key, so it stays exact across DST; `now()` shifts by 24-hour days and is
+/// only used for timestamps.
+public struct ShiftedClock: Clock {
+    public let base: any Clock
+    public let days: Int
+
+    public init(base: any Clock, days: Int) {
+        self.base = base
+        self.days = days
+    }
+
+    public func now() -> Date {
+        base.now().addingTimeInterval(TimeInterval(days) * 86400)
+    }
+
+    public func today() -> DayKey {
+        base.today().adding(days: days)
+    }
+}
+
 /// Deterministic clock for tests and simulations.
 public struct FixedClock: Clock {
     public var date: Date
