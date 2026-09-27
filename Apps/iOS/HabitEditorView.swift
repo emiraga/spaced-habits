@@ -2,10 +2,15 @@ import HabitCore
 import HabitUI
 import SwiftUI
 
-/// Name, emoji, color, importance, vacation behavior, target and recall gap (DESIGN.md §5.1, M3 subset).
+/// Name, emoji, color, importance, vacation behavior, depends-on, cluster, target and recall gap
+/// (DESIGN.md §5.1 screen 3).
 struct HabitEditorView: View {
     let isNew: Bool
     @State private var draft: Habit
+    /// Why the last picked parent was refused (a dependency loop).
+    @State private var refusal: String?
+    /// A new cluster, or the selected one being renamed.
+    @State private var editingCluster: Cluster?
     @Environment(AppModel.self) private var model
     @Environment(ErrorPresenter.self) private var errors
     @Environment(\.dismiss) private var dismiss
@@ -22,23 +27,7 @@ struct HabitEditorView: View {
                 TextField("Emoji (optional)", text: emoji)
             }
             Section("Color") {
-                HStack {
-                    ForEach(HabitPalette.colors, id: \.self) { hex in
-                        Button { draft.colorHex = hex } label: {
-                            Circle()
-                                .fill(Color(hex: hex))
-                                .frame(width: 30, height: 30)
-                                .overlay {
-                                    if draft.colorHex == hex {
-                                        Image(systemName: "checkmark").foregroundStyle(.white)
-                                    }
-                                }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(hex)
-                        .accessibilityAddTraits(draft.colorHex == hex ? .isSelected : [])
-                    }
-                }
+                PaletteRow(selection: $draft.colorHex)
             }
             Section {
                 Picker("Importance", selection: $draft.importance) {
@@ -57,6 +46,8 @@ struct HabitEditorView: View {
                     "Vacation mode pauses every habit that isn't kept. You can still change this when you start a vacation."
                 )
             }
+            dependsOnSection
+            clusterSection
             Section {
                 DisclosureGroup("Advanced") {
                     VStack(alignment: .leading) {
@@ -93,7 +84,79 @@ struct HabitEditorView: View {
                 }
             }
         }
+        .sheet(item: $editingCluster) { cluster in
+            NavigationStack {
+                ClusterEditorView(cluster: cluster, isNew: model.cluster(cluster.id) == nil) {
+                    draft.clusterID = $0.id
+                }
+            }
+        }
         .errorAlert(errors)
+    }
+
+    /// Parents are `.gate` edges; the mode is not exposed (§4.5). A pick that would close a loop is refused.
+    @ViewBuilder private var dependsOnSection: some View {
+        let candidates = model.parentCandidates(for: draft)
+        if !candidates.isEmpty {
+            Section {
+                ForEach(candidates) { parent in
+                    let selected = draft.gateParentIDs.contains(parent.id)
+                    Button { toggleParent(parent) } label: {
+                        HStack {
+                            Text([parent.emoji, parent.name].compactMap(\.self).joined(separator: " "))
+                            Spacer()
+                            if selected {
+                                Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+                            }
+                        }
+                    }
+                    .tint(.primary)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            } header: {
+                Text("Depends on")
+            } footer: {
+                if let refusal {
+                    Text(refusal).foregroundStyle(.red)
+                } else {
+                    Text(
+                        "Only asked about on days you did these habits, and its adherence counts only those days. Pausing one of them pauses this too."
+                    )
+                }
+            }
+        }
+    }
+
+    private func toggleParent(_ parent: Habit) {
+        refusal = nil
+        if draft.gateParentIDs.contains(parent.id) {
+            draft.dependencies.removeAll { $0.parentID == parent.id }
+            return
+        }
+        do {
+            try model.checkDependency(on: parent.id, for: draft)
+            draft.dependencies.removeAll { $0.parentID == parent.id }
+            draft.dependencies.append(Dependency(parentID: parent.id, mode: .gate))
+        } catch {
+            refusal = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+        }
+    }
+
+    private var clusterSection: some View {
+        Section {
+            Picker("Cluster", selection: $draft.clusterID) {
+                Text("None").tag(UUID?.none)
+                ForEach(model.clusters) { cluster in
+                    Text(cluster.name).tag(Optional(cluster.id))
+                }
+            }
+            if let cluster = model.cluster(draft.clusterID) {
+                Button("Rename “\(cluster.name)”…") { editingCluster = cluster }
+            }
+            Button("New cluster…") { editingCluster = model.newClusterDraft() }
+        } footer: {
+            Text("Habits in a cluster are listed together on the Today screen.")
+        }
     }
 
     private func explanation(_ text: LocalizedStringKey) -> some View {

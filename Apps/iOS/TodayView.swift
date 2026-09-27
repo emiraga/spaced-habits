@@ -73,6 +73,7 @@ struct TodayView: View {
             QuestionCard(
                 question: question,
                 habit: habit,
+                parentNames: model.parentNames(for: question),
                 intervalDays: state.currentIntervalDays,
                 guess: state.adherence.mean,
                 today: model.today,
@@ -129,12 +130,23 @@ struct TodayView: View {
         }
     }
 
+    /// One group per cluster, then habits in none ("Habits", or "Other" when there are clusters).
     private var habitList: some View {
+        let groups = model.habitsByCluster
+        return ForEach(groups, id: \.cluster?.id) { group in
+            habitGroup(
+                title: group.cluster?.name ?? (groups.count > 1 ? "Other" : "Habits"),
+                habits: group.habits
+            )
+        }
+    }
+
+    private func habitGroup(title: String, habits: [Habit]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Habits")
+            Text(title)
                 .font(.headline)
                 .padding(.vertical, 8)
-            ForEach(model.activeHabits) { habit in
+            ForEach(habits) { habit in
                 NavigationLink(value: habit.id) {
                     HabitRow(
                         habit: habit,

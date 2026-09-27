@@ -147,7 +147,7 @@ public final class AppModel {
             }
         }
         try edited.forEach { try $0.validate() }
-        try Dependencies.validate(habits)
+        try describingCycles { try Dependencies.validate(habits) }
         for habit in edited {
             let revision = try store.save(habit, editedAt: clock.now())
             truth.habitRevisions.append(revision)

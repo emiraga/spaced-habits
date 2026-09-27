@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 import os
 import SwiftUI
@@ -39,7 +40,7 @@ public extension View {
         ) { _ in
             Button("OK", role: .cancel) {}
         } message: { error in
-            Text(String(describing: error))
+            Text((error as? LocalizedError)?.errorDescription ?? String(describing: error))
         }
     }
 }

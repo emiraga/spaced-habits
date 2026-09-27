@@ -50,6 +50,36 @@ struct QuestionCardTests {
         #expect(QuestionCard.countChips(total: 4).map(\.value) == [0, 1, 3, 4])
         #expect(QuestionCard.countChips(total: 4).map(\.label) == ["None", "Some", "Most", "All"])
     }
+
+    private func question(_ shape: QuestionShape, days: Int, parentDoneDays: Int? = nil) -> Question {
+        Question(
+            habitID: UUID(), covers: today.adding(days: 1 - days) ... today, shape: shape, createdAt: .now,
+            parentContext: parentDoneDays.map { ParentContext(parentIDs: [UUID()], parentDoneDays: $0) }
+        )
+    }
+
+    @Test func promptsAskAboutParentDoneDaysWhenGated() {
+        #expect(QuestionCard.prompt(for: question(.singleDay, days: 1)) == "Done today?")
+        #expect(QuestionCard.prompt(for: question(.count(total: 6), days: 6)) == "How many of the last 6 days?")
+        #expect(QuestionCard
+            .prompt(for: question(.count(total: 4), days: 6, parentDoneDays: 4)) == "On how many of those 4?")
+        #expect(QuestionCard.prompt(for: question(.count(total: 1), days: 6, parentDoneDays: 1)) == "Done on that day?")
+        let perDay = QuestionShape.perDay(days: [today])
+        #expect(QuestionCard.prompt(for: question(perDay, days: 2)) == "Which of these days?")
+        #expect(QuestionCard.prompt(for: question(perDay, days: 2, parentDoneDays: 1)) == "Which of those days?")
+    }
+
+    @Test func contextLineNamesParentsAndTheirDoneDays() {
+        func line(_ names: [String], done: Int, of days: Int) -> String {
+            QuestionCard.contextLine(
+                parentNames: names, context: ParentContext(parentIDs: [], parentDoneDays: done), coverDays: days
+            )
+        }
+        #expect(line(["Gym"], done: 4, of: 6) == "You did Gym on 4 of the last 6 days.")
+        #expect(line(["Gym"], done: 3, of: 3) == "You did Gym on all of the last 3 days.")
+        #expect(line(["Gym"], done: 1, of: 1) == "You did Gym today.")
+        #expect(line(["Gym", "Stretch"], done: 2, of: 5) == "You did Gym and Stretch on 2 of the last 5 days.")
+    }
 }
 
 struct FormattingTests {

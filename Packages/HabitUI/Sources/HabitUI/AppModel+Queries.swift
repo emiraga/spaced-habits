@@ -28,10 +28,16 @@ public extension AppModel {
 
     /// Mean value over the last `days` days that carry evidence (observed, aggregated, Health), and how
     /// many such days there were. Nil without evidence: inferred days are the model's guess, not adherence.
-    func adherence(of habitID: UUID, days: Int = 30) -> (mean: Double, days: Int)? {
+    /// For a gated habit this is P(habit | parents) (§4.5); `includingParentMisses` adds the days its
+    /// parents were not done, giving P(habit).
+    func adherence(
+        of habitID: UUID,
+        days: Int = 30,
+        includingParentMisses: Bool = false
+    ) -> (mean: Double, days: Int)? {
         let since = today.adding(days: 1 - days)
         let evidence = (projected.records[habitID] ?? [:]).values.filter {
-            $0.day >= since && $0.source.feedsModel && !$0.conditionalDenominatorExcluded
+            $0.day >= since && $0.source.feedsModel && (includingParentMisses || !$0.conditionalDenominatorExcluded)
         }
         guard !evidence.isEmpty else { return nil }
         return (evidence.map(\.value).reduce(0, +) / Double(evidence.count), evidence.count)

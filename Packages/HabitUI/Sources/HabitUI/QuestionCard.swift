@@ -2,10 +2,12 @@ import HabitCore
 import SwiftUI
 
 /// One check-in card (DESIGN.md §5.2): Yes/No for a single day, a toggle per day for 2–3 days, or
-/// "N of K" for longer gaps; always with Don't remember, Delay… and Later.
+/// "N of K" for longer gaps; always with Don't remember, Delay… and Later. A gated habit's card leads with
+/// its parents ("You did Gym on 4 of the last 6 days.") and asks only about those days (§4.5).
 public struct QuestionCard: View {
     let question: Question
     let habit: Habit
+    let parentNames: [String]
     let intervalDays: Int
     let today: DayKey
     let onAnswer: (AnswerValue) -> Void
@@ -18,10 +20,12 @@ public struct QuestionCard: View {
     /// Model mean at or above which per-day toggles start on and the count starts at "All" (§5.2).
     public static let presetThreshold = 0.8
 
-    /// `guess` is the model's mean, used only to preset the controls.
+    /// `guess` is the model's mean, used only to preset the controls. `parentNames` name the habits in
+    /// `question.parentContext`.
     public init(
         question: Question,
         habit: Habit,
+        parentNames: [String] = [],
         intervalDays: Int,
         guess: Double,
         today: DayKey,
@@ -31,6 +35,7 @@ public struct QuestionCard: View {
     ) {
         self.question = question
         self.habit = habit
+        self.parentNames = parentNames
         self.intervalDays = intervalDays
         self.today = today
         self.onAnswer = onAnswer
@@ -53,6 +58,10 @@ public struct QuestionCard: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
+            if let context = question.parentContext {
+                Text(Self.contextLine(parentNames: parentNames, context: context, coverDays: question.covers.count))
+                    .foregroundStyle(.secondary)
+            }
             Text(prompt)
                 .font(.title3.weight(.semibold))
             controls
@@ -80,11 +89,7 @@ public struct QuestionCard: View {
     }
 
     var prompt: String {
-        switch question.shape {
-        case .singleDay: "Done today?"
-        case .perDay: "Which of these days?"
-        case let .count(total): "How many of the last \(total) days?"
-        }
+        Self.prompt(for: question)
     }
 
     @ViewBuilder private var controls: some View {
@@ -152,6 +157,32 @@ public struct QuestionCard: View {
     }
 
     // MARK: Pure helpers (tested)
+
+    /// The question. For a gated habit the days are the parents' done days, so it asks about "those".
+    public nonisolated static func prompt(for question: Question) -> String {
+        let gated = question.parentContext != nil
+        switch question.shape {
+        case .singleDay: return "Done today?"
+        case .perDay: return gated ? "Which of those days?" : "Which of these days?"
+        case .count(1) where gated: return "Done on that day?"
+        case let .count(total): return gated ? "On how many of those \(total)?" : "How many of the last \(total) days?"
+        }
+    }
+
+    /// "You did Gym on 4 of the last 6 days." (§4.5)
+    public nonisolated static func contextLine(
+        parentNames: [String],
+        context: ParentContext,
+        coverDays: Int
+    ) -> String {
+        let parents = parentNames.isEmpty ? "the habits this depends on" : parentNames.formatted(.list(type: .and))
+        if coverDays == 1 {
+            return "You did \(parents) today."
+        }
+        return context.parentDoneDays == coverDays
+            ? "You did \(parents) on all of the last \(coverDays) days."
+            : "You did \(parents) on \(context.parentDoneDays) of the last \(coverDays) days."
+    }
 
     /// None / Some / Most / All → 0 / round(0.35K) / round(0.75K) / K (§5.2).
     public nonisolated static func countChips(total: Int) -> [(label: String, value: Int)] {
