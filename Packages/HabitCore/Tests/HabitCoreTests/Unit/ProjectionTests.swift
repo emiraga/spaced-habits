@@ -193,6 +193,29 @@ struct ProjectionPauseTests {
         #expect(after > before)
     }
 
+    @Test func cancelledPauseChangesNothing() throws {
+        let answers = daily(-30 ... -1)
+        var cancelled = pause([gym], -2, 3)
+        cancelled.cancelledAt = noon
+        let plain = try Projection.rebuild(Truth(habits: [gym], answers: answers), clock: clock())
+        let withCancelled = try Projection.rebuild(
+            Truth(habits: [gym], answers: answers, pauses: [cancelled]),
+            clock: clock()
+        )
+        #expect(withCancelled == plain)
+    }
+
+    @Test func endingEarlyAsksTheReentryCheckToday() throws {
+        let ended = pause([gym], -3, 5).endedEarly(today: today, at: noon)
+        let projected = try Projection.rebuild(
+            Truth(habits: [gym], answers: daily(-30 ... -4), pauses: [ended]),
+            clock: clock()
+        )
+        #expect(try record(projected, gym, -1).source == .paused)
+        #expect(try record(projected, gym, 0).source != .paused)
+        #expect(projected.states[gym.id]?.forcedReentryCheck == true)
+    }
+
     @Test func pausedParentBlocksAndFreezesChild() throws {
         let shake = habit("Shake", createdDaysAgo: 30, parents: [gym.id])
         let answers = daily(-30 ... -11) + (-30 ... -11).map { answer(shake, $0, $0, .done) }

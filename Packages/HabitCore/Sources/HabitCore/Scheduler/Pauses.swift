@@ -21,7 +21,11 @@ public enum Unavailability: String, Codable, Sendable, Hashable {
 public enum Pauses {
     /// The pause a `.delayed(days: n)` answer creates: the answer's day through `n - 1` days later.
     /// Nil for any other answer value.
-    public static func event(forDelay answer: Answer, createdAt: Date) throws -> PauseEvent? {
+    public static func event(
+        forDelay answer: Answer,
+        reason: PauseReason = .manual,
+        createdAt: Date
+    ) throws -> PauseEvent? {
         guard case let .delayed(days) = answer.value else { return nil }
         try answer.validate()
         let start = answer.covers.upperBound
@@ -29,7 +33,7 @@ public enum Pauses {
             habitIDs: [answer.habitID],
             start: start,
             end: start.adding(days: days - 1),
-            reason: .manual,
+            reason: reason,
             createdAt: createdAt
         )
     }
@@ -54,7 +58,7 @@ public enum Pauses {
         byID: [UUID: Habit],
         pauses: [PauseEvent]
     ) throws -> [UUID: Unavailability] {
-        let active = pauses.filter { $0.start <= day && day <= $0.end }
+        let active = pauses.filter { $0.isActive(on: day) }
         var result: [UUID: Unavailability] = [:]
         for habit in sorted {
             if active.contains(where: { $0.habitIDs.contains(habit.id) }) {
@@ -66,5 +70,47 @@ public enum Pauses {
             }
         }
         return result
+    }
+
+    // MARK: Queries for the UI
+
+    /// The first day after `today` on which `habitID` is no longer paused ("Resumes <date>"), or nil if
+    /// it is not paused today. Back-to-back and overlapping pauses count as one.
+    public static func resumeDay(of habitID: UUID, today: DayKey, pauses: [PauseEvent]) -> DayKey? {
+        let own = pauses.filter { $0.habitIDs.contains(habitID) && !$0.isCancelled }
+        guard own.contains(where: { $0.isActive(on: today) }) else { return nil }
+        var day = today
+        while let covering = own.filter({ $0.isActive(on: day) }).map(\.end).max() {
+            day = covering.adding(days: 1)
+        }
+        return day
+    }
+
+    /// Pauses of `habitID` in effect on `today` or later, soonest first (ties by ID).
+    public static func current(of habitID: UUID, today: DayKey, pauses: [PauseEvent]) -> [PauseEvent] {
+        pauses
+            .filter { $0.habitIDs.contains(habitID) && !$0.isCancelled && $0.end >= today }
+            .sorted { ($0.start, $0.id.uuidString) < ($1.start, $1.id.uuidString) }
+    }
+
+    // MARK: Insights
+
+    /// Manual delays at or above which a habit gets the "You keep delaying this" card (§4.6).
+    public static let frequentDelayThreshold = 3
+    /// The window, in days ending today, in which delays are counted.
+    public static let frequentDelayWindowDays = 60
+
+    /// Habits with at least `frequentDelayThreshold` manual pauses starting in the last
+    /// `frequentDelayWindowDays` days. Cancelled pauses don't count: the user took them back.
+    public static func frequentlyDelayedHabitIDs(pauses: [PauseEvent], today: DayKey) -> Set<UUID> {
+        let since = today.adding(days: 1 - frequentDelayWindowDays)
+        var counts: [UUID: Int] = [:]
+        let delays = pauses.filter {
+            $0.reason == .manual && !$0.isCancelled && (since ... today).contains($0.start)
+        }
+        for habitID in delays.flatMap({ Set($0.habitIDs) }) {
+            counts[habitID, default: 0] += 1
+        }
+        return Set(counts.filter { $0.value >= frequentDelayThreshold }.keys)
     }
 }

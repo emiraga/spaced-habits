@@ -77,7 +77,8 @@ public enum Channel: String, Codable, Sendable, Hashable {
 }
 
 /// Pauses one or more habits over an inclusive day range (§4.6). Truth; `end` is edited to extend or
-/// end early, `start` may be in the past (backdated) or future (scheduled vacation).
+/// end early, `start` may be in the past (backdated) or future (scheduled vacation). A pause is never
+/// deleted: one ended before it started is cancelled and stays in the log.
 public struct PauseEvent: Identifiable, Codable, Sendable, Hashable {
     public let id: UUID
     public var habitIDs: [UUID]
@@ -87,6 +88,8 @@ public struct PauseEvent: Identifiable, Codable, Sendable, Hashable {
     public let createdAt: Date
     /// Vacation only.
     public var quietAllNotifications: Bool
+    /// Set when the pause was ended before its first day; a cancelled pause pauses nothing.
+    public var cancelledAt: Date?
 
     public enum ValidationError: Error, Equatable {
         case noHabits
@@ -100,7 +103,8 @@ public struct PauseEvent: Identifiable, Codable, Sendable, Hashable {
         end: DayKey,
         reason: PauseReason,
         createdAt: Date,
-        quietAllNotifications: Bool = false
+        quietAllNotifications: Bool = false,
+        cancelledAt: Date? = nil
     ) {
         self.id = id
         self.habitIDs = habitIDs
@@ -109,6 +113,7 @@ public struct PauseEvent: Identifiable, Codable, Sendable, Hashable {
         self.reason = reason
         self.createdAt = createdAt
         self.quietAllNotifications = quietAllNotifications
+        self.cancelledAt = cancelledAt
     }
 
     public func validate() throws {
@@ -116,9 +121,32 @@ public struct PauseEvent: Identifiable, Codable, Sendable, Hashable {
         guard start <= end else { throw ValidationError.endBeforeStart(start: start, end: end) }
     }
 
+    public var isCancelled: Bool {
+        cancelledAt != nil
+    }
+
+    /// True when the pause is in effect on `day` (for any of its habits).
+    public func isActive(on day: DayKey) -> Bool {
+        !isCancelled && start <= day && day <= end
+    }
+
     /// True when `habitID` is paused on `day` by this event.
     public func pauses(_ habitID: UUID, on day: DayKey) -> Bool {
-        start <= day && day <= end && habitIDs.contains(habitID)
+        isActive(on: day) && habitIDs.contains(habitID)
+    }
+
+    /// "End now" (§4.6): the pause stops before `today`, so today is active again and the re-entry check
+    /// is asked today. A pause that had not started before today is cancelled instead. A pause that is
+    /// already over is returned unchanged.
+    public func endedEarly(today: DayKey, at date: Date) -> PauseEvent {
+        var ended = self
+        guard !isCancelled, end >= today else { return ended }
+        if start < today {
+            ended.end = today.adding(days: -1)
+        } else {
+            ended.cancelledAt = date
+        }
+        return ended
     }
 }
 
