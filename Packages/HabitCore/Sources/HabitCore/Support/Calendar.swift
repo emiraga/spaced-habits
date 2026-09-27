@@ -1,0 +1,44 @@
+import Foundation
+
+/// The single place that maps instants to habit days (DESIGN.md §3.1). Nothing else may compute day
+/// boundaries.
+///
+/// A habit day starts at `dayStartHour` local time (default 04:00), so an answer given at 01:30
+/// counts for the previous calendar day.
+public struct DayCalendar: Sendable, Equatable {
+    public static let defaultDayStartHour = 4
+
+    public let timeZone: TimeZone
+    /// 0...23. Instants before this local hour belong to the previous day.
+    public let dayStartHour: Int
+
+    public enum ValidationError: Error, Equatable {
+        case dayStartHourOutOfRange(Int)
+    }
+
+    public init(timeZone: TimeZone, dayStartHour: Int = DayCalendar.defaultDayStartHour) throws {
+        guard (0 ... 23).contains(dayStartHour) else {
+            throw ValidationError.dayStartHourOutOfRange(dayStartHour)
+        }
+        self.timeZone = timeZone
+        self.dayStartHour = dayStartHour
+    }
+
+    public func dayKey(for date: Date) -> DayKey {
+        // Read local wall-clock components rather than subtracting hours from the instant, so a DST
+        // transition between midnight and `dayStartHour` cannot shift the result.
+        let parts = gregorian.dateComponents([.year, .month, .day, .hour], from: date)
+        guard let year = parts.year, let month = parts.month, let day = parts.day, let hour = parts.hour,
+              let key = DayKey(year: year, month: month, day: day)
+        else {
+            preconditionFailure("Gregorian calendar returned incomplete components for \(date)")
+        }
+        return hour < dayStartHour ? key.adding(days: -1) : key
+    }
+
+    private var gregorian: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar
+    }
+}
