@@ -29,6 +29,8 @@ make format        # swiftformat . (run this, don't hand-format)
 make format-check  # what `make ci` runs
 make strings       # sync every Localizable.xcstrings with the sources (after changing UI text)
 make ci            # gen + format-check + lint + test + test-ui — must pass before push
+make ipa           # Release archive + App Store-signed IPA in build/export (no upload)
+make testflight    # archive + upload to App Store Connect; bump CURRENT_PROJECT_VERSION first
 ```
 
 Fast inner loop for engine work: `xcrun swift test --package-path Packages/HabitCore`.
