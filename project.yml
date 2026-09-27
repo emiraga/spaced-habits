@@ -16,7 +16,7 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: EZ6C73TWB8
 packages:
   HabitCore: { path: Packages/HabitCore }
   HabitStore: { path: Packages/HabitStore }

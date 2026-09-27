@@ -136,8 +136,8 @@ The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swif
 
 Still to add to `project.yml` in later milestones:
 - App Group `group.ga.emira.spacedhabits` entitlement on the widget extension (M6); the app has it
-  since M2 (`Apps/iOS/SpacedHabits.entitlements`, written by `make gen`). A device build needs a
-  `DEVELOPMENT_TEAM` with the group registered.
+  since M2 (`Apps/iOS/SpacedHabits.entitlements`, written by `make gen`). `DEVELOPMENT_TEAM` is `EZ6C73TWB8`;
+  a device build needs the group registered under that team.
 - `SpacedHabitsWidgets` iOS app extension from `Apps/iOSWidgets` (M6).
 - iCloud/CloudKit entitlement `iCloud.ga.emira.spacedhabits` (M7) on app, widgets and watch.
 - `SpacedHabitsWatch` (`application.watchapp2`, `Apps/watchOS`) and `SpacedHabitsWatchWidgets`
