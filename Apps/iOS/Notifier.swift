@@ -5,8 +5,9 @@ import Observation
 import os
 import UserNotifications
 
-/// Local notifications (DESIGN.md §8): keeps the pending requests equal to `NotificationPlanner`'s plan,
-/// and turns actions and taps back into `AppModel` calls. Set up in `App.init`, so it is the notification
+/// Local notifications (DESIGN.md §8): keeps the pending requests equal to `NotificationPlanner`'s plan
+/// (the app calls `reschedule` on every `AppModel.onRefresh`), and turns actions and taps back into
+/// `AppModel` calls. Set up in `App.init`, so it is the notification
 /// center's delegate before a background launch for an action finishes.
 @MainActor
 @Observable
@@ -38,7 +39,6 @@ final class Notifier: NSObject {
                 intentIdentifiers: []
             ),
         ])
-        model.onRefresh = { [weak self] in self?.reschedule() }
         reschedule()
     }
 

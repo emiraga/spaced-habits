@@ -4,6 +4,7 @@ import HabitUI
 import os
 import SwiftUI
 import UIKit
+import WidgetKit
 
 @main
 struct SpacedHabitsApp: App {
@@ -36,11 +37,20 @@ struct SpacedHabitsApp: App {
             return model
         }
         _launch = State(initialValue: launch)
-        notifier = if case let .success(model) = launch {
-            Notifier(model: model)
-        } else {
-            nil
+        guard case let .success(model) = launch else {
+            notifier = nil
+            return
         }
+        let notifier = Notifier(model: model)
+        // Every change to truth, settings or the day: replan notifications, redraw widgets (§6, §8).
+        model.onRefresh = { [weak notifier] in
+            notifier?.reschedule()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        self.notifier = notifier
+        // Siri and Shortcuts act on this model when they run in the app (§6).
+        IntentModel.live = model
+        SpacedHabitsShortcuts.updateAppShortcutParameters()
     }
 
     var body: some Scene {
@@ -78,6 +88,8 @@ struct SpacedHabitsApp: App {
             Task { await errors.attemptAsync { try await notifier.appBecameActive() } }
         }
         if new == .background {
+            // Habit names Siri matches in "Log <habit>" (§6).
+            SpacedHabitsShortcuts.updateAppShortcutParameters()
             do {
                 try notifier?.scheduleBackgroundRefresh()
             } catch {

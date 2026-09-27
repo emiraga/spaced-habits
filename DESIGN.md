@@ -109,7 +109,8 @@ SpacedHabits/
 │   ├── iOS/                    # Spaced Habits (iOS app target) + Assets.xcassets
 │   ├── iOSTests/               # app-hosted unit tests (Swift Testing)
 │   ├── iOSUITests/             # XCUITest smoke flows; the app erases its data on `-resetData` (debug builds)
-│   ├── iOSWidgets/             # WidgetKit extension (iOS)
+│   ├── iOSWidgets/             # WidgetKit extension (iOS): question + status widgets
+│   ├── Shared/                 # compiled into app and widget extension: AnswerHabitIntent, IntentModel
 │   ├── watchOS/                # Spaced Habits Watch app (Assets.xcassets parked here until M7)
 │   └── watchOSWidgets/         # Complications / Smart Stack
 ├── Docs/
@@ -138,11 +139,12 @@ The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swif
   (M5: `UIBackgroundModes`, `BGTaskSchedulerPermittedIdentifiers`). Like the entitlements file it is
   generated but checked in; edit `project.yml`, not the plist.
 
+Since M6 the app and the `SpacedHabitsWidgets` extension (`ga.emira.spacedhabits.widgets`, embedded
+in the app) both carry the App Group `group.ga.emira.spacedhabits` entitlement, written by `make gen`.
+`DEVELOPMENT_TEAM` is `EZ6C73TWB8`; a device build needs the group registered for both bundle IDs
+under that team. The app declares the `spacedhabits` URL scheme for widget taps.
+
 Still to add to `project.yml` in later milestones:
-- App Group `group.ga.emira.spacedhabits` entitlement on the widget extension (M6); the app has it
-  since M2 (`Apps/iOS/SpacedHabits.entitlements`, written by `make gen`). `DEVELOPMENT_TEAM` is `EZ6C73TWB8`;
-  a device build needs the group registered under that team.
-- `SpacedHabitsWidgets` iOS app extension from `Apps/iOSWidgets` (M6).
 - iCloud/CloudKit entitlement `iCloud.ga.emira.spacedhabits` (M7) on app, widgets and watch.
 - `SpacedHabitsWatch` (`application.watchapp2`, `Apps/watchOS`) and `SpacedHabitsWatchWidgets`
   (`Apps/watchOSWidgets`), embedded in the iOS app (M7), plus the watch scheme in `make gen`'s
@@ -533,12 +535,28 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 
 ## 6. Widgets (iOS + watchOS)
 
-- **Interactive widget** (small/medium, Home + Lock Screen + StandBy): shows the top-priority
-  due question with Yes/No buttons via `Button(intent:)`. Medium size shows two questions or
-  one `.perDay` card. After answering, the timeline refreshes to the next question.
-- **Status widget**: habits with today's glyphs; taps deep-link to habit detail.
-- App Intents: `AnswerHabitIntent(questionID, value)`, `DelayHabitIntent(habitID, days)`,
-  `ReviewHabitsIntent()` (opens Today). Expose to Siri/Shortcuts: "Log gym in Spaced Habits".
+- **Question widget** (`QuestionWidget`: small, medium, Lock Screen rectangular; StandBy shows the
+  small one): the session's top question with Yes/No buttons via `Button(intent:)`; medium shows the
+  top two. Per-day and count questions need the card's toggles or stepper, so the widget says "Open to
+  answer" and a tap opens Today. After answering, WidgetKit reloads the timeline and the widget shows
+  the next question. With nothing due: "Nothing to ask" and the next check-in.
+- **Status widget** (`StatusWidget`: small, medium, Lock Screen circular "N due" and inline): habits
+  with today's glyphs; a row deep-links to habit detail (`DeepLink`: `spacedhabits://habit/<id>`,
+  `spacedhabits://today`).
+- App Intents: `AnswerHabitIntent(habitID, done)` for the widget buttons (not discoverable in
+  Shortcuts; `Apps/Shared`, so it runs in the widget extension), and in the app only
+  `LogHabitIntent(habit, done = true)`, `DelayHabitIntent(habit, days)` (a pause from today) and
+  `ReviewHabitsIntent()` (opens Today), with `HabitEntity` / `HabitQuery` over active habits. Questions
+  are planned lazily and widgets don't log them (below), so a button carries the habit, not a question
+  ID. App Shortcuts: "Log \(habit) in Spaced Habits", "Delay \(habit) in …", "Review habits in …".
+  The app calls `updateAppShortcutParameters()` at launch and on entering the background so new habit
+  names are matched.
+- Intents run on `IntentModel.open()`: the app's live model when they run in the app (the app sets
+  `IntentModel.live` at launch), otherwise a fresh non-logging model on the App Group store (the
+  widget extension). The app reloads all timelines on every `AppModel.onRefresh`.
+- An answer from a widget doesn't reschedule notifications (planning is too heavy for the
+  extension); that happens on the next app open or background refresh, and a notification planned
+  before the answer is refused as `alreadyCovered` if acted on.
 - Widgets read/write the **shared App Group SwiftData store**. Widget writes append an `Answer`
   and call `WidgetCenter.reloadAllTimelines()`; the app re-reads truth (`AppModel.reload`) when it
   returns from the background. A fresh `TruthStore.load()` sees the other process's rows, so no

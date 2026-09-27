@@ -145,3 +145,24 @@ struct WidgetTests {
         #expect(model.questions.isEmpty)
     }
 }
+
+struct DeepLinkTests {
+    @Test func roundTripsThroughURL() {
+        let habit = UUID()
+        for link in [DeepLink.today, .habit(habit)] {
+            #expect(DeepLink(url: link.url) == link)
+        }
+        #expect(DeepLink.habit(habit).url.absoluteString == "spacedhabits://habit/\(habit.uuidString)")
+    }
+
+    @Test func rejectsOtherURLs() throws {
+        for string in [
+            "https://today",
+            "spacedhabits://habit/not-a-uuid",
+            "spacedhabits://habit",
+            "spacedhabits://settings",
+        ] {
+            #expect(try DeepLink(url: #require(URL(string: string))) == nil, "\(string)")
+        }
+    }
+}
