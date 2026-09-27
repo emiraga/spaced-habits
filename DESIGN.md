@@ -378,7 +378,10 @@ Both features are one primitive: `PauseEvent`.
 - **Delay from a question card:** answer `.delayed(days: n)` → `PauseEvent(habitIDs: [h], start: today, end: today + n - 1, reason: .manual)`.
 - **Backdated pause:** UI lets the user set `start` in the past ("I was sick the last 3 days").
   Re-projection converts those days from whatever they were into `.paused`.
-- **Extend / end early:** edit `end`. Habit rows always show "Resumes <date>".
+- **Extend / end early:** edit `end`. "End now" sets `end = today - 1`, so today is active and gets
+  the re-entry check; a pause that hasn't started yet is cancelled (`cancelledAt`) rather than
+  deleted, since truth is append-only. Habit rows always show "Resumes <date>". Vacation pauses are
+  changed from the vacation sheet, not habit detail, because they cover several habits.
 - **Scheduler during pause:** no decay, no questions, state frozen. Blocked days behave the same.
 - **Resume:** `forcedReentryCheck = true` → guaranteed question on the first active day. The
   question covers only days since `end + 1`, never the pause. If the answer is yes, the interval
@@ -479,7 +482,8 @@ These are the acceptance tests for the engine. They must pass before UI work beg
    collapsed "Advanced" group, each with a plain-language explanation), vacation
    behavior, depends-on picker (with cycle rejection), cluster, Health binding, archive.
 4. **Pause sheet.** Presented from a question card ("Delay…") or habit detail. Duration presets
-   (1, 3, 7, 14 days, custom), start date (default today; can be backdated), reason.
+   (1, 3, 7, 14 days, custom), start date (default today; can be backdated or scheduled; from habit
+   detail only, since a card delay always starts today), reason.
 5. **Vacation sheet.** Start/end dates, checklist of habits (pre-checked = `.keep`), "Also keep
    parents" resolver, "Quiet all notifications" toggle. Persisting checklist changes to
    `vacationBehavior` is on by default with a visible toggle.
@@ -661,18 +665,15 @@ answers survive kill and relaunch. `LaunchMetrics` cold launch on that device: 8
 start (3 runs). Launch it with `xcrun devicectl device process launch --console --terminate-existing
 --environment-variables '{"OS_ACTIVITY_DT_MODE":"1"}'` to see the log line.
 
-### M3 — Pauses and vacation (1–2 days)
+### M3 — Pauses and vacation — done (2026-09-27)
 
-Deliver: Pause sheet (from card and from detail, with backdating), Resumes-on banner, extend /
-end early, Vacation sheet with checklist + persisted `vacationBehavior` + parent resolver + quiet
-toggle + scheduled start, re-entry check, delay-often insight rule (data only; card UI in M9).
-
-Checkpoint:
-- Delay a habit 3 days; advance clock; confirm no questions, `.paused` days in history, exactly
-  one question on the resume day covering only that day.
-- Backdate a pause over answered days; confirm they flip to `.paused` in history.
-- Enable vacation with one kept habit; confirm only that habit is asked; disable and re-enable
-  vacation: the kept set is remembered.
+Pause sheet (card "Delay…" and habit detail, backdated or scheduled), Resumes-on label and
+extend / end now in detail, Vacation sheet (checklist from `vacationBehavior`, remember toggle,
+"Also keep parents", quiet toggle, scheduled start) with a Today banner, re-entry check,
+`Pauses.frequentlyDelayedHabitIDs` (card UI in M9). The three checkpoints (delay 3 days, backdate
+over answered days, vacation with one kept habit remembered) are `HabitUI` `PauseTests.checkpoint*`,
+driven through `AppModel` and "Advance one day". They're not XCUITests because those took ~20 s per
+advanced day and hung the simulator.
 
 ### M4 — Dependencies and clusters (1–2 days)
 
