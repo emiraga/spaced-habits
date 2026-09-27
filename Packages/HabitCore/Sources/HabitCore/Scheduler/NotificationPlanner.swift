@@ -15,6 +15,12 @@ public struct PlannedNotification: Sendable, Hashable {
     /// The habit day the slot falls on.
     public let day: DayKey
     public let kind: Kind
+
+    public init(fireAt: Date, day: DayKey, kind: Kind) {
+        self.fireAt = fireAt
+        self.day = day
+        self.kind = kind
+    }
 }
 
 /// Decides which notifications to schedule (DESIGN.md §8). Pure: the app replaces every pending

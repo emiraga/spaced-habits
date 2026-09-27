@@ -28,8 +28,10 @@ public final class AppModel {
     /// Built from `truth.settings`, which is validated before it is stored.
     public private(set) var planner: QuestionPlanner
 
+    /// Called after every re-plan, i.e. after any change to truth, settings or the day (notifications, §8).
+    @ObservationIgnored public var onRefresh: (@MainActor () -> Void)?
     @ObservationIgnored let store: TruthStore
-    @ObservationIgnored private let timeZone: TimeZone
+    @ObservationIgnored let timeZone: TimeZone
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let baseClock: @Sendable (DayCalendar) -> any Clock
     @ObservationIgnored private var laterHabitIDs: Set<UUID> = []
@@ -78,18 +80,18 @@ public final class AppModel {
 
     /// Records an answer. A `.delayed` answer also pauses the habit from today (§4.6).
     public func answer(_ question: Question, with value: AnswerValue) throws {
-        try record(question, value, delayReason: .manual)
+        try record(question, value, delayReason: .manual, channel: .app)
     }
 
     /// "Delay…" on a card: pauses the habit for `days` days starting today, logged as a `.delayed` answer.
     public func delay(_ question: Question, days: Int, reason: PauseReason) throws {
-        try record(question, .delayed(days: days), delayReason: reason)
+        try record(question, .delayed(days: days), delayReason: reason, channel: .app)
     }
 
-    private func record(_ question: Question, _ value: AnswerValue, delayReason: PauseReason) throws {
+    func record(_ question: Question, _ value: AnswerValue, delayReason: PauseReason, channel: Channel) throws {
         let answer = Answer(
             questionID: question.id, habitID: question.habitID, covers: question.covers, value: value,
-            answeredAt: clock.now(), timezone: timeZone.identifier, channel: .app
+            answeredAt: clock.now(), timezone: timeZone.identifier, channel: channel
         )
         let pause = try Pauses.event(forDelay: answer, reason: delayReason, createdAt: clock.now())
         try store.append(answer)
@@ -249,6 +251,7 @@ public final class AppModel {
         reasons = Dictionary(uniqueKeysWithValues: plan.presented.map { ($0.habitID, $0.reason) })
         queuedCount = plan.queued.count
         dueHabitIDs = Set(due.map(\.habitID))
+        onRefresh?()
     }
 
     /// Same card content, ignoring ID and timestamps.

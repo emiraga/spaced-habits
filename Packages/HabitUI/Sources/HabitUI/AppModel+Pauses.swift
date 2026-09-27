@@ -53,8 +53,15 @@ public extension AppModel {
         try save(vacation)
     }
 
-    /// The vacation sheet's starting point: today for a week, kept habits from `vacationBehavior`.
-    func vacationDraft() -> Vacation.Plan {
-        Vacation.Plan(start: today, end: today.adding(days: 6), kept: Vacation.defaultKept(truth.habits))
+    /// The vacation sheet's starting point: today for a week, kept habits from `vacationBehavior`. From the
+    /// silence nudge (§4.6), retroactive instead: the day after `lastActiveDay` (at most 30 days back, the
+    /// sheet's limit) through today.
+    func vacationDraft(after lastActiveDay: DayKey? = nil) -> Vacation.Plan {
+        let kept = Vacation.defaultKept(truth.habits)
+        guard let lastActiveDay else {
+            return Vacation.Plan(start: today, end: today.adding(days: 6), kept: kept)
+        }
+        let start = min(today, max(lastActiveDay.adding(days: 1), today.adding(days: -30)))
+        return Vacation.Plan(start: start, end: today, kept: kept)
     }
 }
