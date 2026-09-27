@@ -227,6 +227,15 @@ Decay is what makes questions come back: as evidence ages, `n` shrinks, `sd` gro
 habit becomes due again. Lots of consistent yeses → large `n` → long time before `sd` crosses the
 threshold. Paused days apply **no decay** (state is frozen).
 
+**Natural interval** (`AdherenceModel.naturalIntervalDays`, stored as
+`SchedulerState.currentIntervalDays`): the number of days, in `1...maxIntervalDays`, until decay
+alone pushes `sd` above `uncertaintyThreshold`; 1 if it already is. Decay only ever increases `sd`
+(the mean moves toward 0.5 and `n` shrinks), so this is the first crossing. It is the "ask
+interval" in the UI and charts and the "> 7 days" test of §4.2 rule 5. With the defaults, a habit
+answered "yes" every day settles at `alpha ≈ 13.5, beta = 1, sd ≈ 0.06` and an interval of
+~15 days; an exact 50/50 habit settles at `sd ≈ 0.13` (below threshold), so only rule 2 keeps
+asking it daily.
+
 ### 4.2 When is a habit due?
 
 `QuestionPlanner.isDue(habit, state, today) -> DueReason?`
@@ -548,9 +557,10 @@ build.
 
 ### M1 — Engine (2–3 days)
 
-Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`), `Model/` (all types in §3.3).
+Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`), `Model/` (all types in §3.3),
+`Scheduler/AdherenceModel` (§4.1).
 
-Deliver in `HabitCore`: `AdherenceModel`,
+Deliver in `HabitCore`:
 `QuestionPlanner` (due rules, shapes, budget, prioritization, spot checks), `Dependencies`
 (DAG validation, gating, conditional context), `Pauses` (freeze, re-entry, backdating),
 `Projection.rebuild`, and the simulation harness (§4.8). Add a tiny `Scripts/simulate.swift`
