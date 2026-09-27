@@ -650,29 +650,16 @@ build.
 `Support/`, `Model/` (§3.3), `Scheduler/` (§4.1–4.6), `Projection/` (§4.7) and the simulation
 harness with the `simulate` executable (§4.8). Checkpoint evidence is in the final M1 commit.
 
-### M2 — Daily driver, single device (2–3 days)
+### M2 — Daily driver, single device — done (2026-09-27)
 
-Deliver: `HabitStore` SwiftData models in the App Group container (no CloudKit yet), mapping to
-`HabitCore`, Today screen with question cards (all three shapes + Don't remember; Delay shows a
-placeholder), habit list with status glyphs, habit editor (name/emoji/color/importance/target/
-recall gap), habit detail with a plain history list (no charts yet), Settings with session budget
-and day start hour. Seed data behind a debug flag.
-
-Checkpoint:
-- Install on a physical iPhone. Create three habits, answer questions for eight simulated days
-  (use a debug "advance day" control in Settings that shifts the injected `Clock`).
-- Confirm: a habit answered "yes" every time is asked less often by day 7 (§4.8 `steady`, seed 42:
-  asked days 1–5, not days 6–7, then one per-day card on day 8 covering days 6–8; a few "yes"
-  answers are too little evidence to skip day 4); a habit answered "no" is asked daily; a four-day
-  gap produces a `count` card.
-- Kill and relaunch: state persists. Cold launch < 400 ms measured with Instruments or `os_signpost`.
-
-Status (2026-09-27): implemented; simulator-verified, physical-device pass pending. `AppModelTests.
-checkpointEightDays` drives the day 1–8 expectations through `advanceDay` and passes;
-`TodayFlowUITests` answers, relaunches and finds the answer, and gets count cards after a gap
-(screenshots `Docs/checkpoints/m2-*.png`). `LaunchMetrics` logs first-screen time: Release build,
-iPhone 18 Pro simulator, empty store: ~430 ms from process start, of which ~150 ms is after
-`App.init`. The < 400 ms target must be measured on a device.
+`HabitStore` (one `TruthRecord` model in the App Group container, §10), `HabitUI` `AppModel` and
+cards, Today / habit detail / editor / Settings screens, debug "Advance one day" and seed data.
+`AppModelTests.checkpointEightDays` drives the §4.8 `steady` day 1–8 expectations; `TodayFlowUITests`
+covers relaunch persistence and count cards (screenshots `Docs/checkpoints/m2-*.png`). Physical
+iPhone 16 Pro: "yes" habits fade, "no" habits are asked daily, a 4+ day gap gives a count card, and
+answers survive kill and relaunch. `LaunchMetrics` cold launch on that device: 80–82 ms from process
+start (3 runs). Launch it with `xcrun devicectl device process launch --console --terminate-existing
+--environment-variables '{"OS_ACTIVITY_DT_MODE":"1"}'` to see the log line.
 
 ### M3 — Pauses and vacation (1–2 days)
 
