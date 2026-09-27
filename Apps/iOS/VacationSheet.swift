@@ -4,6 +4,8 @@ import SwiftUI
 
 /// Vacation mode (DESIGN.md §5.1 screen 5, §4.6): plan one, or change or end the running/scheduled one.
 struct VacationSheet: View {
+    /// From the silence nudge (§4.6): plan a retroactive vacation from the day after this.
+    var after: DayKey?
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -11,7 +13,7 @@ struct VacationSheet: View {
             if let vacation = model.currentVacation {
                 ManageVacationView(vacation: vacation)
             } else {
-                PlanVacationView(plan: model.vacationDraft())
+                PlanVacationView(plan: model.vacationDraft(after: after))
             }
         }
         .navigationTitle("Vacation")

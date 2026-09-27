@@ -26,6 +26,14 @@ targets:
     type: application
     platform: iOS
     sources: [Apps/iOS]
+    info:
+      path: Apps/iOS/Info.plist
+      properties:
+        UIBackgroundModes: [fetch]
+        BGTaskSchedulerPermittedIdentifiers: [ga.emira.spacedhabits.refresh]
+        # XcodeGen's defaults would pin these to 1.0 / 1, shadowing the build settings.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     entitlements:
       path: Apps/iOS/SpacedHabits.entitlements
       properties:

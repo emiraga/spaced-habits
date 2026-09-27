@@ -132,7 +132,10 @@ The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swif
 - `make test` runs `swift test` for all three packages plus the app-hosted `SpacedHabitsTests`
   target via xcodebuild; package test targets are not in the Xcode scheme.
 - Bundle ID prefix `ga.emira.spacedhabits`. Info.plist is generated from build settings
-  (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`); there is no checked-in Info.plist.
+  (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`), merged with `Apps/iOS/Info.plist`, which
+  `make gen` writes from `project.yml`'s `info.properties` for keys that have no `INFOPLIST_KEY_*`
+  (M5: `UIBackgroundModes`, `BGTaskSchedulerPermittedIdentifiers`). Like the entitlements file it is
+  generated but checked in; edit `project.yml`, not the plist.
 
 Still to add to `project.yml` in later milestones:
 - App Group `group.ga.emira.spacedhabits` entitlement on the widget extension (M6); the app has it
@@ -558,6 +561,14 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 
 - Categories with actions: `HABIT_QUESTION` → *Yes*, *No*, *Later*. Actions are handled in
   `UNUserNotificationCenterDelegate` (app launches in background) and append an `Answer`.
+  Only `.singleDay` questions get the category; per-day and count questions need the card, so a tap
+  opens the app. `Notifier` (app target) is created in `App.init` so it is the delegate before a
+  background launch finishes. The notification carries its `Question` as JSON;
+  `AppModel.respond(to:deliveredAt:with:)` logs it as presented at delivery, then records the answer
+  (channel `.notification`) or the "Later" dismissal. It refuses a notification whose days were
+  covered since (answered in the app, or paused): answers are latest-wins (§4.7), so a stale tap
+  would silently override a newer answer. On app open, delivered notifications' questions are logged
+  to `Truth.questions` and cleared, since the cards supersede them.
 - Scheduling: local notifications computed from `NotificationSettings.cadence`, clipped by quiet
   hours, and only scheduled when `onlyWhenQuestionsDue` finds ≥ 1 due habit at that time
   (re-evaluated on each app foreground and via `BGAppRefreshTask`).
@@ -718,6 +729,13 @@ Checkpoint:
   preserves the mode.
 
 ### M5 — Notifications (1 day)
+
+Implemented; the device checkpoint below is pending. Automated coverage: `HabitCore`
+`NotificationPlannerTests` (slots only while due, quiet hours, grouping, pauses, vacation quiet,
+nudge, cap) and `HabitUI` `NotificationCheckpointTests` (plan → answer "Yes" from a model launched just
+for the action → relaunch sees it; quiet hours skip the next slot). The notification center itself is
+checked by hand (§14): an XCUITest driving SpringBoard banners hung and was dropped. Debug builds have
+Settings → "Notify in 5 seconds" (the top card as a notification) and Reminders shows the next one.
 
 Deliver: permission flow, cadence UI (times per day / every N days), quiet hours, actionable
 notifications with Yes/No/Later, grouping, `onlyWhenQuestionsDue`, silence nudge, background

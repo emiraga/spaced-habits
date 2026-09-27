@@ -6,6 +6,7 @@ import SwiftUI
 struct TodayView: View {
     @Environment(AppModel.self) private var model
     @Environment(ErrorPresenter.self) private var errors
+    @Environment(Notifier.self) private var notifier
     @State private var editingDraft: Habit?
     @State private var showingSettings = false
     @State private var showingVacation = false
@@ -56,6 +57,12 @@ struct TodayView: View {
         }
         .sheet(isPresented: $showingVacation) {
             NavigationStack { VacationSheet() }
+        }
+        .sheet(item: Binding(
+            get: { notifier.vacationAfter.map(NudgedVacation.init) },
+            set: { notifier.vacationAfter = $0?.after }
+        )) { nudged in
+            NavigationStack { VacationSheet(after: nudged.after) }
         }
         .sheet(item: $delaying) { question in
             if let habit = model.habit(question.habitID) {
@@ -159,6 +166,14 @@ struct TodayView: View {
                 Divider()
             }
         }
+    }
+}
+
+/// `sheet(item:)` needs `Identifiable`.
+private struct NudgedVacation: Identifiable {
+    let after: DayKey
+    var id: DayKey {
+        after
     }
 }
 

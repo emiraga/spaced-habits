@@ -20,8 +20,24 @@ public final class ErrorPresenter {
             try action()
             return true
         } catch {
-            logger.error("Action failed: \(String(describing: error), privacy: .public)")
-            self.error = error
+            report(error)
+            return false
+        }
+    }
+
+    private func report(_ error: any Error) {
+        logger.error("Action failed: \(String(describing: error), privacy: .public)")
+        self.error = error
+    }
+
+    /// `attempt` for async actions.
+    @discardableResult
+    public func attemptAsync(_ action: () async throws -> Void) async -> Bool {
+        do {
+            try await action()
+            return true
+        } catch {
+            report(error)
             return false
         }
     }

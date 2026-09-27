@@ -2,10 +2,11 @@ import HabitCore
 import HabitUI
 import SwiftUI
 
-/// Session budget and day start hour (DESIGN.md §5.1, M2 subset), plus debug controls in debug builds.
+/// Session budget, day start hour and reminders (DESIGN.md §5.1), plus debug controls in debug builds.
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(ErrorPresenter.self) private var errors
+    @Environment(Notifier.self) private var notifier
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingErase = false
     private let buildInfo = BuildInfo(infoDictionary: Bundle.main.infoDictionary)
@@ -27,6 +28,16 @@ struct SettingsView: View {
                 Text("Check-ins")
             } footer: {
                 Text("Answers given before this hour count for the previous day.")
+            }
+            Section {
+                NavigationLink {
+                    NotificationSettingsView()
+                } label: {
+                    LabeledContent(
+                        "Reminders",
+                        value: NotificationSettingsView.summary(model.truth.settings.notifications)
+                    )
+                }
             }
             Section("About") {
                 LabeledContent("Version", value: buildInfo.displayString)
@@ -64,6 +75,9 @@ struct SettingsView: View {
                     if errors.attempt({ try model.advanceDay() }) {
                         dismiss()
                     }
+                }
+                Button("Notify in 5 seconds") {
+                    Task { await errors.attemptAsync { try await notifier.fireSoon() } }
                 }
                 Button("Add sample habits") { errors.attempt { try model.addSampleHabits() } }
                 Button("Erase all data", role: .destructive) { confirmingErase = true }
