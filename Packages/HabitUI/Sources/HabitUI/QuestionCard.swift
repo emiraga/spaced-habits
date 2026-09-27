@@ -74,18 +74,36 @@ public struct QuestionCard: View {
                 .fill(Color(hex: habit.colorHex))
                 .frame(width: 6)
         }
+        // One rotor stop per card, named for its habit; the controls stay separate elements.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Self.accessibilityLabel(habit: habit))
     }
 
+    /// One row on the phone; stacked at large Dynamic Type, where the row would wrap both sides.
     private var header: some View {
-        HStack {
-            Text(habit.displayName)
-                .font(.headline)
-            Spacer()
-            Text("\(Self.importanceLabel(habit.importance)) · ~\(intervalDays)d", bundle: .module)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel(DayFormat.askInterval(intervalDays))
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                headerName.fixedSize()
+                Spacer()
+                headerDetail.fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                headerName
+                headerDetail
+            }
         }
+    }
+
+    private var headerName: some View {
+        Text(habit.displayName)
+            .font(.headline)
+    }
+
+    private var headerDetail: some View {
+        Text("\(Self.importanceLabel(habit.importance)) · ~\(intervalDays)d", bundle: .module)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel(Self.headerAccessibilityLabel(importance: habit.importance, intervalDays: intervalDays))
     }
 
     var prompt: String {
@@ -122,6 +140,7 @@ public struct QuestionCard: View {
                     Button(chip.label) { count = chip.value }
                         .buttonStyle(.bordered)
                         .tint(count == chip.value ? Color(hex: habit.colorHex) : .secondary)
+                        .accessibilityAddTraits(count == chip.value ? .isSelected : [])
                 }
             }
             primaryButton(String(localized: "Save", bundle: .module)) { onAnswer(.count(done: count, total: total)) }
@@ -212,6 +231,19 @@ public struct QuestionCard: View {
             (String(localized: "Most", bundle: .module), Int((0.75 * Double(total)).rounded())),
             (String(localized: "All", bundle: .module), total),
         ]
+    }
+
+    /// "Check-in: Gym".
+    public nonisolated static func accessibilityLabel(habit: Habit) -> String {
+        String(localized: "Check-in: \(habit.name)", bundle: .module)
+    }
+
+    /// "High importance, asking every ~6 days": the header's "high · ~6d" read aloud.
+    public nonisolated static func headerAccessibilityLabel(importance: Importance, intervalDays: Int) -> String {
+        String(
+            localized: "\(importanceLabel(importance).localizedCapitalized) importance, \(DayFormat.askInterval(intervalDays))",
+            bundle: .module
+        )
     }
 
     public nonisolated static func importanceLabel(_ importance: Importance) -> String {

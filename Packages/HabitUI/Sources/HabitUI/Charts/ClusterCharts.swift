@@ -48,6 +48,7 @@ public struct ClusterCharts: View {
             .chartForegroundStyleScale(domain: members.map(\.name), range: members.map { Color(hex: $0.colorHex) })
             .dayAxis()
             .frame(height: 160)
+            .accessibilityLabel(Self.weeklySummary(insights.memberWeeks, name: name))
         } legend: {
             Text(
                 "Each habit's share of answered days done, per week, stacked. Estimated and paused days left out.",
@@ -81,6 +82,7 @@ public struct ClusterCharts: View {
             .chartXScale(domain: 0 ... 1)
             .chartForegroundStyleScale([Self.parentDays: Color.accentColor, Self.allDays: Color.gray])
             .frame(height: CGFloat(insights.pairs.count) * 50 + 30)
+            .accessibilityLabel(Self.pairsSummary(insights.pairs, name: name))
         } legend: {
             Text(
                 "Last \(ClusterInsights.windowDays) days. On parent days: how often a habit follows the one it depends on. All days: how often it happens at all.",
@@ -107,12 +109,55 @@ public struct ClusterCharts: View {
             }
             .chartXScale(domain: 0 ... Double(max(1, insights.funnelDays)))
             .frame(height: CGFloat(insights.funnel.count) * 36 + 30)
+            .accessibilityLabel(Self.funnelSummary(insights.funnel, over: insights.funnelDays, name: name))
         } legend: {
             Text(
                 "Days the whole chain happened, over the \(insights.funnelDays) of the last \(ClusterInsights.windowDays) days answered for every habit in it. Counts add fractions of days.",
                 bundle: .module
             )
         }
+    }
+
+    // MARK: VoiceOver summaries (tested)
+
+    /// "Adherence in the latest week: Gym 80% and Protein 60%".
+    nonisolated static func weeklySummary(_ weeks: [ClusterInsights.MemberWeek], name: (UUID) -> String) -> String {
+        guard let latest = weeks.map(\.weekStart).max() else {
+            return String(localized: "No data", bundle: .module)
+        }
+        let parts = weeks.filter { $0.weekStart == latest }
+            .map { "\(name($0.habitID)) \(DayFormat.percent($0.mean))" }
+            .formatted(.list(type: .and))
+        return String(localized: "Adherence in the latest week: \(parts)", bundle: .module)
+    }
+
+    /// "Protein: 90% on parent days, 50% on all days".
+    nonisolated static func pairsSummary(_ pairs: [ClusterInsights.Pair], name: (UUID) -> String) -> String {
+        pairs.map { pair in
+            let conditional = pair.conditional.map(DayFormat.percent) ?? "–"
+            let overall = pair.overall.map(DayFormat.percent) ?? "–"
+            return String(
+                localized: "\(name(pair.habitID)): \(conditional) on parent days, \(overall) on all days",
+                bundle: .module
+            )
+        }
+        .joined(separator: "; ")
+    }
+
+    /// "Chain over 20 answered days: Gym 12 days, then Protein 10 days".
+    nonisolated static func funnelSummary(
+        _ funnel: [ClusterInsights.FunnelStep],
+        over funnelDays: Int,
+        name: (UUID) -> String
+    ) -> String {
+        let steps = funnel.map { step in
+            String(
+                localized: "\(name(step.habitID)) \(step.days.formatted(.number.precision(.fractionLength(0)))) days",
+                bundle: .module
+            )
+        }
+        .joined(separator: String(localized: ", then ", bundle: .module))
+        return String(localized: "Chain over \(funnelDays) answered days: \(steps)", bundle: .module)
     }
 
     private static let parentDays = String(localized: "On parent days", bundle: .module)

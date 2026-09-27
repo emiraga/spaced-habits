@@ -41,7 +41,7 @@ public struct AskIntervalChart: View {
     }
 
     /// "Days between check-ins: 1 at first, 11 now, at most 12".
-    static func summary(_ series: [ModelPoint]) -> String {
+    nonisolated static func summary(_ series: [ModelPoint]) -> String {
         guard let first = series.first, let last = series.last else {
             return String(localized: "No data", bundle: .module)
         }
@@ -77,6 +77,9 @@ public struct AdherenceChart: View {
             .percentAxis()
             .chartXScale(domain: insights.domain)
             .frame(height: 160)
+            .accessibilityLabel(
+                Self.summary(month: insights.rolling30, week: insights.rolling7, target: insights.target)
+            )
         } legend: {
             VStack(alignment: .leading, spacing: 4) {
                 LegendRow(items: [
@@ -87,6 +90,18 @@ public struct AdherenceChart: View {
                 Text("From answered days: yes/no, counts and Health. Estimated days are left out.", bundle: .module)
             }
         }
+    }
+
+    /// "Adherence now: 30 days 82%, 7 days 70%, target 80%".
+    nonisolated static func summary(month: [AdherencePoint], week: [AdherencePoint], target: Double) -> String {
+        let target = DayFormat.percent(target)
+        guard let month = month.last, let week = week.last else {
+            return String(localized: "Adherence: no answered days yet, target \(target)", bundle: .module)
+        }
+        return String(
+            localized: "Adherence now: 30 days \(DayFormat.percent(month.mean)), 7 days \(DayFormat.percent(week.mean)), target \(target)",
+            bundle: .module
+        )
     }
 
     private static let days30 = String(localized: "30 days", bundle: .module)
@@ -141,6 +156,7 @@ public struct ConfidenceChart: View {
             .percentAxis()
             .chartXScale(domain: insights.domain)
             .frame(height: 140)
+            .accessibilityLabel(Self.summary(insights.series))
         } legend: {
             LegendRow(items: [
                 LegendItem(Self.estimate, color: color),
@@ -150,6 +166,19 @@ public struct ConfidenceChart: View {
     }
 
     private static let estimate = String(localized: "Estimate", bundle: .module)
+
+    /// "Model estimate now: 85%, likely between 75% and 95%".
+    nonisolated static func summary(_ series: [ModelPoint]) -> String {
+        guard let last = series.last else {
+            return String(localized: "No data", bundle: .module)
+        }
+        let low = DayFormat.percent(max(0, last.mean - last.standardDeviation))
+        let high = DayFormat.percent(min(1, last.mean + last.standardDeviation))
+        return String(
+            localized: "Model estimate now: \(DayFormat.percent(last.mean)), likely between \(low) and \(high)",
+            bundle: .module
+        )
+    }
 }
 
 /// Every per-habit chart for habit detail (§12), or why there are none yet.

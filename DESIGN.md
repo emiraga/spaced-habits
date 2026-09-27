@@ -516,8 +516,8 @@ yesterday.
    only the model's guess, so the list shows ○ due or · not due instead (`DayStatus.today`); history
    rows show ≈ / ? for such days. Aggregated (answered as a count) and inferred (no answer; filled in
    by the model) never share a glyph (§1.1). Pull-to-refresh replans. Empty state: "Nothing to ask.
-   Next check-in: <habit> on <date>." (`QuestionPlanner.nextCheckIn`: today + ask interval, capped by
-   `maxIntervalDays` since the last covered day).
+   Next check-in: <habit>, <day>." (the day may read "Tomorrow", so no "on"; `QuestionPlanner.nextCheckIn`:
+   today + ask interval, capped by `maxIntervalDays` since the last covered day).
 2. **Habit detail.** Header with current ask interval ("Asking every ~9 days"), adherence 30d (for a
    gated habit both `P(B|A)` "On Gym days" and `P(B)` "All days"), Resumes-on banner if paused (a
    blocked banner if a parent is), charts (§10), history calendar, dependency list (cluster, depends on,

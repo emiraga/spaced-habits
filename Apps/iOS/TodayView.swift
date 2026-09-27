@@ -12,6 +12,7 @@ struct TodayView: View {
     @State private var showingVacation = false
     @State private var delaying: Question?
     @State private var answers = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ScrollView {
@@ -93,8 +94,15 @@ struct TodayView: View {
         ) {
             card
                 .id(question.id)
-                .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
+                .transition(Self.cardTransition(reduceMotion: reduceMotion))
         }
+    }
+
+    /// Answered cards slide away; with Reduce Motion they only fade (§5.2).
+    static func cardTransition(reduceMotion: Bool) -> AnyTransition {
+        reduceMotion
+            ? .opacity
+            : .asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity))
     }
 
     private func vacationBanner(_ vacation: PauseEvent) -> some View {
@@ -125,7 +133,7 @@ struct TodayView: View {
                 Text("Nothing to ask.")
                     .font(.title3.weight(.semibold))
                 if let next = model.nextCheckIn() {
-                    Text("Next check-in: \(next.habit.name) on \(DayFormat.short(next.day, today: model.today)).")
+                    Text("Next check-in: \(next.habit.name), \(DayFormat.short(next.day, today: model.today)).")
                         .foregroundStyle(.secondary)
                 }
             }

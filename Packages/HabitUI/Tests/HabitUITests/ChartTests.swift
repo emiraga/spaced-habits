@@ -142,3 +142,67 @@ struct ChartTests {
         return fastest
     }
 }
+
+/// §13 M11: every chart reads as one sentence under VoiceOver.
+struct ChartSummaryTests {
+    private let day = DayKey(dayNumber: 20723)
+    private let gym = UUID()
+    private let protein = UUID()
+
+    private func name(_ id: UUID) -> String {
+        id == gym ? "Gym" : "Protein"
+    }
+
+    @Test func adherenceReadsLatestWindowsAndTarget() {
+        let month = [AdherencePoint(day: day, mean: 0.5, segment: 0), AdherencePoint(day: day, mean: 0.82, segment: 0)]
+        let week = [AdherencePoint(day: day, mean: 0.7, segment: 0)]
+        #expect(
+            AdherenceChart.summary(month: month, week: week, target: 0.8)
+                == "Adherence now: 30 days 82%, 7 days 70%, target 80%"
+        )
+        #expect(
+            AdherenceChart.summary(month: [], week: [], target: 0.8) == "Adherence: no answered days yet, target 80%"
+        )
+    }
+
+    @Test func confidenceClampsTheBand() {
+        let series = [ModelPoint(day: day, mean: 0.9, standardDeviation: 0.2, intervalDays: 5)]
+        #expect(ConfidenceChart.summary(series) == "Model estimate now: 90%, likely between 70% and 100%")
+        #expect(ConfidenceChart.summary([]) == "No data")
+    }
+
+    @Test func clusterChartsNameEveryMember() {
+        let weeks = [
+            ClusterInsights.MemberWeek(habitID: gym, weekStart: day.adding(days: -7), mean: 0.1),
+            ClusterInsights.MemberWeek(habitID: gym, weekStart: day, mean: 0.8),
+            ClusterInsights.MemberWeek(habitID: protein, weekStart: day, mean: 0.6),
+        ]
+        #expect(ClusterCharts
+            .weeklySummary(weeks, name: name) == "Adherence in the latest week: Gym 80% and Protein 60%")
+
+        let pairs = [ClusterInsights.Pair(habitID: protein, parentIDs: [gym], conditional: 0.9, overall: nil)]
+        #expect(ClusterCharts.pairsSummary(pairs, name: name) == "Protein: 90% on parent days, – on all days")
+
+        let funnel = [
+            ClusterInsights.FunnelStep(habitID: gym, days: 12),
+            ClusterInsights.FunnelStep(habitID: protein, days: 9.6),
+        ]
+        #expect(
+            ClusterCharts.funnelSummary(funnel, over: 20, name: name)
+                == "Chain over 20 answered days: Gym 12 days, then Protein 10 days"
+        )
+    }
+
+    @Test func weekdayHeatmapReadsBestAndWorstDayForAllHabits() {
+        let cells = [
+            Overview.WeekdayCell(habitID: nil, weekday: 1, mean: 0.9, days: 4),
+            Overview.WeekdayCell(habitID: nil, weekday: 6, mean: 0.4, days: 4),
+            Overview.WeekdayCell(habitID: nil, weekday: 7, mean: 0, days: 0),
+            Overview.WeekdayCell(habitID: gym, weekday: 7, mean: 0.1, days: 3),
+        ]
+        let summary = WeekdayHeatmapChart.summary(cells)
+        #expect(summary.hasPrefix("All habits: best on "))
+        #expect(summary.contains("(90%)") && summary.contains("(40%)"))
+        #expect(WeekdayHeatmapChart.summary([]) == "No data")
+    }
+}

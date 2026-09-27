@@ -122,3 +122,14 @@ struct FormattingTests {
         #expect(Color(hex: "nope") == .gray)
     }
 }
+
+struct QuestionCardAccessibilityTests {
+    @Test func cardAndHeaderReadAsWords() {
+        let habit = Habit(name: "Gym", emoji: "🏋️", colorHex: "#00AA00", createdAt: .now, createdDay: today)
+        #expect(QuestionCard.accessibilityLabel(habit: habit) == "Check-in: Gym")
+        #expect(
+            QuestionCard.headerAccessibilityLabel(importance: .high, intervalDays: 6)
+                == "High importance, Asking every ~6 days"
+        )
+    }
+}

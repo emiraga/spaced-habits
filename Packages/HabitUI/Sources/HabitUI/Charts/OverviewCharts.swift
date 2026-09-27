@@ -163,7 +163,7 @@ public struct QuestionsPerDayChart: View {
     private static let weekAverageLabel = String(localized: "7-day average", bundle: .module)
 
     /// "Questions per day, 7-day average: 3.1 90 days ago, 0.9 now".
-    static func summary(_ average: [(day: DayKey, mean: Double)]) -> String {
+    nonisolated static func summary(_ average: [(day: DayKey, mean: Double)]) -> String {
         let then = format(average.first?.mean ?? 0)
         let now = format(average.last?.mean ?? 0)
         return String(
@@ -183,7 +183,7 @@ public struct WeekdayHeatmapChart: View {
     let habits: [Habit]
 
     /// "Mon" … "Sun", as `Overview` numbers weekdays; day 4 (1970-01-05) was a Monday.
-    private static let weekdayNames = (4 ..< 11).map { dayNumber in
+    nonisolated static let weekdayNames = (4 ..< 11).map { dayNumber in
         DayFormat.noonUTC(DayKey(dayNumber: dayNumber))
             .formatted(Date.FormatStyle(timeZone: .gmt).weekday(.abbreviated))
     }
@@ -214,12 +214,27 @@ public struct WeekdayHeatmapChart: View {
                 AxisMarks(preset: .extended, position: .leading) { _ in AxisValueLabel(centered: true) }
             }
             .frame(height: CGFloat(rows.count) * 24 + 30)
+            .accessibilityLabel(Self.summary(overview.weekdays))
         } legend: {
             LegendRow(items: [
                 LegendItem(String(localized: "Rarely", bundle: .module), band: Color.accentColor.opacity(0.1)),
                 LegendItem(String(localized: "Always done", bundle: .module), band: Color.accentColor),
             ] + [LegendItem(String(localized: "Answered days only", bundle: .module), swatch: EmptyView())])
         }
+    }
+}
+
+extension WeekdayHeatmapChart {
+    /// "All habits: best on Mon (90%), worst on Sat (40%)", from the "All habits" row.
+    nonisolated static func summary(_ cells: [Overview.WeekdayCell]) -> String {
+        let all = cells.filter { $0.habitID == nil && $0.days > 0 }
+        guard let best = all.max(by: { $0.mean < $1.mean }), let worst = all.min(by: { $0.mean < $1.mean }) else {
+            return String(localized: "No data", bundle: .module)
+        }
+        return String(
+            localized: "All habits: best on \(weekdayNames[best.weekday - 1]) (\(DayFormat.percent(best.mean))), worst on \(weekdayNames[worst.weekday - 1]) (\(DayFormat.percent(worst.mean)))",
+            bundle: .module
+        )
     }
 }
 

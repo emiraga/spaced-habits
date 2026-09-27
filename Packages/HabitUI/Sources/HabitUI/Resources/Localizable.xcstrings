@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    ", then " : {
+
+    },
     "%@ – %@" : {
       "localizations" : {
         "en" : {
@@ -24,6 +27,16 @@
     "%@ (from a count)" : {
 
     },
+    "%@ %@ days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ days"
+          }
+        }
+      }
+    },
     "%@ can't depend on %@: that would make a loop (%@ would need %@ %@)." : {
       "localizations" : {
         "en" : {
@@ -36,6 +49,16 @@
     },
     "%@ days" : {
 
+    },
+    "%@ importance, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ importance, %2$@"
+          }
+        }
+      }
     },
     "%@ is slipping" : {
 
@@ -52,6 +75,16 @@
     },
     "%@, which needs" : {
 
+    },
+    "%@: %@ on parent days, %@ on all days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@ on parent days, %3$@ on all days"
+          }
+        }
+      }
     },
     "%lld days" : {
 
@@ -102,6 +135,22 @@
     "Adherence by week" : {
 
     },
+    "Adherence in the latest week: %@" : {
+
+    },
+    "Adherence now: 30 days %@, 7 days %@, target %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Adherence now: 30 days %1$@, 7 days %2$@, target %3$@"
+          }
+        }
+      }
+    },
+    "Adherence: no answered days yet, target %@" : {
+
+    },
     "All" : {
 
     },
@@ -110,6 +159,16 @@
     },
     "All habits" : {
 
+    },
+    "All habits: best on %@ (%@), worst on %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "All habits: best on %1$@ (%2$@), worst on %3$@ (%4$@)"
+          }
+        }
+      }
     },
     "Already answered through %@." : {
 
@@ -163,6 +222,16 @@
     "Chain" : {
 
     },
+    "Chain over %lld answered days: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chain over %1$lld answered days: %2$@"
+          }
+        }
+      }
+    },
     "Charts appear after %lld days that aren't paused (%lld so far)." : {
       "localizations" : {
         "en" : {
@@ -172,6 +241,9 @@
           }
         }
       }
+    },
+    "Check-in: %@" : {
+
     },
     "Day" : {
 
@@ -302,6 +374,16 @@
     },
     "Model confidence" : {
 
+    },
+    "Model estimate now: %@, likely between %@ and %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Model estimate now: %1$@, likely between %2$@ and %3$@"
+          }
+        }
+      }
     },
     "Most" : {
 
