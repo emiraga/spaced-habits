@@ -21,6 +21,8 @@ settings:
     SWIFT_EMIT_LOC_STRINGS: YES
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     DEVELOPMENT_TEAM: EZ6C73TWB8
+    # Export compliance (§2): only Apple's HTTPS/CloudKit encryption, which is exempt; App Store Connect stops asking.
+    INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
 packages:
   HabitCore: { path: Packages/HabitCore }
   HabitStore: { path: Packages/HabitStore }

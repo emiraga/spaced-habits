@@ -80,6 +80,8 @@ interval is itself the progress metric.
 | Task runner | `Makefile` | `make gen / build / test / lint / format / ci` |
 | CI | None hosted; `make ci` locally | Run before every push. GitHub's macOS runners lacked Xcode 27 at M0 |
 | Git hooks | `pre-commit` (or `lefthook`) | format + lint on staged files |
+| Privacy | `PrivacyInfo.xcprivacy` in each of the four bundles | No tracking, no collected data types (habits stay on device and in the user's own iCloud). Required-reason APIs: `UserDefaults` only — `CA92.1` (app's own defaults, iPhone app) and `1C8F.1` (App Group suite, every bundle). `LaunchMetrics`' `sysctl` reads this process's start time, not boot time |
+| Export compliance | `ITSAppUsesNonExemptEncryption = NO` | Only Apple's HTTPS/CloudKit transport encryption, which is exempt |
 
 ### 2.1 Module layout
 

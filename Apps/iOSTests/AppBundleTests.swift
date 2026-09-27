@@ -52,4 +52,27 @@ struct AppBundleTests {
         #expect(actions == ["AnswerHabitIntent", "LogHabitIntent", "DelayHabitIntent", "ReviewHabitsIntent"])
         #expect((json["autoShortcuts"] as? [Any])?.count == 3)
     }
+
+    /// §2: every bundle ships a privacy manifest (no tracking, `UserDefaults` reasons only), and the app
+    /// declares its encryption exempt so App Store Connect doesn't ask per build.
+    @Test func privacyManifestsAndExportComplianceAreDeclared() throws {
+        let app = Bundle.main.bundleURL
+        let bundles = [
+            app,
+            app.appendingPathComponent("PlugIns/SpacedHabitsWidgets.appex"),
+            app.appendingPathComponent("Watch/SpacedHabitsWatch.app"),
+            app.appendingPathComponent("Watch/SpacedHabitsWatch.app/PlugIns/SpacedHabitsWatchWidgets.appex"),
+        ]
+        for bundle in bundles {
+            let data = try Data(contentsOf: bundle.appendingPathComponent("PrivacyInfo.xcprivacy"))
+            let manifest = try #require(
+                PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+            )
+            #expect(manifest["NSPrivacyTracking"] as? Bool == false, "\(bundle.lastPathComponent)")
+            let types = (manifest["NSPrivacyAccessedAPITypes"] as? [[String: Any]])?
+                .compactMap { $0["NSPrivacyAccessedAPIType"] as? String }
+            #expect(types == ["NSPrivacyAccessedAPICategoryUserDefaults"], "\(bundle.lastPathComponent)")
+        }
+        #expect(Bundle.main.object(forInfoDictionaryKey: "ITSAppUsesNonExemptEncryption") as? Bool == false)
+    }
 }
