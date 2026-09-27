@@ -67,9 +67,15 @@ public struct AdherenceModel: Sendable, Hashable {
         beta += (1 - value) * weight
     }
 
-    /// Adds a projected day using the source weight (inferred/unknown/paused/blocked add nothing).
+    /// Weight of a projected day: its source weight, or 0 when it is excluded from a gated habit's
+    /// conditional metric (the model estimates P(child | parents), §4.5).
+    public static func weight(for record: DayRecord) -> Double {
+        record.conditionalDenominatorExcluded ? 0 : weight(for: record.source)
+    }
+
+    /// Adds a projected day (inferred/unknown/paused/blocked and conditionally excluded days add nothing).
     public mutating func observe(_ record: DayRecord) throws {
-        try observe(value: record.value, weight: Self.weight(for: record.source))
+        try observe(value: record.value, weight: Self.weight(for: record))
     }
 
     /// Days from now until decay alone makes the habit uncertain (`sd > threshold`), in `1...maxDays`.

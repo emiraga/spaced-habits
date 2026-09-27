@@ -78,24 +78,48 @@ public enum Dependencies {
         guard !parentIDs.isEmpty else { return nil }
         let means = parentIDs.map { (states[$0] ?? .initial(habitID: $0)).adherence.mean }
         guard means.allSatisfy({ $0 >= minParentMean }) else { return .closed }
-        let joint = covers.map { day in
-            (day, zip(parentIDs, means).reduce(1.0) { product, parent in
-                product * expectedValue(of: records[parent.0]?[day], mean: parent.1)
-            })
-        }
-        let expectedDoneDays = joint.reduce(0) { $0 + $1.1 }
+        let joint = jointParentValues(parentIDs: parentIDs, covers: covers, states: states, records: records)
+        let expectedDoneDays = joint.reduce(0) { $0 + $1.value }
         guard expectedDoneDays >= minExpectedParentDoneDays else { return .closed }
         let context = ParentContext(parentIDs: parentIDs, parentDoneDays: Int(expectedDoneDays.rounded()))
         switch QuestionPlanner.shape(for: covers) {
         case .singleDay:
             return .open(shape: .singleDay, context: context)
         case .perDay:
-            let days = joint.filter { $0.1 >= parentDoneDayThreshold }.map(\.0)
+            let days = joint.filter { $0.value >= parentDoneDayThreshold }.map(\.day)
             guard !days.isEmpty else { return .closed }
             return .open(shape: .perDay(days: days), context: context)
         case .count:
             return .open(shape: .count(total: context.parentDoneDays), context: context)
         }
+    }
+
+    /// Per day in `covers`, the expected value that all parents were done: the product of each parent's
+    /// `expectedValue`.
+    public static func jointParentValues(
+        parentIDs: [UUID],
+        covers: ClosedRange<DayKey>,
+        states: [UUID: SchedulerState],
+        records: DayRecords
+    ) -> [(day: DayKey, value: Double)] {
+        let means = parentIDs.map { (states[$0] ?? .initial(habitID: $0)).adherence.mean }
+        return covers.map { day in
+            (day, zip(parentIDs, means).reduce(1.0) { product, parent in
+                product * expectedValue(of: records[parent.0]?[day], mean: parent.1)
+            })
+        }
+    }
+
+    /// Days in `covers` on which all parents were likely done (joint value ≥ `parentDoneDayThreshold`).
+    public static func parentDoneDays(
+        parentIDs: [UUID],
+        covers: ClosedRange<DayKey>,
+        states: [UUID: SchedulerState],
+        records: DayRecords
+    ) -> [DayKey] {
+        jointParentValues(parentIDs: parentIDs, covers: covers, states: states, records: records)
+            .filter { $0.value >= parentDoneDayThreshold }
+            .map(\.day)
     }
 
     /// A parent's expected done value on a day: 0 while paused or blocked, the posterior mean when

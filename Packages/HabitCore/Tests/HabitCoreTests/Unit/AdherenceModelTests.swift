@@ -47,6 +47,16 @@ struct AdherenceModelTests {
         }
     }
 
+    @Test func conditionallyExcludedDaysDoNotFeedModel() throws {
+        let day = try #require(DayKey("2026-09-27"))
+        var model = AdherenceModel.prior
+        try model.observe(DayRecord(
+            habitID: UUID(), day: day, value: 0, source: .observed, confidence: 1,
+            conditionalDenominatorExcluded: true
+        ))
+        #expect(model == .prior)
+    }
+
     @Test func decayShrinksEvidenceTowardPrior() throws {
         var model = AdherenceModel(alpha: 11, beta: 3)
         try model.decay(days: 1, rate: 0.5)

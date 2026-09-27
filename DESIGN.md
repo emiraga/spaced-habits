@@ -352,7 +352,7 @@ Both features are one primitive: `PauseEvent`.
 - **Backdated pause:** UI lets the user set `start` in the past ("I was sick the last 3 days").
   Re-projection converts those days from whatever they were into `.paused`.
 - **Extend / end early:** edit `end`. Habit rows always show "Resumes <date>".
-- **Scheduler during pause:** no decay, no questions, state frozen.
+- **Scheduler during pause:** no decay, no questions, state frozen. Blocked days behave the same.
 - **Resume:** `forcedReentryCheck = true` → guaranteed question on the first active day. The
   question covers only days since `end + 1`, never the pause. If the answer is yes, the interval
   continues from its frozen value; if no, the normal model update handles it.
@@ -371,19 +371,39 @@ Both features are one primitive: `PauseEvent`.
 
 ### 4.7 Projection (`HabitCore/Projection`)
 
-`Projection.rebuild(habits, answers, pauses, healthObservations, settings, clock)`:
+`Projection.rebuild(truth, clock) -> Projected` (`Projection/Projection.swift`). `Truth`
+(`Model/Truth.swift`) bundles habits, answers, pauses, health observations and settings, and is
+validated first (including that every reference names a known habit). Habits are projected in
+topological order so parents' records exist when their children are projected.
 
 1. For each habit, for each day from `createdDay` to `today`:
-   - if inside a pause for this habit → `.paused`
-   - else if any parent is paused that day → `.blocked`
+   - if inside a pause for this habit → `.paused`; else if a gate parent is paused or blocked → `.blocked`
+     (both: value 0, confidence 0)
    - else if a HealthObservation matches → `.health`, value 1
-   - else if an Answer covers the day → `.observed` (singleDay/perDay) or `.aggregated` (count, value = done/of)
-   - else if `.dontRemember` covers it → `.unknown`
-   - else → `.inferred` or `.unknown` per §4.3 (computed *after* the model state for that point in time)
-2. Replay the adherence model chronologically, applying decay per elapsed non-paused day and
-   updates per observed/aggregated/health day, to obtain `SchedulerState` as of today. Also emit
-   a time series of `(day, mean, sd, intervalDays)` for the "ask interval over time" chart.
+   - else if an Answer covers the day → `.observed` (singleDay/perDay) or `.aggregated` (count). When
+     answers overlap, the latest `answeredAt` wins (ties by answer ID)
+   - else if `.dontRemember` covers it → `.unknown` (value = model mean, confidence 0)
+   - else if a gate parent is `.observed` with value 0 → `.observed` value 0 with
+     `conditionalDenominatorExcluded` (§4.5)
+   - else → `.inferred` or `.unknown` per §4.3, from the model state after that day's decay
+2. Replay the adherence model chronologically, applying decay per elapsed non-paused, non-blocked
+   day and updates per observed/aggregated/health day (excluded days add nothing: the model is
+   P(child | parents)), to obtain `SchedulerState` as of today. Also emit a `ModelPoint` series of
+   `(day, mean, sd, intervalDays)` for the "ask interval over time" chart.
+   - `lastCoveredDay`: latest of answer `covers.upperBound` (not `.delayed`), health days, and
+     paused/blocked days. Counting a pause as covered is what keeps questions out of it.
+   - `lastAskedDay`: latest `covers.upperBound` of any answer. A question's `covers` always end on the
+     day it was asked, so no `Date` → day mapping is needed.
+   - `forcedReentryCheck`: set on the first available day after a paused/blocked stretch unless an
+     answer's `covers` end on or after that day.
 3. Output is deterministic; the same inputs must produce byte-identical output (tests assert this).
+   `Projected` encodes its habit-keyed maps as objects keyed by UUID string for this reason.
+
+Aggregated answers are spread evenly (`value = done / total` on each day of `covers`; for a gated
+habit, on each parent-done day). Placing them on "likely" days would invent data.
+
+Performance: 50 habits × 3 years (answers every 3 days) rebuilds in 0.11 s in a release build on an
+M-series Mac (0.37 s debug).
 
 ### 4.8 Simulation test harness
 
@@ -582,10 +602,10 @@ build.
 Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`), `Model/` (all types in §3.3),
 `Scheduler/AdherenceModel` (§4.1), `Scheduler/QuestionPlanner` + `SpotCheck` (§4.2–4.4),
 `Scheduler/Dependencies` (DAG validation, topological order, gating, conditional context; §4.5),
-`Scheduler/Pauses` (delay → `PauseEvent`, paused/blocked per day; §4.6).
+`Scheduler/Pauses` (delay → `PauseEvent`, paused/blocked per day; §4.6), `Projection.rebuild`
+(§4.7, including pause freeze, re-entry and backdating).
 
-Deliver in `HabitCore`: `Pauses` freeze/re-entry/backdating (applied by the projection) (freeze, re-entry, backdating),
-`Projection.rebuild`, and the simulation harness (§4.8). Add a tiny `Scripts/simulate.swift`
+Deliver in `HabitCore`: the simulation harness (§4.8). Add a tiny `Scripts/simulate.swift`
 (or a `swift run` executable target) that prints a 180-day table for a chosen synthetic user.
 
 Checkpoint:
@@ -759,8 +779,6 @@ documented manual checkpoint, not a flaky automated test.
 
 Decide during the relevant milestone, then move the answer into the section it governs.
 
-- O1. Should aggregated answers be spread evenly (`value = N/K` per day) or placed on the days
-  the model finds most likely? Even spread is simpler and more honest; decide in M1.
 - O2. Should the "Later" dismissal count toward staleness, or be entirely stateless? Stateless
   for M2; revisit if users report nagging.
 - O3. Third vacation behavior "keep but relaxed" (reduced target). Not in v1.
