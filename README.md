@@ -24,11 +24,14 @@ or two. The goal is an app that quietly gets out of your way.
   you choose to keep. The app remembers your choices for next time.
 - **Answer anywhere.** Home Screen and Lock Screen widgets, Apple Watch, and reply-from-
   notification, all in sync.
+- **Siri and Shortcuts.** "Log gym in Spaced Habits", "Delay gym in Spaced Habits", or "Review
+  habits in Spaced Habits". Hands-free, or wired into your own automations.
 - **Auto-complete from Apple Health.** Logged a workout? The gym habit is done. No question asked.
 - **Reminders on your terms.** A few times a day or every few days, quiet hours respected, and
   only when there's actually something to answer.
-- **Charts that mean something.** Per habit, per routine, and overall: check-in interval over
-  time, adherence trends, and a "questions per day" line that should keep going down.
+- **Charts that mean something.** Per habit: check-in interval over time and adherence trends.
+  Per cluster (habits you group together): how each member is doing and how often connected
+  habits happen together. Overall: a "questions per day" line that should keep going down.
 - **Your data, always.** Every habit and edit, every question asked, and every answer and pause is
   logged and exportable to CSV and JSON at any time.
 
