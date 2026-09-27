@@ -2,7 +2,7 @@ import HabitCore
 import HabitUI
 import SwiftUI
 
-/// Name, emoji, color, importance, target and recall gap (DESIGN.md §5.1, M2 subset).
+/// Name, emoji, color, importance, vacation behavior, target and recall gap (DESIGN.md §5.1, M3 subset).
 struct HabitEditorView: View {
     let isNew: Bool
     @State private var draft: Habit
@@ -51,6 +51,13 @@ struct HabitEditorView: View {
                 Text("More important habits are asked first when several are due.")
             }
             Section {
+                Toggle("Keep asking during vacation", isOn: keepOnVacation)
+            } footer: {
+                Text(
+                    "Vacation mode pauses every habit that isn't kept. You can still change this when you start a vacation."
+                )
+            }
+            Section {
                 DisclosureGroup("Advanced") {
                     VStack(alignment: .leading) {
                         Text("Target: \(DayFormat.percent(draft.targetAdherence)) of days")
@@ -91,6 +98,13 @@ struct HabitEditorView: View {
 
     private func explanation(_ text: LocalizedStringKey) -> some View {
         Text(text).font(.footnote).foregroundStyle(.secondary)
+    }
+
+    private var keepOnVacation: Binding<Bool> {
+        Binding(
+            get: { draft.vacationBehavior == .keep },
+            set: { draft.vacationBehavior = $0 ? .keep : .pause }
+        )
     }
 
     /// Keeps the last character typed, so the field holds one emoji; empty clears it.

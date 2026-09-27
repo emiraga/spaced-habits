@@ -12,7 +12,7 @@ import Observation
 @MainActor
 @Observable
 public final class AppModel {
-    public private(set) var truth: Truth
+    public internal(set) var truth: Truth
     public private(set) var projected: Projected
     /// The cards to show now, in priority order.
     public private(set) var questions: [Question] = []
@@ -28,7 +28,7 @@ public final class AppModel {
     /// Built from `truth.settings`, which is validated before it is stored.
     public private(set) var planner: QuestionPlanner
 
-    @ObservationIgnored private let store: TruthStore
+    @ObservationIgnored let store: TruthStore
     @ObservationIgnored private let timeZone: TimeZone
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let baseClock: @Sendable (DayCalendar) -> any Clock
@@ -76,13 +76,28 @@ public final class AppModel {
         try refresh()
     }
 
+    /// Records an answer. A `.delayed` answer also pauses the habit from today (§4.6).
     public func answer(_ question: Question, with value: AnswerValue) throws {
+        try record(question, value, delayReason: .manual)
+    }
+
+    /// "Delay…" on a card: pauses the habit for `days` days starting today, logged as a `.delayed` answer.
+    public func delay(_ question: Question, days: Int, reason: PauseReason) throws {
+        try record(question, .delayed(days: days), delayReason: reason)
+    }
+
+    private func record(_ question: Question, _ value: AnswerValue, delayReason: PauseReason) throws {
         let answer = Answer(
             questionID: question.id, habitID: question.habitID, covers: question.covers, value: value,
             answeredAt: clock.now(), timezone: timeZone.identifier, channel: .app
         )
+        let pause = try Pauses.event(forDelay: answer, reason: delayReason, createdAt: clock.now())
         try store.append(answer)
         truth.answers.append(answer)
+        if let pause {
+            try store.save(pause, at: clock.now())
+            truth.pauses.append(pause)
+        }
         shownQuestions[question.habitID] = nil
         try refresh()
     }
@@ -118,16 +133,26 @@ public final class AppModel {
 
     /// Creates or edits a habit.
     public func save(_ habit: Habit) throws {
+        try save([habit])
+    }
+
+    /// Creates or edits several habits, validating the resulting dependency graph before writing any.
+    func save(_ edited: [Habit]) throws {
         var habits = truth.habits
-        if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-            habits[index] = habit
-        } else {
-            habits.append(habit)
+        for habit in edited {
+            if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                habits[index] = habit
+            } else {
+                habits.append(habit)
+            }
         }
+        try edited.forEach { try $0.validate() }
         try Dependencies.validate(habits)
-        let revision = try store.save(habit, editedAt: clock.now())
+        for habit in edited {
+            let revision = try store.save(habit, editedAt: clock.now())
+            truth.habitRevisions.append(revision)
+        }
         truth.habits = habits
-        truth.habitRevisions.append(revision)
         try refresh()
     }
 
@@ -193,7 +218,7 @@ public final class AppModel {
     // MARK: Planning
 
     /// Re-projects and re-plans; logs newly shown questions to `Truth.questions` (§4.4).
-    private func refresh() throws {
+    func refresh() throws {
         projected = try Projection.rebuild(truth, clock: clock)
         let today = clock.today()
         let unavailable = try Set(Pauses.unavailable(on: today, habits: truth.habits, pauses: truth.pauses).keys)

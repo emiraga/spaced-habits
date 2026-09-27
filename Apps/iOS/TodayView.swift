@@ -8,12 +8,16 @@ struct TodayView: View {
     @Environment(ErrorPresenter.self) private var errors
     @State private var editingDraft: Habit?
     @State private var showingSettings = false
-    @State private var showingDelayNotice = false
+    @State private var showingVacation = false
+    @State private var delaying: Question?
     @State private var answers = 0
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
+                if let vacation = model.currentVacation {
+                    vacationBanner(vacation)
+                }
                 if model.questions.isEmpty {
                     emptyState
                 }
@@ -38,7 +42,9 @@ struct TodayView: View {
             ToolbarItem(placement: .topBarLeading) {
                 Button("Settings", systemImage: "gearshape") { showingSettings = true }
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button("Vacation", systemImage: "beach.umbrella") { showingVacation = true }
+                    .disabled(model.activeHabits.isEmpty)
                 Button("Add habit", systemImage: "plus") { editingDraft = model.newHabitDraft() }
             }
         }
@@ -48,10 +54,13 @@ struct TodayView: View {
         .sheet(isPresented: $showingSettings) {
             NavigationStack { SettingsView() }
         }
-        .alert("Delay", isPresented: $showingDelayNotice) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Delaying a habit is coming soon. Use Later to skip it for now.")
+        .sheet(isPresented: $showingVacation) {
+            NavigationStack { VacationSheet() }
+        }
+        .sheet(item: $delaying) { question in
+            if let habit = model.habit(question.habitID) {
+                NavigationStack { PauseSheet(habit: habit, origin: .card(question), today: model.today) }
+            }
         }
         .sensoryFeedback(.success, trigger: answers)
         .onAppear { LaunchMetrics.firstScreenAppeared() }
@@ -74,12 +83,25 @@ struct TodayView: View {
                         }
                     }
                 },
-                onDelay: { showingDelayNotice = true },
+                onDelay: { delaying = question },
                 onLater: { withAnimation { _ = errors.attempt { try model.later(question) } } }
             )
             .id(question.id)
             .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
         }
+    }
+
+    private func vacationBanner(_ vacation: PauseEvent) -> some View {
+        let today = model.today
+        let text = vacation.start <= today
+            ? "On vacation until \(DayFormat.short(vacation.end, today: today))"
+            : "Vacation \(DayFormat.range(vacation.start, vacation.end, today: today))"
+        return Button { showingVacation = true } label: {
+            Label(text, systemImage: "beach.umbrella")
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        }
+        .padding(.horizontal)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder private var emptyState: some View {
@@ -117,7 +139,8 @@ struct TodayView: View {
                     HabitRow(
                         habit: habit,
                         status: model.todayStatus(of: habit.id),
-                        intervalDays: model.state(of: habit.id).currentIntervalDays
+                        intervalDays: model.state(of: habit.id).currentIntervalDays,
+                        resumes: model.resumeDay(of: habit.id).map { DayFormat.short($0, today: model.today) }
                     )
                 }
                 .buttonStyle(.plain)
@@ -131,6 +154,8 @@ private struct HabitRow: View {
     let habit: Habit
     let status: DayStatus
     let intervalDays: Int
+    /// "Resumes <day>" replaces the ask interval while the habit is paused (§4.6).
+    let resumes: String?
 
     var body: some View {
         HStack(spacing: 12) {
@@ -140,7 +165,7 @@ private struct HabitRow: View {
                 .foregroundStyle(Color(hex: habit.colorHex))
             Text([habit.emoji, habit.name].compactMap(\.self).joined(separator: " "))
             Spacer()
-            Text("~\(intervalDays)d")
+            Text(resumes.map { "Resumes \($0)" } ?? "~\(intervalDays)d")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
             Image(systemName: "chevron.right")
@@ -150,6 +175,8 @@ private struct HabitRow: View {
         .frame(minHeight: 44)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(habit.name), \(status.label), \(DayFormat.askInterval(intervalDays))")
+        .accessibilityLabel(
+            "\(habit.name), \(status.label), \(resumes.map { "resumes \($0)" } ?? DayFormat.askInterval(intervalDays))"
+        )
     }
 }

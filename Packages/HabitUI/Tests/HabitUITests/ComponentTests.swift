@@ -1,6 +1,6 @@
 import Foundation
 import HabitCore
-import HabitUI
+@testable import HabitUI
 import SwiftUI
 import Testing
 
@@ -56,8 +56,28 @@ struct FormattingTests {
     @Test func relativeDayLabels() {
         #expect(DayFormat.short(today, today: today) == "Today")
         #expect(DayFormat.short(today.adding(days: -1), today: today) == "Yesterday")
+        #expect(DayFormat.short(today.adding(days: 1), today: today) == "Tomorrow")
         let older = DayFormat.short(today.adding(days: -2), today: today)
         #expect(older.contains("25"))
+    }
+
+    @Test func rangeCollapsesASingleDay() {
+        #expect(DayFormat.range(today, today, today: today) == "Today")
+        #expect(DayFormat.range(today, today.adding(days: 1), today: today) == "Today – Tomorrow")
+    }
+
+    /// `DayPicker` maps days through noon UTC and back.
+    @Test func pickerDatesRoundTrip() {
+        for offset in [-400, -1, 0, 1, 365] {
+            let day = today.adding(days: offset)
+            #expect(DayFormat.day(fromNoonUTC: DayFormat.noonUTC(day)) == day)
+        }
+    }
+
+    @Test func pauseReasonLabels() {
+        #expect(PauseReason.choices.map(\.label) == ["Delay", "Sick", "Other"])
+        #expect(PauseReason.vacation.label == "Vacation")
+        #expect(PauseReason.other("Travel").label == "Travel")
     }
 
     @Test func askIntervalWording() {

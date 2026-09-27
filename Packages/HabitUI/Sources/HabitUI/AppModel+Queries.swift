@@ -38,8 +38,12 @@ public extension AppModel {
     }
 
     /// When a habit that isn't due today will next be asked (§5.1 empty state). Nil if due or archived.
+    /// A paused habit is asked on the day it resumes (the re-entry check, §4.6).
     func nextCheckIn(of habit: Habit) -> DayKey? {
         guard !habit.isArchived, !dueHabitIDs.contains(habit.id) else { return nil }
+        if let resume = resumeDay(of: habit.id) {
+            return resume
+        }
         return planner.nextCheckIn(habit: habit, state: state(of: habit.id), today: today)
     }
 

@@ -154,7 +154,7 @@ public struct QuestionCard: View {
     // MARK: Pure helpers (tested)
 
     /// None / Some / Most / All → 0 / round(0.35K) / round(0.75K) / K (§5.2).
-    public static func countChips(total: Int) -> [(label: String, value: Int)] {
+    public nonisolated static func countChips(total: Int) -> [(label: String, value: Int)] {
         [
             ("None", 0),
             ("Some", Int((0.35 * Double(total)).rounded())),
@@ -163,7 +163,7 @@ public struct QuestionCard: View {
         ]
     }
 
-    public static func importanceLabel(_ importance: Importance) -> String {
+    public nonisolated static func importanceLabel(_ importance: Importance) -> String {
         switch importance {
         case .low: "low"
         case .normal: "normal"

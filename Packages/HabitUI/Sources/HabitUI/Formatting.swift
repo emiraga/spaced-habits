@@ -27,11 +27,12 @@ public extension Color {
 
 /// Display strings for days and intervals. Presentation only: day boundaries come from `DayCalendar`.
 public enum DayFormat {
-    /// "Today", "Yesterday", else e.g. "Mon 21 Sep".
+    /// "Today", "Yesterday", "Tomorrow", else e.g. "Mon 21 Sep".
     public static func short(_ day: DayKey, today: DayKey) -> String {
         switch day.days(to: today) {
         case 0: "Today"
         case 1: "Yesterday"
+        case -1: "Tomorrow"
         default: noonUTC(day).formatted(style)
         }
     }
@@ -45,10 +46,36 @@ public enum DayFormat {
         value.formatted(.percent.precision(.fractionLength(0)))
     }
 
+    /// "Mon 21 Sep – Wed 23 Sep", or one day.
+    public static func range(_ start: DayKey, _ end: DayKey, today: DayKey) -> String {
+        start == end ? short(start, today: today) : "\(short(start, today: today)) – \(short(end, today: today))"
+    }
+
     /// Noon UTC on the day's civil date, formatted in UTC, so the label is the same in every time zone.
-    private static func noonUTC(_ day: DayKey) -> Date {
+    /// `DayPicker` round-trips through it: a picked civil date is not an instant, so this is not a day
+    /// boundary computation (§3.1).
+    static func noonUTC(_ day: DayKey) -> Date {
         Date(timeIntervalSince1970: TimeInterval(day.dayNumber) * 86400 + 12 * 3600)
     }
 
+    /// The civil date a UTC `DatePicker` selected.
+    static func day(fromNoonUTC date: Date) -> DayKey {
+        DayKey(dayNumber: Int((date.timeIntervalSince1970 / 86400).rounded(.down)))
+    }
+
     private static let style = Date.FormatStyle(timeZone: .gmt).weekday(.abbreviated).day().month(.abbreviated)
+}
+
+public extension PauseReason {
+    /// The reasons the pause sheet offers; `.other` takes free text.
+    static let choices: [PauseReason] = [.manual, .sick, .other("")]
+
+    var label: String {
+        switch self {
+        case .manual: "Delay"
+        case .vacation: "Vacation"
+        case .sick: "Sick"
+        case let .other(text): text.isEmpty ? "Other" : text
+        }
+    }
 }
