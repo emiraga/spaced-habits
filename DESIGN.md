@@ -120,122 +120,20 @@ Rule: **`HabitCore` never imports Foundation-UI, SwiftUI, SwiftData, or HealthKi
 plain values and returns plain values. This is what makes it testable and lets the scheduler be
 swapped or tuned without touching the apps.
 
-### 2.2 Tooling files (initial content)
+### 2.2 Tooling
 
-`project.yml` (sketch — the agent should complete it):
+The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swiftlint.yml`,
+`.pre-commit-config.yaml`, `.xcode-version`) landed in M0 and are the source of truth; see
+D9–D13 for where they deviate from the original sketch. No hosted CI (D13).
 
-```yaml
-name: SpacedHabits
-options:
-  bundleIdPrefix: ga.emira.spacedhabits
-  deploymentTarget:
-    iOS: "17.0"
-    watchOS: "10.0"
-  xcodeVersion: "16.0"
-  createIntermediateGroups: true
-settings:
-  base:
-    SWIFT_VERSION: "6.0"
-    SWIFT_STRICT_CONCURRENCY: complete
-    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
-    ENABLE_USER_SCRIPT_SANDBOXING: YES
-packages:
-  HabitCore:  { path: Packages/HabitCore }
-  HabitStore: { path: Packages/HabitStore }
-  HabitUI:    { path: Packages/HabitUI }
-targets:
-  SpacedHabits:
-    type: application
-    platform: iOS
-    sources: [Apps/iOS]
-    dependencies:
-      - package: HabitCore
-      - package: HabitStore
-      - package: HabitUI
-      - target: SpacedHabitsWidgets
-      - target: SpacedHabitsWatch
-    entitlements:
-      path: Apps/iOS/SpacedHabits.entitlements
-      properties:
-        com.apple.security.application-groups: [group.ga.emira.spacedhabits]
-        com.apple.developer.icloud-services: [CloudKit]
-        com.apple.developer.icloud-container-identifiers: [iCloud.ga.emira.spacedhabits]
-        com.apple.developer.healthkit: true
-    info:
-      path: Apps/iOS/Info.plist
-      properties:
-        NSHealthShareUsageDescription: Spaced Habits reads workouts to auto-complete matching habits.
-  SpacedHabitsWidgets:
-    type: app-extension
-    platform: iOS
-    sources: [Apps/iOSWidgets]
-    dependencies: [{ package: HabitCore }, { package: HabitStore }, { package: HabitUI }]
-    # same app group + iCloud entitlements
-  SpacedHabitsWatch:
-    type: application.watchapp2
-    platform: watchOS
-    sources: [Apps/watchOS]
-    dependencies: [{ package: HabitCore }, { package: HabitStore }, { package: HabitUI }, { target: SpacedHabitsWatchWidgets }]
-  SpacedHabitsWatchWidgets:
-    type: app-extension
-    platform: watchOS
-    sources: [Apps/watchOSWidgets]
-schemes:
-  SpacedHabits:
-    build: { targets: { SpacedHabits: all } }
-    test:  { targets: [HabitCoreTests] }
-```
-
-`Makefile` (targets the agent must keep working):
-
-```makefile
-.PHONY: setup gen build test lint format format-check ci clean
-
-setup:        ## install pinned tools
-	brew bundle
-	pre-commit install
-
-gen:          ## regenerate SpacedHabits.xcodeproj from project.yml
-	xcodegen generate
-
-build: gen
-	set -o pipefail && xcodebuild -project SpacedHabits.xcodeproj -scheme SpacedHabits \
-	  -destination 'generic/platform=iOS Simulator' build | xcbeautify
-
-test:         ## HabitCore package tests run via SwiftPM (fast); app tests via xcodebuild
-	swift test --package-path Packages/HabitCore
-	set -o pipefail && xcodebuild -project SpacedHabits.xcodeproj -scheme SpacedHabits \
-	  -destination "$$(Scripts/simulator-destination.sh)" test | xcbeautify
-
-lint:
-	swiftlint lint --strict
-
-format:
-	swiftformat .
-
-format-check:
-	swiftformat --lint .
-
-ci: gen format-check lint test
-
-clean:
-	rm -rf SpacedHabits.xcodeproj DerivedData .build Packages/*/.build
-```
-
-`.swiftformat` (starting point): `--swiftversion 6`, `--indent 4`, `--maxwidth 120`,
-`--wraparguments before-first`, `--stripunusedargs closure-only`, `--self remove`,
-`--header strip`. Exclude `SpacedHabits.xcodeproj`, `.build`, `DerivedData`.
-
-`.swiftlint.yml` (starting point): `--strict` compatible; enable `opt_in_rules` such as
-`force_unwrapping`, `implicitly_unwrapped_optional`, `explicit_init`, `sorted_imports`,
-`unused_import`, `closure_end_indentation`, `empty_count`, `first_where`, `contains_over_first_not_nil`.
-Disable `line_length` (SwiftFormat owns it) and `todo`. `excluded: [SpacedHabits.xcodeproj, .build, DerivedData]`.
-
-`Brewfile`: `brew "xcodegen"`, `brew "swiftlint"`, `brew "swiftformat"`, `brew "xcbeautify"`, `brew "pre-commit"`.
-
-`.gitignore`: `*.xcodeproj/`, `DerivedData/`, `.build/`, `*.xcuserstate`, `xcuserdata/`, `.DS_Store`.
-
-No hosted CI (D13): `make ci` run locally before every push is the gate.
+Still to add to `project.yml` in later milestones:
+- App Group `group.ga.emira.spacedhabits` entitlement on the app (M2) and widget extension (M6).
+- `SpacedHabitsWidgets` iOS app extension from `Apps/iOSWidgets` (M6).
+- iCloud/CloudKit entitlement `iCloud.ga.emira.spacedhabits` (M7) on app, widgets and watch.
+- `SpacedHabitsWatch` (`application.watchapp2`, `Apps/watchOS`) and `SpacedHabitsWatchWidgets`
+  (`Apps/watchOSWidgets`), embedded in the iOS app (M7).
+- HealthKit entitlement and `NSHealthShareUsageDescription`: "Spaced Habits reads workouts to
+  auto-complete matching habits." (M8).
 
 ---
 
@@ -761,16 +659,7 @@ the next milestone until the checkpoint passes and `make ci` is green. Milestone
 so that a usable app exists from M2 onward and every later milestone adds a feature to a working
 build.
 
-### M0 — Scaffold (½ day)
-
-Deliver: repo layout from §2.1, `project.yml`, `Makefile`, `Brewfile`, `.swiftformat`,
-`.swiftlint.yml`, `.gitignore`, `.xcode-version`, empty `HabitCore` /
-`HabitStore` / `HabitUI` packages with one trivial test each, empty iOS app showing
-"Spaced Habits" and a build number.
-
-Checkpoint:
-- `make setup && make gen && make ci` passes locally with zero warnings.
-- App launches on an iOS simulator.
+### M0 — Scaffold — done (2026-09-27)
 
 ### M1 — Engine (2–3 days)
 
@@ -996,3 +885,4 @@ Changelog:
 - 2026-09-27 — M0 scaffold landed; D9–D12 recorded; logging subsystem is
   `ga.emira.spacedhabits`.
 - 2026-09-27 — hosted CI dropped (D13).
+- 2026-09-27 — removed implemented M0 instructions (§2.2 sketches, M0 deliverables).
