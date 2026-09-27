@@ -51,19 +51,25 @@ struct HabitEditorView: View {
                 Text("More important habits are asked first when several are due.")
             }
             Section {
-                VStack(alignment: .leading) {
-                    Text("Target: \(DayFormat.percent(draft.targetAdherence)) of days")
-                    Slider(value: $draft.targetAdherence, in: 0.1 ... 1, step: 0.05)
+                DisclosureGroup("Advanced") {
+                    VStack(alignment: .leading) {
+                        Text("Target: \(DayFormat.percent(draft.targetAdherence)) of days")
+                        Slider(value: $draft.targetAdherence, in: 0.1 ... 1, step: 0.05)
+                        explanation(
+                            "How often you aim to do this habit. While you're below the target, you'll get a check-in every day. Once you're above it, check-ins become less frequent."
+                        )
+                    }
+                    VStack(alignment: .leading) {
+                        Stepper(
+                            "Look back up to \(draft.maxRecallGapDays) days",
+                            value: $draft.maxRecallGapDays,
+                            in: 1 ... 14
+                        )
+                        explanation(
+                            "If you haven't answered for a while, the next check-in asks about at most this many recent days. Earlier days aren't asked about; they're estimated from your history."
+                        )
+                    }
                 }
-                Stepper(
-                    "Ask about at most \(draft.maxRecallGapDays) days",
-                    value: $draft.maxRecallGapDays,
-                    in: 1 ... 14
-                )
-            } footer: {
-                Text(
-                    "Below the target you'll be asked daily. After a gap, questions cover at most this many days; earlier days are estimated."
-                )
             }
         }
         .navigationTitle(isNew ? "New habit" : "Edit habit")
@@ -81,6 +87,10 @@ struct HabitEditorView: View {
             }
         }
         .errorAlert(errors)
+    }
+
+    private func explanation(_ text: LocalizedStringKey) -> some View {
+        Text(text).font(.footnote).foregroundStyle(.secondary)
     }
 
     /// Keeps the last character typed, so the field holds one emoji; empty clears it.

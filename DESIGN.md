@@ -475,7 +475,8 @@ These are the acceptance tests for the engine. They must pass before UI work beg
    `maxIntervalDays` since the last covered day).
 2. **Habit detail.** Header with current ask interval ("Asking every ~9 days"), adherence 30d,
    Resumes-on banner if paused, charts (§10), history calendar, dependency list, edit button.
-3. **Habit editor.** Name, emoji, color, importance, target adherence, max recall gap, vacation
+3. **Habit editor.** Name, emoji, color, importance, target adherence and max recall gap (both in a
+   collapsed "Advanced" group, each with a plain-language explanation), vacation
    behavior, depends-on picker (with cycle rejection), cluster, Health binding, archive.
 4. **Pause sheet.** Presented from a question card ("Delay…") or habit detail. Duration presets
    (1, 3, 7, 14 days, custom), start date (default today; can be backdated), reason.
