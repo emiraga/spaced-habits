@@ -26,7 +26,6 @@ or two. The goal is an app that quietly gets out of your way.
   notification, all in sync.
 - **Siri and Shortcuts.** "Log gym in Spaced Habits", "Delay gym in Spaced Habits", or "Review
   habits in Spaced Habits". Hands-free, or wired into your own automations.
-- **Auto-complete from Apple Health.** Logged a workout? The gym habit is done. No question asked.
 - **Reminders on your terms.** A few times a day or every few days, quiet hours respected, and
   only when there's actually something to answer.
 - **Charts that mean something.** Per habit: check-in interval over time and adherence trends.
@@ -35,9 +34,16 @@ or two. The goal is an app that quietly gets out of your way.
 - **Your data, always.** Every habit and edit, every question asked, and every answer and pause is
   logged and exportable to CSV and JSON at any time.
 
-## Coming later: ideas from *Atomic Habits*
+## Coming later
 
-These are under review and not yet in the app. Each is optional and independent.
+These are not yet in the app. Each is optional and independent.
+
+- **Auto-complete from Apple Health.** Logged a workout? The gym habit is done. No question asked.
+  Deferred because it needs Health access permissions.
+
+### Ideas from *Atomic Habits*
+
+Under review:
 
 - **Habit stacking.** Attach a new habit to something you already do ("after coffee, meditate")
   and answer a whole routine in one flow.

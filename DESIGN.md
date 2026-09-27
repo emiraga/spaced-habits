@@ -51,6 +51,8 @@ interval is itself the progress metric.
 - Multiple check-ins per day for one habit.
 - AI/LLM features.
 - Server backend of our own. CloudKit only.
+- HealthKit integration (§9). Deferred as optional post-v1 work because it needs the Health
+  entitlement and user permission; see O7.
 
 ---
 
@@ -66,7 +68,7 @@ interval is itself the progress metric.
 | Sync | SwiftData + CloudKit private database | Plus WatchConnectivity for low-latency phone↔watch |
 | Widgets | WidgetKit + App Intents (interactive) | Home, Lock Screen, StandBy, watch Smart Stack |
 | Notifications | UserNotifications with action categories | Answer from the notification |
-| Health | HealthKit (read-only) | Auto-answer physical habits |
+| Health | HealthKit (read-only) | Auto-answer physical habits. **Deferred, optional post-v1** (§9, O7) |
 | Charts | Swift Charts | |
 | Tests | **Swift Testing** (`import Testing`) for new code; XCTest only where required (UI tests) | |
 | Project generation | **XcodeGen** (`project.yml`) | `.xcodeproj` is generated and git-ignored |
@@ -161,7 +163,7 @@ the watch app and compiles the same `Apps/Widgets` sources as the iOS extension.
 
 Still to add to `project.yml` in later milestones:
 - HealthKit entitlement and `NSHealthShareUsageDescription`: "Spaced Habits reads workouts to
-  auto-complete matching habits." (M8).
+  auto-complete matching habits." (M8, deferred; see O7).
 
 ---
 
@@ -653,6 +655,11 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 
 ## 9. HealthKit
 
+**Deferred (optional, post-v1).** The domain side (`HealthBinding`, `HealthObservation`, the
+`.health` day source in projection) already exists in `HabitCore`; the HealthKit integration below
+(entitlement, permission flow, queries, binding editor) is not built. Until it is, the editor shows no
+Health binding and Settings shows no Health permissions row. See O7.
+
 - Optional per habit. `HealthBinding` cases: `.workout(minMinutes:)`, `.steps(min:)`,
   `.sleep(minHours:)`, `.mindfulMinutes(min:)`. Read-only.
 - A background `HKObserverQuery` (and a foreground fetch) turns matching samples into
@@ -868,7 +875,9 @@ Checkpoint:
 - Install on a second iPhone with the same iCloud account; habits and history appear; answer on
   one, see it on the other; no duplicates in `answers.csv`.
 
-### M8 — HealthKit (1 day)
+### M8 — HealthKit — deferred (optional, post-v1)
+
+Skipped for now: it needs the HealthKit entitlement and Health permissions. Go straight to M9. See O7.
 
 Deliver: Health binding editor, permission flow, observer + foreground fetch, `HealthObservation`
 truth events, `.health` day source.
@@ -909,7 +918,7 @@ Checkpoint:
 - TestFlight build installs on iPhone + Watch from the same build.
 
 **Rough total:** ~3–4 weeks of focused work. M0–M2 is the MVP you can live with; M3–M4 make it
-the app described in §1; M5–M8 make it frictionless; M9–M11 make it shippable.
+the app described in §1; M5–M7 make it frictionless (M8 HealthKit is deferred); M9–M11 make it shippable.
 
 ---
 
@@ -964,4 +973,6 @@ Decide during the relevant milestone, then move the answer into the section it g
 - O6. The M7 two-iPhone check (§13) is unverified: no second device was available. Run it once one
   is (a TestFlight tester's phone would do): habits and history appear, an answer on one shows on
   the other, no duplicates in `answers.csv`.
+- O7. HealthKit (§9, M8) is deferred as optional post-v1 work because it needs the Health entitlement
+  and user permission. Decide after M11 whether to build it; if so, run the M8 checkpoint as written.
 
