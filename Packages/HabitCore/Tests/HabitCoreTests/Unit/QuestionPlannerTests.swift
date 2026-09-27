@@ -164,6 +164,33 @@ struct QuestionPlannerDueTests {
         #expect(interval <= SpotCheck.minAskIntervalDays)
         #expect(try planner(spotCheckRate: 1).dueReason(habit: steady, state: shortInterval, today: today) == nil)
     }
+
+    @Test func nextCheckInFollowsTheAskInterval() throws {
+        let steady = habit()
+        var state = steadyState(for: steady, coveredDaysAgo: 0)
+        state.currentIntervalDays = 9
+        #expect(try planner().nextCheckIn(habit: steady, state: state, today: today) == today.adding(days: 9))
+    }
+
+    @Test func nextCheckInIsCappedByTheCeiling() throws {
+        let steady = habit()
+        var state = steadyState(for: steady, coveredDaysAgo: 10)
+        state.currentIntervalDays = 9
+        // Covered 10 days ago, ceiling 14: due in 4 days, before the interval runs out.
+        #expect(try planner().nextCheckIn(habit: steady, state: state, today: today) == today.adding(days: 4))
+    }
+
+    @Test func nextCheckInIsNeverBeforeTomorrow() throws {
+        let fresh = habit(createdDaysAgo: 0)
+        #expect(try planner().nextCheckIn(habit: fresh, state: .initial(habitID: fresh.id), today: today)
+            == today.adding(days: 1))
+        let overdue = habit()
+        #expect(try planner().nextCheckIn(
+            habit: overdue,
+            state: steadyState(for: overdue, coveredDaysAgo: 20),
+            today: today
+        ) == today.adding(days: 1))
+    }
 }
 
 struct QuestionPlannerShapeTests {

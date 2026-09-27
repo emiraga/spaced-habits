@@ -77,6 +77,16 @@ public struct QuestionPlanner: Sendable {
         return SpotCheck.isSpotCheck(habitID: habit.id, day: today, rate: settings.spotCheckRate) ? .spotCheck : nil
     }
 
+    /// The first day after today on which decay (the ask interval, §4.1) or the `maxIntervalDays` ceiling
+    /// makes the habit due, for "Next check-in" (§5.1). Ignores spot checks, pauses and gates, which can
+    /// only move a check-in earlier or hold it back; `state` is as of the end of today.
+    public func nextCheckIn(habit: Habit, state: SchedulerState, today: DayKey) -> DayKey {
+        let lastCovered = state.lastCoveredDay ?? habit.createdDay.adding(days: -1)
+        let byDecay = today.adding(days: state.currentIntervalDays)
+        let byCeiling = lastCovered.adding(days: settings.maxIntervalDays)
+        return max(today.adding(days: 1), min(byDecay, byCeiling))
+    }
+
     // MARK: Question construction (§4.3)
 
     /// Days since the last covered day; a habit never covered counts from its `createdDay` inclusive.
