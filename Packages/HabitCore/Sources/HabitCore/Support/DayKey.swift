@@ -140,3 +140,29 @@ extension DayKey: Codable {
         try container.encode(description)
     }
 }
+
+/// Lets `[DayKey: V]` encode as a JSON object keyed by `yyyy-MM-dd` instead of a flat key/value array.
+extension DayKey: CodingKeyRepresentable {
+    public var codingKey: any CodingKey {
+        AnyDayCodingKey(stringValue: description)
+    }
+
+    public init?(codingKey: some CodingKey) {
+        self.init(codingKey.stringValue)
+    }
+}
+
+private struct AnyDayCodingKey: CodingKey {
+    let stringValue: String
+    var intValue: Int? {
+        nil
+    }
+
+    init(stringValue: String) {
+        self.stringValue = stringValue
+    }
+
+    init?(intValue _: Int) {
+        nil
+    }
+}

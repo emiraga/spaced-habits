@@ -92,7 +92,7 @@ SpacedHabits/
 ├── Packages/
 │   ├── HabitCore/              # PURE logic. No SwiftUI/UIKit/SwiftData imports. Fully tested.
 │   │   ├── Sources/HabitCore/
-│   │   │   ├── Model/          # Habit, Question, Answer, PauseEvent, DayRecord
+│   │   │   ├── Model/          # Habit, Question, Events, DayRecord, Settings
 │   │   │   ├── Scheduler/      # AdherenceModel, QuestionPlanner, SessionBudget, SpotCheck
 │   │   │   ├── Projection/     # EventLog -> DayRecords (materialization)
 │   │   │   ├── Dependencies/   # DAG validation, gating, conditional metrics
@@ -170,146 +170,28 @@ earliest changed day is an optimization for later.
 
 ### 3.3 Types
 
-```swift
-struct Habit: Identifiable, Codable, Sendable {
-    let id: UUID
-    var name: String
-    var emoji: String?
-    var colorHex: String
-    var createdAt: Date
-    var archivedAt: Date?
-    var kind: HabitKind                 // .boolean (v1). Reserved: .quantity(unit:target:)
-    var importance: Importance          // .low, .normal, .high — weights question priority
-    var targetAdherence: Double         // 0...1, default 0.8. Below this the scheduler asks daily.
-    var maxRecallGapDays: Int           // default 7. Questions never cover more than this.
-    var vacationBehavior: VacationBehavior  // .pause (default) | .keep — persisted, remembered
-    var dependencies: [Dependency]      // parent edges. Parent IDs must remain a DAG (all modes).
-    var clusterID: UUID?                // optional grouping ("Morning routine", "Gym")
-    var healthBinding: HealthBinding?   // e.g. .workout(minMinutes: 20)
-    var notes: String?
+Implemented in `HabitCore/Model/` (M1) as `Sendable`, `Codable`, `Hashable` value types; the code is
+the reference for fields and defaults:
 
-    /// Parents that gate this habit (§4.5). The only mode v1 creates.
-    var gateParentIDs: [UUID] { dependencies.filter { $0.mode == .gate }.map(\.parentID) }
-    /// All parents regardless of mode — used for DAG validation only.
-    var allParentIDs: [UUID] { dependencies.map(\.parentID) }
-}
+- `Habit.swift`: `Habit` (+ `HabitKind`, `Importance`, `VacationBehavior`, `HealthBinding`),
+  `Dependency` / `DependencyMode` (D8), `Cluster`.
+- `Question.swift`: `Question`, `QuestionShape` (`.singleDay` / `.perDay(days:)` / `.count(total:)`),
+  `ParentContext`.
+- `Events.swift`: truth events `Answer` / `AnswerValue` / `Channel`, `PauseEvent` / `PauseReason`,
+  `HealthObservation`.
+- `DayRecord.swift`: derived `DayRecord` (with `conditionalDenominatorExcluded`, §4.5), `DaySource`
+  (`feedsModel` encodes D4), `SchedulerState`.
+- `Settings.swift`: `Settings` (`.default` holds the tunables used throughout §4),
+  `NotificationSettings`, `TimeOfDay`, `QuietHours` (D16).
 
-/// One edge from a habit to a parent habit.
-struct Dependency: Codable, Sendable, Hashable {
-    let parentID: UUID
-    var mode: DependencyMode
-}
+Rules that still bind new code:
 
-/// How a parent relates to its child. v1 creates `.gate` only; `.sequence` is reserved for
-/// habit stacking (see ATOMIC_HABITS_IDEAS.md F2) and must round-trip through store, sync and
-/// export without the planner or projection acting on it.
-enum DependencyMode: String, Codable, Sendable {
-    case gate       // child is measured as P(child | parent) and not asked while parent fails
-    case sequence   // child merely follows parent in a routine; no gating, no conditional metric
-}
-
-enum VacationBehavior: String, Codable { case pause, keep }
-enum Importance: Int, Codable { case low = 1, normal = 2, high = 3 }
-
-struct Cluster: Identifiable, Codable, Sendable { let id: UUID; var name: String; var colorHex: String }
-
-/// One question presented to the user. Created by the planner, answered by the user.
-struct Question: Identifiable, Codable, Sendable {
-    let id: UUID
-    let habitID: UUID
-    let covers: ClosedRange<DayKey>     // the days this question is about (≤ maxRecallGapDays)
-    let shape: QuestionShape
-    let createdAt: Date
-    var presentedAt: Date?
-    var dismissedAt: Date?              // "Later" — will be re-planned next session
-    /// For dependent habits: how many days in `covers` the parent(s) were done.
-    var parentContext: ParentContext?
-}
-
-enum QuestionShape: Codable, Sendable {
-    case singleDay                       // "Did you do X today?"           gap == 1
-    case perDay(days: [DayKey])          // toggles per day                  gap 2...3
-    case count(of: Int)                  // stepper "N of K days"            gap 4...maxRecallGap
-}
-
-struct Answer: Identifiable, Codable, Sendable {
-    let id: UUID
-    let questionID: UUID
-    let habitID: UUID
-    let covers: ClosedRange<DayKey>
-    let value: AnswerValue
-    let answeredAt: Date
-    let timezone: String
-    let channel: Channel                 // .app, .widget, .watch, .notification, .health
-}
-
-enum AnswerValue: Codable, Sendable {
-    case yes, no                         // singleDay
-    case perDay([DayKey: Bool])          // perDay
-    case count(done: Int, of: Int)       // count
-    case dontRemember                    // recorded; days become .unknown
-    case delayed(days: Int)              // creates a PauseEvent; no day data
-}
-
-struct PauseEvent: Identifiable, Codable, Sendable {
-    let id: UUID
-    var habitIDs: [UUID]
-    var start: DayKey                    // inclusive; may be in the past (backdated)
-    var end: DayKey                      // inclusive; edited to extend or end early
-    var reason: PauseReason              // .manual, .vacation, .sick, .other(String)
-    let createdAt: Date
-    var quietAllNotifications: Bool      // vacation only
-}
-
-/// Derived. One per (habit, day). Rebuilt from truth.
-struct DayRecord: Codable, Sendable, Hashable {
-    let habitID: UUID
-    let day: DayKey
-    let value: Double                    // expected value in 0...1
-    let source: DaySource
-    let confidence: Double               // 1.0 for observed; posterior-based for inferred
-    let questionID: UUID?
-}
-
-enum DaySource: String, Codable, Sendable {
-    case observed      // user answered about this specific day (singleDay / perDay)
-    case aggregated    // user answered "N of K"; value = N/K spread across the window
-    case health        // auto-filled from HealthKit
-    case inferred      // no answer covers this day; value = model posterior mean
-    case unknown       // "don't remember" or beyond recall cap AND model too uncertain
-    case paused        // inside a PauseEvent for this habit
-    case blocked       // a parent habit was paused; this habit is moot
-    case notYetDue     // future / today-before-cutoff placeholder (display only)
-}
-
-struct SchedulerState: Codable, Sendable {
-    let habitID: UUID
-    var alpha: Double                    // Beta posterior pseudo-count for "did it"
-    var beta: Double                     // pseudo-count for "didn't"
-    var lastCoveredDay: DayKey?          // last day any answer covers
-    var lastAskedDay: DayKey?
-    var currentIntervalDays: Int         // derived, for display/charts ("ask interval")
-    var forcedReentryCheck: Bool         // set when a pause ends
-}
-
-struct Settings: Codable, Sendable {
-    var sessionBudget: Int               // default 3
-    var dayStartHour: Int                // default 4
-    var spotCheckRate: Double            // default 0.05 per habit-day when interval > 7
-    var uncertaintyThreshold: Double     // default 0.15
-    var decayPerDay: Double              // default 0.92
-    var maxIntervalDays: Int             // default 30 — never go longer without asking
-    var notifications: NotificationSettings
-}
-
-struct NotificationSettings: Codable, Sendable {
-    enum Cadence: Codable { case timesPerDay([DateComponents]); case everyNDays(Int, at: DateComponents) }
-    var cadence: Cadence
-    var quietHours: ClosedRange<Int>?    // e.g. 22...7
-    var nudgeAfterSilentDays: Int?       // "you haven't reviewed in N days"
-    var onlyWhenQuestionsDue: Bool       // default true
-}
-```
+- Planner, projection and UI read parents via `habit.gateParentIDs`; `allParentIDs` is for
+  `Dependencies.validate` only.
+- Truth arriving from outside the engine (widget, watch, notification, import) goes through the
+  type's `validate()` before it is stored; decoding `TimeOfDay` / `QuietHours` already validates.
+- JSON uses `DayKey` strings (`yyyy-MM-dd`), including as dictionary keys (`[DayKey: Bool]` is an
+  object); `ClosedRange<DayKey>` is `[lower, upper]`.
 
 ---
 
@@ -373,7 +255,7 @@ coverDays = min(gapDays, habit.maxRecallGapDays)
 covers = (today - coverDays + 1) ... today
 shape = coverDays == 1 ? .singleDay
       : coverDays <= 3 ? .perDay
-      : .count(of: coverDays)
+      : .count(total: coverDays)
 ```
 
 Days in the gap **before** `covers` (when `gapDays > maxRecallGapDays`) are not asked about.
@@ -421,11 +303,11 @@ produces noise. Multiple gate parents: all must pass (AND). Keep it AND in v1; d
 
 - `parentContext.parentDoneDays = round(Σ A.dayRecords[day].value for day in covers)`.
 - The `count` question reads: *"You did A on 4 of 6 days. On how many of those 4 did you do B?"*
-  `of` = `parentDoneDays`, not `coverDays`.
+  `total` = `parentDoneDays`, not `coverDays`.
 - Per-day shape: only show toggles for days where `A.value ≥ 0.5`.
 - Projection: on days where `A.value == 0` (observed), `B` gets `source = .observed, value = 0`
   with a flag `conditionalDenominatorExcluded = true` so charts can compute both `P(B)` and
-  `P(B|A)`. (Add this flag to `DayRecord`; it defaults to false.)
+  `P(B|A)`.
 
 **Pause propagation.** If gate-parent `A` is paused on a day, `B`'s DayRecord is `.blocked` (not
 `.paused`), so the user can distinguish "I paused protein" from "protein was moot because gym was
@@ -666,9 +548,9 @@ build.
 
 ### M1 — Engine (2–3 days)
 
-Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`).
+Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`), `Model/` (all types in §3.3).
 
-Deliver in `HabitCore`: all types in §3.3, `AdherenceModel`,
+Deliver in `HabitCore`: `AdherenceModel`,
 `QuestionPlanner` (due rules, shapes, budget, prioritization, spot checks), `Dependencies`
 (DAG validation, gating, conditional context), `Pauses` (freeze, re-entry, backdating),
 `Projection.rebuild`, and the simulation harness (§4.8). Add a tiny `Scripts/simulate.swift`
@@ -710,8 +592,7 @@ Checkpoint:
 
 ### M4 — Dependencies and clusters (1–2 days)
 
-Deliver: `Dependency` / `DependencyMode` types and `gateParentIDs` / `allParentIDs` on `Habit`
-(if not already landed in M1), depends-on picker with cycle rejection (creates `.gate` edges;
+Deliver: depends-on picker with cycle rejection (creates `.gate` edges;
 mode is not exposed), cluster editor, gating in the planner, parent context line on cards,
 conditional per-day toggles, `.blocked` propagation, `P(B|A)` in the projection. All dependency
 reads in planner, projection and UI go through `gateParentIDs`; `allParentIDs` is used only by
@@ -876,6 +757,17 @@ Decided:
   hash of `(habit.id, day)`, not by a fresh random draw on each planner run. A per-run draw would
   make the effective rate grow with how often the app is opened and let phone, widget and watch
   disagree. Trade-off: spot-check days are predictable in principle, which is irrelevant here.
+- D15 (2026-09-27, M1). `Habit` stores `createdDay: DayKey`, fixed at creation by `DayCalendar`.
+  §4.3/§4.7 start a habit's history there instead of re-deriving a day from `createdAt`, which
+  would move if the user later changes time zone or day-start hour.
+- D16 (2026-09-27, M1). `NotificationSettings` uses `TimeOfDay(hour, minute)` instead of
+  `DateComponents` (no calendar/time-zone baggage, trivially `Codable`), and
+  `quietHours: QuietHours(startHour, endHour)` (half-open, wraps past midnight) instead of
+  `ClosedRange<Int>`: `22...7` traps at runtime.
+- D17 (2026-09-27, M1). Case and label renames to satisfy SwiftLint `identifier_name` rather than
+  allowlisting short names: `AnswerValue.yes/.no` → `.done/.notDone`, `count(done:of:)` →
+  `count(done:total:)`, `QuestionShape.count(of:)` → `.count(total:)`, `Cadence.everyNDays(_:at:)` →
+  `everyNDays(_:time:)`. User-facing copy still says Yes / No.
 
 Open (decide during the relevant milestone and record here):
 - O1. Should aggregated answers be spread evenly (`value = N/K` per day) or placed on the days
