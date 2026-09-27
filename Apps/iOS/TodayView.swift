@@ -100,8 +100,8 @@ struct TodayView: View {
     private func vacationBanner(_ vacation: PauseEvent) -> some View {
         let today = model.today
         let text = vacation.start <= today
-            ? "On vacation until \(DayFormat.short(vacation.end, today: today))"
-            : "Vacation \(DayFormat.range(vacation.start, vacation.end, today: today))"
+            ? String(localized: "On vacation until \(DayFormat.short(vacation.end, today: today))")
+            : String(localized: "Vacation \(DayFormat.range(vacation.start, vacation.end, today: today))")
         return Button { showingVacation = true } label: {
             Label(text, systemImage: "beach.umbrella")
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -140,7 +140,8 @@ struct TodayView: View {
         let groups = model.habitsByCluster
         return ForEach(groups, id: \.cluster?.id) { group in
             habitGroup(
-                title: group.cluster?.name ?? (groups.count > 1 ? "Other" : "Habits"),
+                title: group.cluster?
+                    .name ?? (groups.count > 1 ? String(localized: "Other") : String(localized: "Habits")),
                 habits: group.habits
             )
         }

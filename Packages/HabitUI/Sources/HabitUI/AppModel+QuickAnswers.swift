@@ -14,10 +14,13 @@ public enum AnswerRefusal: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .habitGone: "That habit no longer exists."
-        case let .alreadyCovered(day): "Already answered through \(day)."
-        case .notSingleDay: "This question needs the app to answer."
-        case .unavailable: "That habit is paused today."
+        case .habitGone: String(localized: "That habit no longer exists.", bundle: .module)
+        case let .alreadyCovered(day): String(
+                localized: "Already answered through \(day.description).",
+                bundle: .module
+            )
+        case .notSingleDay: String(localized: "This question needs the app to answer.", bundle: .module)
+        case .unavailable: String(localized: "That habit is paused today.", bundle: .module)
         }
     }
 }

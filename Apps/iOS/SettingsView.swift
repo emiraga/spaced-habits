@@ -77,7 +77,7 @@ struct SettingsView: View {
             LabeledContent("Account", value: sync.account.label)
             LabeledContent(
                 "Last merge",
-                value: sync.lastMerge?.formatted(date: .abbreviated, time: .standard) ?? "Not yet"
+                value: sync.lastMerge?.formatted(date: .abbreviated, time: .standard) ?? String(localized: "Not yet")
             )
             // Without an account every setup fails; the account row already says why.
             if sync.account == .available, let error = sync.lastError {

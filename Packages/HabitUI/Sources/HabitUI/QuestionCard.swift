@@ -81,7 +81,7 @@ public struct QuestionCard: View {
             Text(habit.displayName)
                 .font(.headline)
             Spacer()
-            Text("\(Self.importanceLabel(habit.importance)) · ~\(intervalDays)d")
+            Text("\(Self.importanceLabel(habit.importance)) · ~\(intervalDays)d", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .accessibilityLabel(DayFormat.askInterval(intervalDays))
@@ -96,15 +96,15 @@ public struct QuestionCard: View {
         switch question.shape {
         case .singleDay:
             HStack {
-                primaryButton("Yes") { onAnswer(.done) }
-                primaryButton("No", prominent: false) { onAnswer(.notDone) }
+                primaryButton(String(localized: "Yes", bundle: .module)) { onAnswer(.done) }
+                primaryButton(String(localized: "No", bundle: .module), prominent: false) { onAnswer(.notDone) }
             }
         case let .perDay(days):
             ForEach(days, id: \.self) { day in
                 Toggle(DayFormat.short(day, today: today), isOn: binding(for: day))
                     .frame(minHeight: 44)
             }
-            primaryButton("Save") { onAnswer(.perDay(perDay)) }
+            primaryButton(String(localized: "Save", bundle: .module)) { onAnswer(.perDay(perDay)) }
         case let .count(total):
             countControls(total: total)
         }
@@ -113,7 +113,7 @@ public struct QuestionCard: View {
     private func countControls(total: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Stepper(value: $count, in: 0 ... total) {
-                Text("\(count) of \(total) days")
+                Text("\(count) of \(total) days", bundle: .module)
                     .font(.body.monospacedDigit())
             }
             .frame(minHeight: 44)
@@ -124,7 +124,7 @@ public struct QuestionCard: View {
                         .tint(count == chip.value ? Color(hex: habit.colorHex) : .secondary)
                 }
             }
-            primaryButton("Save") { onAnswer(.count(done: count, total: total)) }
+            primaryButton(String(localized: "Save", bundle: .module)) { onAnswer(.count(done: count, total: total)) }
         }
     }
 
@@ -140,10 +140,10 @@ public struct QuestionCard: View {
     }
 
     @ViewBuilder private var footerButtons: some View {
-        Button("Don't remember") { onAnswer(.dontRemember) }
+        Button(String(localized: "Don't remember", bundle: .module)) { onAnswer(.dontRemember) }
             .lineLimit(1)
-        Button("Delay…", action: onDelay)
-        Button("Later", action: onLater)
+        Button(String(localized: "Delay…", bundle: .module), action: onDelay)
+        Button(String(localized: "Later", bundle: .module), action: onLater)
     }
 
     @ViewBuilder
@@ -169,10 +169,18 @@ public struct QuestionCard: View {
     public nonisolated static func prompt(for question: Question) -> String {
         let gated = question.parentContext != nil
         switch question.shape {
-        case .singleDay: return "Done today?"
-        case .perDay: return gated ? "Which of those days?" : "Which of these days?"
-        case .count(1) where gated: return "Done on that day?"
-        case let .count(total): return gated ? "On how many of those \(total)?" : "How many of the last \(total) days?"
+        case .singleDay:
+            return String(localized: "Done today?", bundle: .module)
+        case .perDay:
+            return gated
+                ? String(localized: "Which of those days?", bundle: .module)
+                : String(localized: "Which of these days?", bundle: .module)
+        case .count(1) where gated:
+            return String(localized: "Done on that day?", bundle: .module)
+        case let .count(total):
+            return gated
+                ? String(localized: "On how many of those \(total)?", bundle: .module)
+                : String(localized: "How many of the last \(total) days?", bundle: .module)
         }
     }
 
@@ -182,30 +190,35 @@ public struct QuestionCard: View {
         context: ParentContext,
         coverDays: Int
     ) -> String {
-        let parents = parentNames.isEmpty ? "the habits this depends on" : parentNames.formatted(.list(type: .and))
+        let parents = parentNames.isEmpty
+            ? String(localized: "the habits this depends on", bundle: .module)
+            : parentNames.formatted(.list(type: .and))
         if coverDays == 1 {
-            return "You did \(parents) today."
+            return String(localized: "You did \(parents) today.", bundle: .module)
         }
         return context.parentDoneDays == coverDays
-            ? "You did \(parents) on all of the last \(coverDays) days."
-            : "You did \(parents) on \(context.parentDoneDays) of the last \(coverDays) days."
+            ? String(localized: "You did \(parents) on all of the last \(coverDays) days.", bundle: .module)
+            : String(
+                localized: "You did \(parents) on \(context.parentDoneDays) of the last \(coverDays) days.",
+                bundle: .module
+            )
     }
 
     /// None / Some / Most / All → 0 / round(0.35K) / round(0.75K) / K (§5.2).
     public nonisolated static func countChips(total: Int) -> [(label: String, value: Int)] {
         [
-            ("None", 0),
-            ("Some", Int((0.35 * Double(total)).rounded())),
-            ("Most", Int((0.75 * Double(total)).rounded())),
-            ("All", total),
+            (String(localized: "None", bundle: .module), 0),
+            (String(localized: "Some", bundle: .module), Int((0.35 * Double(total)).rounded())),
+            (String(localized: "Most", bundle: .module), Int((0.75 * Double(total)).rounded())),
+            (String(localized: "All", bundle: .module), total),
         ]
     }
 
     public nonisolated static func importanceLabel(_ importance: Importance) -> String {
         switch importance {
-        case .low: "low"
-        case .normal: "normal"
-        case .high: "high"
+        case .low: String(localized: "low", bundle: .module)
+        case .normal: String(localized: "normal", bundle: .module)
+        case .high: String(localized: "high", bundle: .module)
         }
     }
 }

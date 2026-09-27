@@ -1,4 +1,4 @@
-.PHONY: setup gen build test test-packages test-app test-ui lint format format-check ci clean
+.PHONY: setup gen build test test-packages test-app test-ui lint format format-check strings ci clean
 
 PACKAGES := HabitCore HabitStore HabitUI
 XCODEBUILD := set -o pipefail && xcodebuild -project SpacedHabits.xcodeproj -scheme SpacedHabits
@@ -37,6 +37,9 @@ format:
 
 format-check:
 	swiftformat --lint .
+
+strings: gen  ## fill every Localizable.xcstrings (en base) with the strings the sources use
+	xcodebuild -exportLocalizations -project SpacedHabits.xcodeproj -localizationPath "$$(mktemp -d)" -exportLanguage en | tail -1
 
 ci: gen format-check lint test test-ui
 

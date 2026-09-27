@@ -1,0 +1,56 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%lld more" : {
+
+    },
+    "Add habits on your iPhone." : {
+
+    },
+    "Delay" : {
+
+    },
+    "Habits" : {
+
+    },
+    "Next check-in: %@" : {
+
+    },
+    "Next: %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Next: %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Nothing to ask" : {
+
+    },
+    "Resumes %@" : {
+
+    },
+    "Spaced Habits couldn't open its data" : {
+
+    },
+    "This habit no longer exists." : {
+
+    },
+    "Today" : {
+
+    }
+  },
+  "version" : "1.0"
+}

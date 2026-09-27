@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "HabitCore",
+    defaultLocalization: "en",
     platforms: [.iOS(.v17), .watchOS(.v10), .macOS(.v14)],
     products: [
         .library(name: "HabitCore", targets: ["HabitCore"]),
@@ -14,6 +15,8 @@ let package = Package(
     targets: [
         .target(
             name: "HabitCore",
+            // Localizable.xcstrings: import errors (§13 M11).
+            resources: [.process("Resources")],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         // §4.8 synthetic users driving the engine; shared by the tests and `simulate`.

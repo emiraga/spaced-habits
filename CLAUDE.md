@@ -27,6 +27,7 @@ make test-ui       # XCUITest smoke flows (~35 s); run when touching app screens
 make lint          # swiftlint --strict
 make format        # swiftformat . (run this, don't hand-format)
 make format-check  # what `make ci` runs
+make strings       # sync every Localizable.xcstrings with the sources (after changing UI text)
 make ci            # gen + format-check + lint + test + test-ui — must pass before push
 ```
 
@@ -45,6 +46,8 @@ packages (`unknown argument: '-target-arch-variant'`). The Makefile already uses
 - Swift 6 language mode, strict concurrency, warnings are errors. Value types are `Sendable`;
   view models are `@MainActor`. No `@unchecked Sendable` without a justifying comment.
 - No force unwraps or `try!` outside tests. No `print`; use `os.Logger`.
+- User-facing text is localizable (DESIGN.md §2.2): `String(localized:)` for strings built in code, and
+  `bundle: .module` inside packages.
 - New tests use Swift Testing (`import Testing`, `@Test`, `#expect`). Every `HabitCore` change
   ships with tests; the §4.8 simulations must keep passing.
 - SwiftData models that sync via CloudKit: no `@Attribute(.unique)`, every property has a

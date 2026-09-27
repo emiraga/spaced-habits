@@ -41,7 +41,7 @@ struct NotificationSettingsView: View {
     static func summary(_ settings: NotificationSettings) -> String {
         switch settings.cadence {
         case let .timesPerDay(times): times.sorted().map(format).joined(separator: ", ")
-        case let .everyNDays(days, time): "Every \(days) days at \(format(time))"
+        case let .everyNDays(days, time): String(localized: "Every \(days) days at \(format(time))")
         }
     }
 

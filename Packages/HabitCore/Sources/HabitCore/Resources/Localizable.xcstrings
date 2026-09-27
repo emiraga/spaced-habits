@@ -1,0 +1,19 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "This file isn't a Spaced Habits export: %@" : {
+
+    },
+    "This file uses export format %lld; this version of Spaced Habits reads format %lld." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This file uses export format %1$lld; this version of Spaced Habits reads format %2$lld."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

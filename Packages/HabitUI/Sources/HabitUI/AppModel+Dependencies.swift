@@ -8,10 +8,15 @@ public struct DependencyCycleError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         guard names.count > 2, let first = names.first else {
-            return "A habit can't depend on itself."
+            return String(localized: "A habit can't depend on itself.", bundle: .module)
         }
-        let rest = names.dropFirst().dropLast().map { "\($0), which needs" }.joined(separator: " ")
-        return "\(first) can't depend on \(names[1]): that would make a loop (\(first) would need \(rest) \(first))."
+        let rest = names.dropFirst().dropLast()
+            .map { String(localized: "\($0), which needs", bundle: .module) }
+            .joined(separator: " ")
+        return String(
+            localized: "\(first) can't depend on \(names[1]): that would make a loop (\(first) would need \(rest) \(first)).",
+            bundle: .module
+        )
     }
 }
 
@@ -63,7 +68,7 @@ public extension AppModel {
     }
 
     private func name(of id: UUID, in habits: [Habit]) -> String {
-        habits.first { $0.id == id }?.name ?? "Unknown habit"
+        habits.first { $0.id == id }?.name ?? String(localized: "Unknown habit", bundle: .module)
     }
 
     // MARK: Clusters

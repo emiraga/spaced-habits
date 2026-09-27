@@ -58,10 +58,12 @@ public enum ImportError: Error, Equatable, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case let .unsupportedSchemaVersion(version):
-            "This file uses export format \(version); this version of Spaced Habits reads format "
-                + "\(ExportDocument.schemaVersion)."
+            String(
+                localized: "This file uses export format \(version); this version of Spaced Habits reads format \(ExportDocument.schemaVersion).",
+                bundle: .module
+            )
         case let .invalidDocument(detail):
-            "This file isn't a Spaced Habits export: \(detail)"
+            String(localized: "This file isn't a Spaced Habits export: \(detail)", bundle: .module)
         }
     }
 }

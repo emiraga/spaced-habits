@@ -53,7 +53,7 @@ enum IntentError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case let .invalidHabitID(id): "\(id) is not a habit ID."
+        case let .invalidHabitID(id): String(localized: "\(id) is not a habit ID.")
         }
     }
 }

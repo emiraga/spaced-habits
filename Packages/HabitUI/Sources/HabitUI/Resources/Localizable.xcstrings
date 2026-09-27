@@ -1,0 +1,489 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ – %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ – %2$@"
+          }
+        }
+      }
+    },
+    "%@ · ~%lldd" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · ~%2$lldd"
+          }
+        }
+      }
+    },
+    "%@ (from a count)" : {
+
+    },
+    "%@ can't depend on %@: that would make a loop (%@ would need %@ %@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ can't depend on %2$@: that would make a loop (%3$@ would need %4$@ %5$@)."
+          }
+        }
+      }
+    },
+    "%@ days" : {
+
+    },
+    "%@ is slipping" : {
+
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, which needs" : {
+
+    },
+    "%lld days" : {
+
+    },
+    "%lld habits to review" : {
+
+    },
+    "%lld of %lld days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld days"
+          }
+        }
+      }
+    },
+    "± 1 sd" : {
+
+    },
+    "~%@ (estimated)" : {
+
+    },
+    "🏋️ Gym" : {
+
+    },
+    "📚 Read" : {
+
+    },
+    "1 day" : {
+
+    },
+    "7 days" : {
+
+    },
+    "7-day average" : {
+
+    },
+    "30 days" : {
+
+    },
+    "A habit can't depend on itself." : {
+
+    },
+    "Adherence" : {
+
+    },
+    "Adherence by week" : {
+
+    },
+    "All" : {
+
+    },
+    "All days" : {
+
+    },
+    "All habits" : {
+
+    },
+    "Already answered through %@." : {
+
+    },
+    "Always done" : {
+
+    },
+    "Answered" : {
+
+    },
+    "Answered as a count" : {
+
+    },
+    "Answered days only" : {
+
+    },
+    "Ask interval, from the model after each day" : {
+
+    },
+    "Asked" : {
+
+    },
+    "Asking daily" : {
+
+    },
+    "Asking every ~%lld days" : {
+
+    },
+    "Autonomy score: ~%@" : {
+
+    },
+    "Blocked" : {
+
+    },
+    "By day of the week" : {
+
+    },
+    "Calendar" : {
+
+    },
+    "Calendar, last %lld weeks: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Calendar, last %1$lld weeks: %2$@"
+          }
+        }
+      }
+    },
+    "Chain" : {
+
+    },
+    "Charts appear after %lld days that aren't paused (%lld so far)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Charts appear after %1$lld days that aren't paused (%2$lld so far)."
+          }
+        }
+      }
+    },
+    "Day" : {
+
+    },
+    "Days" : {
+
+    },
+    "Days between check-ins" : {
+
+    },
+    "Days between check-ins: %lld at first, %lld now, at most %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Days between check-ins: %1$lld at first, %2$lld now, at most %3$lld"
+          }
+        }
+      }
+    },
+    "Days blocked" : {
+
+    },
+    "Days paused" : {
+
+    },
+    "Days the whole chain happened, over the %lld of the last %lld days answered for every habit in it. Counts add fractions of days." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Days the whole chain happened, over the %1$lld of the last %2$lld days answered for every habit in it. Counts add fractions of days."
+          }
+        }
+      }
+    },
+    "Delay" : {
+
+    },
+    "Delay…" : {
+
+    },
+    "Delayed %lld times in the last %lld days. A lower target or a longer pause might fit better." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Delayed %1$lld times in the last %2$lld days. A lower target or a longer pause might fit better."
+          }
+        }
+      }
+    },
+    "Delays" : {
+
+    },
+    "Don't remember" : {
+
+    },
+    "Done" : {
+
+    },
+    "Done (Health)" : {
+
+    },
+    "Done on %@ of answered days in the last %lld days, down from %@ in the %lld days before." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Done on %1$@ of answered days in the last %2$lld days, down from %3$@ in the %4$lld days before."
+          }
+        }
+      }
+    },
+    "Done on that day?" : {
+
+    },
+    "Done today?" : {
+
+    },
+    "Due today" : {
+
+    },
+    "Each habit's share of answered days done, per week, stacked. Estimated and paused days left out." : {
+
+    },
+    "Estimate" : {
+
+    },
+    "Estimated" : {
+
+    },
+    "From" : {
+
+    },
+    "From a count" : {
+
+    },
+    "From answered days: yes/no, counts and Health. Estimated days are left out." : {
+
+    },
+    "Habit" : {
+
+    },
+    "Habits asked about, from shown cards and all answers (widget, watch, Siri included)." : {
+
+    },
+    "high" : {
+
+    },
+    "High" : {
+
+    },
+    "How many of the last %lld days?" : {
+
+    },
+    "Last %lld days. On parent days: how often a habit follows the one it depends on. All days: how often it happens at all." : {
+
+    },
+    "Later" : {
+
+    },
+    "low" : {
+
+    },
+    "Low" : {
+
+    },
+    "Model confidence" : {
+
+    },
+    "Most" : {
+
+    },
+    "No" : {
+
+    },
+    "No check-ins for %lld days. Turn on vacation mode for them so they don't count against you." : {
+
+    },
+    "No data" : {
+
+    },
+    "None" : {
+
+    },
+    "normal" : {
+
+    },
+    "Not done" : {
+
+    },
+    "Not done (parent not done)" : {
+
+    },
+    "Not due" : {
+
+    },
+    "OK" : {
+
+    },
+    "On average, each habit is asked about this often. The longer the gap, the more automatic your habits." : {
+
+    },
+    "On how many of those %lld?" : {
+
+    },
+    "On parent days" : {
+
+    },
+    "Other" : {
+
+    },
+    "Paused" : {
+
+    },
+    "Per day" : {
+
+    },
+    "Questions per day" : {
+
+    },
+    "Questions per day, 7-day average: %@ %lld days ago, %@ now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Questions per day, 7-day average: %1$@ %2$lld days ago, %3$@ now"
+          }
+        }
+      }
+    },
+    "Rarely" : {
+
+    },
+    "Save" : {
+
+    },
+    "Sick" : {
+
+    },
+    "Some" : {
+
+    },
+    "Something went wrong" : {
+
+    },
+    "Spaced Habits" : {
+
+    },
+    "Step" : {
+
+    },
+    "Taking a break?" : {
+
+    },
+    "Target" : {
+
+    },
+    "That habit is paused today." : {
+
+    },
+    "That habit no longer exists." : {
+
+    },
+    "the habits this depends on" : {
+
+    },
+    "This question needs the app to answer." : {
+
+    },
+    "Through" : {
+
+    },
+    "Time for a quick check-in." : {
+
+    },
+    "Today" : {
+
+    },
+    "Together and on their own" : {
+
+    },
+    "Tomorrow" : {
+
+    },
+    "Unknown" : {
+
+    },
+    "Unknown habit" : {
+
+    },
+    "Vacation" : {
+
+    },
+    "Version %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "Week" : {
+
+    },
+    "Weekday" : {
+
+    },
+    "Which of these days?" : {
+
+    },
+    "Which of those days?" : {
+
+    },
+    "Window" : {
+
+    },
+    "Yes" : {
+
+    },
+    "Yesterday" : {
+
+    },
+    "You did %@ on %lld of the last %lld days." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You did %1$@ on %2$lld of the last %3$lld days."
+          }
+        }
+      }
+    },
+    "You did %@ on all of the last %lld days." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You did %1$@ on all of the last %2$lld days."
+          }
+        }
+      }
+    },
+    "You did %@ today." : {
+
+    },
+    "You keep delaying %@" : {
+
+    }
+  },
+  "version" : "1.0"
+}

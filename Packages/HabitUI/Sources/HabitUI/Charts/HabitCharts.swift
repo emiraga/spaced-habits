@@ -14,13 +14,16 @@ public struct AskIntervalChart: View {
     }
 
     public var body: some View {
-        ChartCard(title: "Days between check-ins") {
+        ChartCard(title: String(localized: "Days between check-ins", bundle: .module)) {
             Chart {
                 BandMarks(bands: insights.bands)
                 ForEach(insights.series, id: \.day) { point in
-                    LineMark(x: .value("Day", ChartDay.date(point.day)), y: .value("Days", point.intervalDays))
-                        .interpolationMethod(.stepEnd)
-                        .foregroundStyle(color)
+                    LineMark(
+                        x: .value(ChartLabel.day, ChartDay.date(point.day)),
+                        y: .value(ChartLabel.days, point.intervalDays)
+                    )
+                    .interpolationMethod(.stepEnd)
+                    .foregroundStyle(color)
                 }
             }
             .dayAxis()
@@ -28,16 +31,25 @@ public struct AskIntervalChart: View {
             .frame(height: 160)
             .accessibilityLabel(Self.summary(insights.series))
         } legend: {
-            LegendRow(items: [LegendItem("Ask interval, from the model after each day", color: color)] +
-                bandLegend(insights))
+            LegendRow(items: [
+                LegendItem(
+                    String(localized: "Ask interval, from the model after each day", bundle: .module),
+                    color: color
+                ),
+            ] + bandLegend(insights))
         }
     }
 
     /// "Days between check-ins: 1 at first, 11 now, at most 12".
     static func summary(_ series: [ModelPoint]) -> String {
-        guard let first = series.first, let last = series.last else { return "No data" }
-        return "Days between check-ins: \(first.intervalDays) at first, \(last.intervalDays) now, "
-            + "at most \(series.map(\.intervalDays).max() ?? last.intervalDays)"
+        guard let first = series.first, let last = series.last else {
+            return String(localized: "No data", bundle: .module)
+        }
+        let most = series.map(\.intervalDays).max() ?? last.intervalDays
+        return String(
+            localized: "Days between check-ins: \(first.intervalDays) at first, \(last.intervalDays) now, at most \(most)",
+            bundle: .module
+        )
     }
 }
 
@@ -52,12 +64,12 @@ public struct AdherenceChart: View {
     }
 
     public var body: some View {
-        ChartCard(title: "Adherence") {
+        ChartCard(title: ChartLabel.adherence) {
             Chart {
                 BandMarks(bands: insights.bands)
-                line(insights.rolling30, name: "30 days", dashed: false)
-                line(insights.rolling7, name: "7 days", dashed: true)
-                RuleMark(y: .value("Target", insights.target))
+                line(insights.rolling30, name: Self.days30, dashed: false)
+                line(insights.rolling7, name: Self.days7, dashed: true)
+                RuleMark(y: .value(ChartLabel.target, insights.target))
                     .foregroundStyle(.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 3]))
             }
@@ -68,20 +80,24 @@ public struct AdherenceChart: View {
         } legend: {
             VStack(alignment: .leading, spacing: 4) {
                 LegendRow(items: [
-                    LegendItem("30 days", color: color),
-                    LegendItem("7 days", color: color.opacity(0.6), dashed: true),
-                    LegendItem("Target", color: .secondary, dashed: true),
+                    LegendItem(Self.days30, color: color),
+                    LegendItem(Self.days7, color: color.opacity(0.6), dashed: true),
+                    LegendItem(ChartLabel.target, color: .secondary, dashed: true),
                 ] + bandLegend(insights))
-                Text("From answered days: yes/no, counts and Health. Estimated days are left out.")
+                Text("From answered days: yes/no, counts and Health. Estimated days are left out.", bundle: .module)
             }
         }
     }
 
+    private static let days30 = String(localized: "30 days", bundle: .module)
+    private static let days7 = String(localized: "7 days", bundle: .module)
+
     private func line(_ points: [AdherencePoint], name: String, dashed: Bool) -> some ChartContent {
         ForEach(points, id: \.day) { point in
             LineMark(
-                x: .value("Day", ChartDay.date(point.day)),
-                y: .value("Adherence", point.mean),
+                x: .value(ChartLabel.day, ChartDay.date(point.day)),
+                y: .value(ChartLabel.adherence, point.mean),
+                // One series per window and gap-free segment; the name is never shown.
                 series: .value("Window", "\(name) \(point.segment)")
             )
             .foregroundStyle(dashed ? color.opacity(0.6) : color)
@@ -101,17 +117,23 @@ public struct ConfidenceChart: View {
     }
 
     public var body: some View {
-        ChartCard(title: "Model confidence") {
+        ChartCard(title: String(localized: "Model confidence", bundle: .module)) {
             Chart {
                 BandMarks(bands: insights.bands)
                 ForEach(insights.series, id: \.day) { point in
                     AreaMark(
-                        x: .value("Day", ChartDay.date(point.day)),
-                        yStart: .value("Low", max(0, point.mean - point.standardDeviation)),
-                        yEnd: .value("High", min(1, point.mean + point.standardDeviation))
+                        x: .value(ChartLabel.day, ChartDay.date(point.day)),
+                        yStart: .value(
+                            String(localized: "Low", bundle: .module),
+                            max(0, point.mean - point.standardDeviation)
+                        ),
+                        yEnd: .value(
+                            String(localized: "High", bundle: .module),
+                            min(1, point.mean + point.standardDeviation)
+                        )
                     )
                     .foregroundStyle(color.opacity(0.2))
-                    LineMark(x: .value("Day", ChartDay.date(point.day)), y: .value("Estimate", point.mean))
+                    LineMark(x: .value(ChartLabel.day, ChartDay.date(point.day)), y: .value(Self.estimate, point.mean))
                         .foregroundStyle(color)
                 }
             }
@@ -121,11 +143,13 @@ public struct ConfidenceChart: View {
             .frame(height: 140)
         } legend: {
             LegendRow(items: [
-                LegendItem("Estimate", color: color),
-                LegendItem("± 1 sd", band: color.opacity(0.2)),
+                LegendItem(Self.estimate, color: color),
+                LegendItem(String(localized: "± 1 sd", bundle: .module), band: color.opacity(0.2)),
             ] + bandLegend(insights))
         }
     }
+
+    private static let estimate = String(localized: "Estimate", bundle: .module)
 }
 
 /// Every per-habit chart for habit detail (§12), or why there are none yet.
@@ -148,10 +172,10 @@ public struct HabitCharts: View {
             NotEnoughData(availableDays: insights.availableDays)
         }
         HStack {
-            StatTile("Delays", value: "\(insights.delays)")
-            StatTile("Days paused", value: "\(insights.pausedDays)")
+            StatTile(String(localized: "Delays", bundle: .module), value: insights.delays.formatted())
+            StatTile(String(localized: "Days paused", bundle: .module), value: insights.pausedDays.formatted())
             if insights.blockedDays > 0 {
-                StatTile("Days blocked", value: "\(insights.blockedDays)")
+                StatTile(String(localized: "Days blocked", bundle: .module), value: insights.blockedDays.formatted())
             }
         }
     }
@@ -173,6 +197,6 @@ extension HabitInsights {
 private func bandLegend(_ insights: HabitInsights) -> [LegendItem] {
     let reasons = Set(insights.bands.map(\.reason))
     return [Unavailability.paused, .blocked].filter(reasons.contains).map { reason in
-        LegendItem(reason == .paused ? "Paused" : "Blocked", band: BandStyle.color(reason))
+        LegendItem(reason == .paused ? ChartLabel.paused : ChartLabel.blocked, band: BandStyle.color(reason))
     }
 }

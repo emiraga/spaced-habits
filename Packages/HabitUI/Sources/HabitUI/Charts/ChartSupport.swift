@@ -26,6 +26,21 @@ enum ChartDay {
     static let label = Date.FormatStyle(timeZone: .gmt).month(.abbreviated).day()
 }
 
+/// Plotted values' names, which VoiceOver's audio graphs read out.
+enum ChartLabel {
+    static let day = String(localized: "Day", bundle: .module)
+    static let days = String(localized: "Days", bundle: .module)
+    static let week = String(localized: "Week", bundle: .module)
+    static let weekday = String(localized: "Weekday", bundle: .module)
+    static let from = String(localized: "From", bundle: .module)
+    static let through = String(localized: "Through", bundle: .module)
+    static let habit = String(localized: "Habit", bundle: .module)
+    static let adherence = String(localized: "Adherence", bundle: .module)
+    static let target = String(localized: "Target", bundle: .module)
+    static let paused = String(localized: "Paused", bundle: .module)
+    static let blocked = String(localized: "Blocked", bundle: .module)
+}
+
 extension View {
     /// Date axis labeled in UTC (see `ChartDay`).
     func dayAxis() -> some View {
@@ -64,8 +79,8 @@ struct BandMarks: ChartContent {
     var body: some ChartContent {
         ForEach(bands, id: \.days.lowerBound) { band in
             RectangleMark(
-                xStart: .value("From", ChartDay.start(band.days.lowerBound)),
-                xEnd: .value("Through", ChartDay.end(band.days.upperBound))
+                xStart: .value(ChartLabel.from, ChartDay.start(band.days.lowerBound)),
+                xEnd: .value(ChartLabel.through, ChartDay.end(band.days.upperBound))
             )
             .foregroundStyle(BandStyle.color(band.reason))
         }
@@ -181,7 +196,8 @@ public struct NotEnoughData: View {
 
     public var body: some View {
         Text(
-            "Charts appear after \(Insights.minimumChartDays) days that aren't paused (\(availableDays) so far)."
+            "Charts appear after \(Insights.minimumChartDays) days that aren't paused (\(availableDays) so far).",
+            bundle: .module
         )
         .font(.callout)
         .foregroundStyle(.secondary)

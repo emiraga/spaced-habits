@@ -46,7 +46,7 @@ public final class ErrorPresenter {
 public extension View {
     func errorAlert(_ presenter: ErrorPresenter) -> some View {
         alert(
-            "Something went wrong",
+            Text("Something went wrong", bundle: .module),
             isPresented: Binding(get: { presenter.error != nil }, set: {
                 if !$0 {
                     presenter.error = nil
@@ -54,7 +54,7 @@ public extension View {
             }),
             presenting: presenter.error
         ) { _ in
-            Button("OK", role: .cancel) {}
+            Button(String(localized: "OK", bundle: .module), role: .cancel) {}
         } message: { error in
             Text((error as? LocalizedError)?.errorDescription ?? String(describing: error))
         }

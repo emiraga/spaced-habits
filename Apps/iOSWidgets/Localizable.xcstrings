@@ -1,0 +1,63 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ is not a habit ID." : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld habits due" : {
+
+    },
+    "All caught up" : {
+
+    },
+    "Answer Habit" : {
+
+    },
+    "Answer the next question without opening the app." : {
+
+    },
+    "Check-in" : {
+
+    },
+    "Done" : {
+
+    },
+    "due" : {
+
+    },
+    "Habit ID" : {
+
+    },
+    "Next: %@" : {
+
+    },
+    "No" : {
+
+    },
+    "No habits yet" : {
+
+    },
+    "Nothing to ask" : {
+
+    },
+    "Open Spaced Habits to refresh." : {
+
+    },
+    "Open to answer" : {
+
+    },
+    "Today" : {
+
+    },
+    "Yes" : {
+
+    },
+    "Your habits and today's status." : {
+
+    }
+  },
+  "version" : "1.0"
+}

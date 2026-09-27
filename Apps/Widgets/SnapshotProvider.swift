@@ -49,7 +49,11 @@ struct SnapshotProvider: TimelineProvider {
             ).map { SnapshotEntry(date: $0.date, snapshot: $0.snapshot) }
         } catch {
             logger.error("Timeline failed: \(String(describing: error), privacy: .public)")
-            return [SnapshotEntry(date: now, snapshot: .placeholder, failure: "Open Spaced Habits to refresh.")]
+            return [SnapshotEntry(
+                date: now,
+                snapshot: .placeholder,
+                failure: String(localized: "Open Spaced Habits to refresh.")
+            )]
         }
     }
 }

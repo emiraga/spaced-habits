@@ -162,6 +162,16 @@ iOS scheme builds it. It has the same App Group and iCloud entitlements as the a
 `SpacedHabitsWatchWidgets` (`ga.emira.spacedhabits.watchkitapp.widgets`, App Group only) is embedded in
 the watch app and compiles the same `Apps/Widgets` sources as the iOS extension.
 
+Localization (M11): English is the development language and the only one shipped. Every target has a
+`Localizable.xcstrings` (the app, both widget extensions and the watch app in their `Apps/` folder;
+`HabitUI` and `HabitCore` under `Sources/<name>/Resources`, with `defaultLocalization: "en"`). SwiftUI
+literals are localized by type; a user-facing `String` built in code uses `String(localized:)`, and in a
+package `String(localized: …, bundle: .module)` / `Text(…, bundle: .module)`: a package's plain
+`Text("…")` would look in the app's table, not its own. `make strings` (`xcodebuild -exportLocalizations`)
+syncs the catalogs with the sources; run it after changing UI text. A string it doesn't pick up is typed
+`String`, not localized. English-only catalogs compile to no tables (every value is its key), so adding a
+language is a translation in the catalogs, not a code change.
+
 Still to add to `project.yml` in later milestones:
 - HealthKit entitlement and `NSHealthShareUsageDescription`: "Spaced Habits reads workouts to
   auto-complete matching habits." (M8, deferred; see O7).

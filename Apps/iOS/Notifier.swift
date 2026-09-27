@@ -180,7 +180,7 @@ enum NotifierError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .nothingDue: "Nothing is due, so there is nothing to notify about."
+        case .nothingDue: String(localized: "Nothing is due, so there is nothing to notify about.")
         }
     }
 }

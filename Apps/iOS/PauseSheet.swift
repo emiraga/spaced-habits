@@ -56,12 +56,12 @@ struct PauseSheet: View {
         Form {
             Section("Duration") {
                 Picker("Duration", selection: $preset) {
-                    ForEach(Self.presets, id: \.self) { Text(Self.daysLabel($0)).tag(Int?.some($0)) }
+                    ForEach(Self.presets, id: \.self) { Text(DayFormat.days($0)).tag(Int?.some($0)) }
                     Text("Custom").tag(Int?.none)
                 }
                 .pickerStyle(.segmented)
                 if preset == nil {
-                    Stepper(Self.daysLabel(customDays), value: $customDays, in: 1 ... 90)
+                    Stepper(DayFormat.days(customDays), value: $customDays, in: 1 ... 90)
                 }
             }
             if !isDelay {
@@ -105,7 +105,7 @@ struct PauseSheet: View {
     private var summary: String {
         let today = model.today
         let resumes = DayFormat.short(end.adding(days: 1), today: today)
-        return "Paused \(DayFormat.range(start, end, today: today)). Resumes \(resumes)."
+        return String(localized: "Paused \(DayFormat.range(start, end, today: today)). Resumes \(resumes).")
     }
 
     private func confirm() {
@@ -120,9 +120,5 @@ struct PauseSheet: View {
         if done {
             dismiss()
         }
-    }
-
-    static func daysLabel(_ days: Int) -> String {
-        days == 1 ? "1 day" : "\(days) days"
     }
 }

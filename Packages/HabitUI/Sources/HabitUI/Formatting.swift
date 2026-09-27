@@ -30,16 +30,23 @@ public enum DayFormat {
     /// "Today", "Yesterday", "Tomorrow", else e.g. "Mon 21 Sep".
     public static func short(_ day: DayKey, today: DayKey) -> String {
         switch day.days(to: today) {
-        case 0: "Today"
-        case 1: "Yesterday"
-        case -1: "Tomorrow"
+        case 0: String(localized: "Today", bundle: .module)
+        case 1: String(localized: "Yesterday", bundle: .module)
+        case -1: String(localized: "Tomorrow", bundle: .module)
         default: noonUTC(day).formatted(style)
         }
     }
 
     /// "Asking daily" / "Asking every ~9 days" (§5.1 habit detail).
     public static func askInterval(_ days: Int) -> String {
-        days <= 1 ? "Asking daily" : "Asking every ~\(days) days"
+        days <= 1
+            ? String(localized: "Asking daily", bundle: .module)
+            : String(localized: "Asking every ~\(days) days", bundle: .module)
+    }
+
+    /// "1 day" / "3 days": pause lengths on the phone and the watch.
+    public static func days(_ days: Int) -> String {
+        days == 1 ? String(localized: "1 day", bundle: .module) : String(localized: "\(days) days", bundle: .module)
     }
 
     /// "S" for Sunday: the watch's 7-day strip (§7).
@@ -53,7 +60,9 @@ public enum DayFormat {
 
     /// "Mon 21 Sep – Wed 23 Sep", or one day.
     public static func range(_ start: DayKey, _ end: DayKey, today: DayKey) -> String {
-        start == end ? short(start, today: today) : "\(short(start, today: today)) – \(short(end, today: today))"
+        start == end
+            ? short(start, today: today)
+            : String(localized: "\(short(start, today: today)) – \(short(end, today: today))", bundle: .module)
     }
 
     /// Noon UTC on the day's civil date, formatted in UTC, so the label is the same in every time zone.
@@ -77,10 +86,10 @@ public extension PauseReason {
 
     var label: String {
         switch self {
-        case .manual: "Delay"
-        case .vacation: "Vacation"
-        case .sick: "Sick"
-        case let .other(text): text.isEmpty ? "Other" : text
+        case .manual: String(localized: "Delay", bundle: .module)
+        case .vacation: String(localized: "Vacation", bundle: .module)
+        case .sick: String(localized: "Sick", bundle: .module)
+        case let .other(text): text.isEmpty ? String(localized: "Other", bundle: .module) : text
         }
     }
 }

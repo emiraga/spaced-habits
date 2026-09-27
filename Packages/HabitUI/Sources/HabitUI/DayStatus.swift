@@ -39,9 +39,12 @@ public enum DayStatus: String, Sendable, Hashable, CaseIterable {
     public static func historyText(_ record: DayRecord) -> String {
         let status = DayStatus(record: record)
         switch status {
-        case .aggregated: return "\(DayFormat.percent(record.value)) (from a count)"
-        case .inferred: return "~\(DayFormat.percent(record.value)) (estimated)"
-        case .notDone where record.conditionalDenominatorExcluded: return "Not done (parent not done)"
+        case .aggregated:
+            return String(localized: "\(DayFormat.percent(record.value)) (from a count)", bundle: .module)
+        case .inferred:
+            return String(localized: "~\(DayFormat.percent(record.value)) (estimated)", bundle: .module)
+        case .notDone where record.conditionalDenominatorExcluded:
+            return String(localized: "Not done (parent not done)", bundle: .module)
         default: return status.label
         }
     }
@@ -64,16 +67,16 @@ public enum DayStatus: String, Sendable, Hashable, CaseIterable {
     /// Spoken by VoiceOver and shown next to the glyph in history.
     public var label: String {
         switch self {
-        case .done: "Done"
-        case .notDone: "Not done"
-        case .health: "Done (Health)"
-        case .aggregated: "Answered as a count"
-        case .inferred: "Estimated"
-        case .unknown: "Unknown"
-        case .paused: "Paused"
-        case .blocked: "Blocked"
-        case .due: "Due today"
-        case .notDue: "Not due"
+        case .done: String(localized: "Done", bundle: .module)
+        case .notDone: String(localized: "Not done", bundle: .module)
+        case .health: String(localized: "Done (Health)", bundle: .module)
+        case .aggregated: String(localized: "Answered as a count", bundle: .module)
+        case .inferred: String(localized: "Estimated", bundle: .module)
+        case .unknown: String(localized: "Unknown", bundle: .module)
+        case .paused: String(localized: "Paused", bundle: .module)
+        case .blocked: String(localized: "Blocked", bundle: .module)
+        case .due: String(localized: "Due today", bundle: .module)
+        case .notDue: String(localized: "Not due", bundle: .module)
         }
     }
 }

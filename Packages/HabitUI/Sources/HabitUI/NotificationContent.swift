@@ -70,9 +70,9 @@ public enum NotificationAction: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .done: "Yes"
-        case .notDone: "No"
-        case .later: "Later"
+        case .done: String(localized: "Yes", bundle: .module)
+        case .notDone: String(localized: "No", bundle: .module)
+        case .later: String(localized: "Later", bundle: .module)
         }
     }
 }
@@ -103,21 +103,24 @@ public struct NotificationContent: Sendable, Hashable {
         case let .question(question, dueCount):
             let text = QuestionText(question, habits: habits)
             title = text.title
-            subtitle = dueCount > 1 ? "\(dueCount) habits to review" : ""
+            subtitle = dueCount > 1 ? String(localized: "\(dueCount) habits to review", bundle: .module) : ""
             body = text.body
             categoryIdentifier = question.shape == .singleDay ? Self.questionCategory : ""
             payload = .question(question)
         case .reminder:
-            title = "Spaced Habits"
+            title = String(localized: "Spaced Habits", bundle: .module)
             subtitle = ""
-            body = "Time for a quick check-in."
+            body = String(localized: "Time for a quick check-in.", bundle: .module)
             categoryIdentifier = ""
             payload = .reminder
         case let .silenceNudge(lastActiveDay):
             let days = lastActiveDay.days(to: planned.day)
-            title = "Taking a break?"
+            title = String(localized: "Taking a break?", bundle: .module)
             subtitle = ""
-            body = "No check-ins for \(days) days. Turn on vacation mode for them so they don't count against you."
+            body = String(
+                localized: "No check-ins for \(days) days. Turn on vacation mode for them so they don't count against you.",
+                bundle: .module
+            )
             categoryIdentifier = ""
             payload = .silenceNudge(lastActiveDay: lastActiveDay)
         }
@@ -132,7 +135,7 @@ public struct QuestionText: Sendable, Hashable {
 
     public init(_ question: Question, habits: [Habit]) {
         let byID = Dictionary(habits.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        title = byID[question.habitID].map(\.displayName) ?? "Spaced Habits"
+        title = byID[question.habitID].map(\.displayName) ?? String(localized: "Spaced Habits", bundle: .module)
         let context = question.parentContext.map { context in
             QuestionCard.contextLine(
                 parentNames: context.parentIDs.compactMap { byID[$0]?.name },

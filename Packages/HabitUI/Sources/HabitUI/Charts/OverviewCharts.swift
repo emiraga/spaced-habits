@@ -33,23 +33,29 @@ public enum InsightCard: Hashable, Identifiable {
 
     public func title(habitName: String) -> String {
         switch self {
-        case .regression: "\(habitName) is slipping"
-        case .delayedOften: "You keep delaying \(habitName)"
-        case let .autonomy(days): "Autonomy score: ~\(Self.days(days))"
+        case .regression: String(localized: "\(habitName) is slipping", bundle: .module)
+        case .delayedOften: String(localized: "You keep delaying \(habitName)", bundle: .module)
+        case let .autonomy(days): String(localized: "Autonomy score: ~\(Self.days(days))", bundle: .module)
         }
     }
 
     public var message: String {
         switch self {
         case let .regression(regression):
-            "Done on \(DayFormat.percent(regression.recent)) of answered days in the last "
-                + "\(Overview.regressionRecentDays) days, down from \(DayFormat.percent(regression.prior)) "
-                + "in the \(Overview.regressionPriorDays) days before."
+            String(
+                localized: "Done on \(DayFormat.percent(regression.recent)) of answered days in the last \(Overview.regressionRecentDays) days, down from \(DayFormat.percent(regression.prior)) in the \(Overview.regressionPriorDays) days before.",
+                bundle: .module
+            )
         case let .delayedOften(delayed):
-            "Delayed \(delayed.delays) times in the last \(Pauses.frequentDelayWindowDays) days. "
-                + "A lower target or a longer pause might fit better."
+            String(
+                localized: "Delayed \(delayed.delays) times in the last \(Pauses.frequentDelayWindowDays) days. A lower target or a longer pause might fit better.",
+                bundle: .module
+            )
         case .autonomy:
-            "On average, each habit is asked about this often. The longer the gap, the more automatic your habits."
+            String(
+                localized: "On average, each habit is asked about this often. The longer the gap, the more automatic your habits.",
+                bundle: .module
+            )
         }
     }
 
@@ -63,7 +69,10 @@ public enum InsightCard: Hashable, Identifiable {
 
     static func days(_ value: Double) -> String {
         let rounded = value.formatted(.number.precision(.fractionLength(0 ... 1)))
-        return value == 1 ? "1 day" : "\(rounded) days"
+        return value == 1 ? String(localized: "1 day", bundle: .module) : String(
+            localized: "\(rounded) days",
+            bundle: .module
+        )
     }
 }
 
@@ -102,38 +111,44 @@ public struct QuestionsPerDayChart: View {
 
     public var body: some View {
         let average = Self.weekAverage(overview.questionsPerDay)
-        ChartCard(title: "Questions per day") {
+        ChartCard(title: String(localized: "Questions per day", bundle: .module)) {
             Chart {
                 ForEach(overview.vacations, id: \.lowerBound) { range in
                     RectangleMark(
-                        xStart: .value("From", ChartDay.start(range.lowerBound)),
-                        xEnd: .value("Through", ChartDay.end(range.upperBound))
+                        xStart: .value(ChartLabel.from, ChartDay.start(range.lowerBound)),
+                        xEnd: .value(ChartLabel.through, ChartDay.end(range.upperBound))
                     )
                     .foregroundStyle(BandStyle.vacation)
                 }
                 ForEach(overview.questionsPerDay, id: \.day) { day in
-                    BarMark(x: .value("Day", ChartDay.date(day.day), unit: .day), y: .value("Asked", day.count))
-                        .foregroundStyle(Color.accentColor.opacity(0.3))
+                    BarMark(
+                        x: .value(ChartLabel.day, ChartDay.date(day.day), unit: .day),
+                        y: .value(String(localized: "Asked", bundle: .module), day.count)
+                    )
+                    .foregroundStyle(Color.accentColor.opacity(0.3))
                 }
                 ForEach(average, id: \.day) { point in
-                    LineMark(x: .value("Day", ChartDay.date(point.day)), y: .value("7-day average", point.mean))
-                        .foregroundStyle(Color.accentColor)
+                    LineMark(
+                        x: .value(ChartLabel.day, ChartDay.date(point.day)),
+                        y: .value(Self.weekAverageLabel, point.mean)
+                    )
+                    .foregroundStyle(Color.accentColor)
                 }
             }
             .dayAxis()
             .frame(height: 160)
-            .accessibilityLabel(
-                "Questions per day, 7-day average: \(average.first.map { Self.format($0.mean) } ?? "0") "
-                    + "\(Overview.burdenDays) days ago, \(average.last.map { Self.format($0.mean) } ?? "0") now"
-            )
+            .accessibilityLabel(Self.summary(average))
         } legend: {
             VStack(alignment: .leading, spacing: 4) {
                 LegendRow(items: [
-                    LegendItem("Per day", band: Color.accentColor.opacity(0.3)),
-                    LegendItem("7-day average", color: .accentColor),
-                    LegendItem("Vacation", band: BandStyle.vacation),
+                    LegendItem(String(localized: "Per day", bundle: .module), band: Color.accentColor.opacity(0.3)),
+                    LegendItem(Self.weekAverageLabel, color: .accentColor),
+                    LegendItem(String(localized: "Vacation", bundle: .module), band: BandStyle.vacation),
                 ])
-                Text("Habits asked about, from shown cards and all answers (widget, watch, Siri included).")
+                Text(
+                    "Habits asked about, from shown cards and all answers (widget, watch, Siri included).",
+                    bundle: .module
+                )
             }
         }
     }
@@ -143,6 +158,18 @@ public struct QuestionsPerDayChart: View {
             let window = counts[max(0, index - 6) ... index]
             return (counts[index].day, Double(window.map(\.count).reduce(0, +)) / Double(window.count))
         }
+    }
+
+    private static let weekAverageLabel = String(localized: "7-day average", bundle: .module)
+
+    /// "Questions per day, 7-day average: 3.1 90 days ago, 0.9 now".
+    static func summary(_ average: [(day: DayKey, mean: Double)]) -> String {
+        let then = format(average.first?.mean ?? 0)
+        let now = format(average.last?.mean ?? 0)
+        return String(
+            localized: "Questions per day, 7-day average: \(then) \(Overview.burdenDays) days ago, \(now) now",
+            bundle: .module
+        )
     }
 
     private static func format(_ value: Double) -> String {
@@ -155,8 +182,13 @@ public struct WeekdayHeatmapChart: View {
     let overview: Overview
     let habits: [Habit]
 
-    private static let weekdayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    private static let allHabits = "All habits"
+    /// "Mon" … "Sun", as `Overview` numbers weekdays; day 4 (1970-01-05) was a Monday.
+    private static let weekdayNames = (4 ..< 11).map { dayNumber in
+        DayFormat.noonUTC(DayKey(dayNumber: dayNumber))
+            .formatted(Date.FormatStyle(timeZone: .gmt).weekday(.abbreviated))
+    }
+
+    private static let allHabits = String(localized: "All habits", bundle: .module)
 
     public init(overview: Overview, habits: [Habit]) {
         self.overview = overview
@@ -166,11 +198,11 @@ public struct WeekdayHeatmapChart: View {
     public var body: some View {
         let names = Dictionary(uniqueKeysWithValues: habits.map { ($0.id, $0.name) })
         let rows = [Self.allHabits] + habits.map(\.name)
-        ChartCard(title: "By day of the week") {
+        ChartCard(title: String(localized: "By day of the week", bundle: .module)) {
             Chart(overview.weekdays, id: \.self) { cell in
                 RectangleMark(
-                    x: .value("Weekday", Self.weekdayNames[cell.weekday - 1]),
-                    y: .value("Habit", cell.habitID.flatMap { names[$0] } ?? Self.allHabits),
+                    x: .value(ChartLabel.weekday, Self.weekdayNames[cell.weekday - 1]),
+                    y: .value(ChartLabel.habit, cell.habitID.flatMap { names[$0] } ?? Self.allHabits),
                     width: .ratio(0.92),
                     height: .ratio(0.85)
                 )
@@ -184,9 +216,9 @@ public struct WeekdayHeatmapChart: View {
             .frame(height: CGFloat(rows.count) * 24 + 30)
         } legend: {
             LegendRow(items: [
-                LegendItem("Rarely", band: Color.accentColor.opacity(0.1)),
-                LegendItem("Always done", band: Color.accentColor),
-            ] + [LegendItem("Answered days only", swatch: EmptyView())])
+                LegendItem(String(localized: "Rarely", bundle: .module), band: Color.accentColor.opacity(0.1)),
+                LegendItem(String(localized: "Always done", bundle: .module), band: Color.accentColor),
+            ] + [LegendItem(String(localized: "Answered days only", bundle: .module), swatch: EmptyView())])
         }
     }
 }

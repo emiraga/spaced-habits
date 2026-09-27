@@ -39,15 +39,25 @@ public struct WidgetSnapshot: Sendable, Hashable {
             today: DayKey(dayNumber: 0),
             cards: [Card(
                 id: gym,
-                title: "🏋️ Gym",
-                body: "Done today?",
+                title: String(localized: "🏋️ Gym", bundle: .module),
+                body: String(localized: "Done today?", bundle: .module),
                 colorHex: HabitPalette.colors[0],
                 isYesNo: true
             )],
             dueCount: 1,
             habits: [
-                Row(id: gym, title: "🏋️ Gym", colorHex: HabitPalette.colors[0], status: .due),
-                Row(id: read, title: "📚 Read", colorHex: HabitPalette.colors[1], status: .done),
+                Row(
+                    id: gym,
+                    title: String(localized: "🏋️ Gym", bundle: .module),
+                    colorHex: HabitPalette.colors[0],
+                    status: .due
+                ),
+                Row(
+                    id: read,
+                    title: String(localized: "📚 Read", bundle: .module),
+                    colorHex: HabitPalette.colors[1],
+                    status: .done
+                ),
             ],
             nextCheckIn: nil
         )
@@ -75,7 +85,9 @@ public extension AppModel {
                     status: todayStatus(of: $0.id)
                 )
             },
-            nextCheckIn: nextCheckIn().map { "\($0.habit.name), \(DayFormat.short($0.day, today: today))" }
+            nextCheckIn: nextCheckIn().map {
+                String(localized: "\($0.habit.name), \(DayFormat.short($0.day, today: today))", bundle: .module)
+            }
         )
     }
 }

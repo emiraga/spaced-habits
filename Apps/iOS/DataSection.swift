@@ -33,8 +33,7 @@ struct DataSection: View {
             Text("Your data")
         } footer: {
             Text(
-                "JSON holds everything and can be imported again. CSV opens in Numbers or Excel. "
-                    + "Importing adds and updates habits and answers, and never deletes any."
+                "JSON holds everything and can be imported again. CSV opens in Numbers or Excel. Importing adds and updates habits and answers, and never deletes any."
             )
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
@@ -68,13 +67,16 @@ struct DataSection: View {
 
     private static func describe(_ summary: ImportSummary) -> String {
         if summary.changedNothing {
-            return "Everything in the file was already here."
+            return String(localized: "Everything in the file was already here.")
         }
-        var parts = ["\(summary.added) new records", "\(summary.updated) updated"]
+        var parts = [
+            String(localized: "\(summary.added) new records"),
+            String(localized: "\(summary.updated) updated"),
+        ]
         if summary.settingsChanged {
-            parts.append("settings replaced")
+            parts.append(String(localized: "settings replaced"))
         }
-        return parts.joined(separator: ", ") + "."
+        return String(localized: "\(parts.formatted(.list(type: .and))).")
     }
 }
 

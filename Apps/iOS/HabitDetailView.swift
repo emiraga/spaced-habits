@@ -65,12 +65,15 @@ struct HabitDetailView: View {
         LabeledContent("Check-ins", value: DayFormat.askInterval(state.currentIntervalDays))
         let parents = model.gateParents(of: habitID)
         if parents.isEmpty {
-            adherenceRow("Adherence, 30 days", model.adherence(of: habitID))
+            adherenceRow(String(localized: "Adherence, 30 days"), model.adherence(of: habitID))
         } else {
             // P(habit | parents) is what the scheduler tracks; P(habit) is shown alongside (§4.5).
             let names = parents.map(\.name).formatted(.list(type: .and))
-            adherenceRow("On \(names) days, 30 days", model.adherence(of: habitID))
-            adherenceRow("All days, 30 days", model.adherence(of: habitID, includingParentMisses: true))
+            adherenceRow(String(localized: "On \(names) days, 30 days"), model.adherence(of: habitID))
+            adherenceRow(
+                String(localized: "All days, 30 days"),
+                model.adherence(of: habitID, includingParentMisses: true)
+            )
         }
         if model.dueHabitIDs.contains(habitID) {
             LabeledContent("Next check-in", value: "Today")
@@ -83,7 +86,8 @@ struct HabitDetailView: View {
     private func adherenceRow(_ label: String, _ adherence: (mean: Double, days: Int)?) -> some View {
         LabeledContent(
             label,
-            value: adherence.map { "\(DayFormat.percent($0.mean)) of \($0.days) answered days" } ?? "No answers yet"
+            value: adherence.map { String(localized: "\(DayFormat.percent($0.mean)) of \($0.days) answered days") }
+                ?? String(localized: "No answers yet")
         )
     }
 

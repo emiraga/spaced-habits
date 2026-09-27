@@ -81,7 +81,7 @@ struct WatchDelaySheet: View {
 
     var body: some View {
         List(Self.lengths, id: \.self) { days in
-            Button(days == 1 ? "1 day" : "\(days) days") {
+            Button(DayFormat.days(days)) {
                 if errors.attempt({ try model.delay(question, days: days, reason: .manual) }) {
                     dismiss()
                 }

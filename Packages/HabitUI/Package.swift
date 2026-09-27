@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "HabitUI",
+    defaultLocalization: "en",
     platforms: [.iOS(.v17), .watchOS(.v10), .macOS(.v14)],
     products: [
         .library(name: "HabitUI", targets: ["HabitUI"]),
@@ -16,6 +17,7 @@ let package = Package(
         .target(
             name: "HabitUI",
             dependencies: ["HabitCore", "HabitStore"],
+            resources: [.process("Resources")],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         .testTarget(

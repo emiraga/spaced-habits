@@ -15,6 +15,6 @@ public struct BuildInfo: Sendable, Equatable {
     }
 
     public var displayString: String {
-        "Version \(version) (\(build))"
+        String(localized: "Version \(version) (\(build))", bundle: .module)
     }
 }

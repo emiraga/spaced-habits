@@ -29,7 +29,7 @@ public struct ClusterCharts: View {
     }
 
     private func name(_ id: UUID) -> String {
-        habits.first { $0.id == id }?.name ?? "Unknown habit"
+        habits.first { $0.id == id }?.name ?? String(localized: "Unknown habit", bundle: .module)
     }
 
     private var members: [Habit] {
@@ -37,55 +37,67 @@ public struct ClusterCharts: View {
     }
 
     private var stacked: some View {
-        ChartCard(title: "Adherence by week") {
+        ChartCard(title: String(localized: "Adherence by week", bundle: .module)) {
             Chart(insights.memberWeeks, id: \.self) { week in
                 BarMark(
-                    x: .value("Week", ChartDay.date(week.weekStart), unit: .weekOfYear),
-                    y: .value("Adherence", week.mean)
+                    x: .value(ChartLabel.week, ChartDay.date(week.weekStart), unit: .weekOfYear),
+                    y: .value(ChartLabel.adherence, week.mean)
                 )
-                .foregroundStyle(by: .value("Habit", name(week.habitID)))
+                .foregroundStyle(by: .value(ChartLabel.habit, name(week.habitID)))
             }
             .chartForegroundStyleScale(domain: members.map(\.name), range: members.map { Color(hex: $0.colorHex) })
             .dayAxis()
             .frame(height: 160)
         } legend: {
-            Text("Each habit's share of answered days done, per week, stacked. Estimated and paused days left out.")
+            Text(
+                "Each habit's share of answered days done, per week, stacked. Estimated and paused days left out.",
+                bundle: .module
+            )
         }
     }
 
     private var pairs: some View {
-        ChartCard(title: "Together and on their own") {
+        ChartCard(title: String(localized: "Together and on their own", bundle: .module)) {
             Chart {
                 ForEach(insights.pairs, id: \.habitID) { pair in
                     if let conditional = pair.conditional {
-                        BarMark(x: .value("Adherence", conditional), y: .value("Habit", name(pair.habitID)))
-                            .position(by: .value("Days", "On parent days"))
-                            .foregroundStyle(by: .value("Days", "On parent days"))
+                        BarMark(
+                            x: .value(ChartLabel.adherence, conditional),
+                            y: .value(ChartLabel.habit, name(pair.habitID))
+                        )
+                        .position(by: .value(ChartLabel.days, Self.parentDays))
+                        .foregroundStyle(by: .value(ChartLabel.days, Self.parentDays))
                     }
                     if let overall = pair.overall {
-                        BarMark(x: .value("Adherence", overall), y: .value("Habit", name(pair.habitID)))
-                            .position(by: .value("Days", "All days"))
-                            .foregroundStyle(by: .value("Days", "All days"))
+                        BarMark(
+                            x: .value(ChartLabel.adherence, overall),
+                            y: .value(ChartLabel.habit, name(pair.habitID))
+                        )
+                        .position(by: .value(ChartLabel.days, Self.allDays))
+                        .foregroundStyle(by: .value(ChartLabel.days, Self.allDays))
                     }
                 }
             }
             .chartXScale(domain: 0 ... 1)
-            .chartForegroundStyleScale(["On parent days": Color.accentColor, "All days": Color.gray])
+            .chartForegroundStyleScale([Self.parentDays: Color.accentColor, Self.allDays: Color.gray])
             .frame(height: CGFloat(insights.pairs.count) * 50 + 30)
         } legend: {
             Text(
-                "Last \(ClusterInsights.windowDays) days. On parent days: how often a habit follows the one it "
-                    + "depends on. All days: how often it happens at all."
+                "Last \(ClusterInsights.windowDays) days. On parent days: how often a habit follows the one it depends on. All days: how often it happens at all.",
+                bundle: .module
             )
         }
     }
 
     private var funnel: some View {
-        ChartCard(title: "Chain") {
+        ChartCard(title: String(localized: "Chain", bundle: .module)) {
             Chart(Array(insights.funnel.enumerated()), id: \.offset) { index, step in
                 BarMark(
-                    x: .value("Days", step.days),
-                    y: .value("Step", index == 0 ? name(step.habitID) : "+ \(name(step.habitID))")
+                    x: .value(ChartLabel.days, step.days),
+                    y: .value(
+                        String(localized: "Step", bundle: .module),
+                        index == 0 ? name(step.habitID) : "+ \(name(step.habitID))"
+                    )
                 )
                 .foregroundStyle(Color(hex: habits.first { $0.id == step.habitID }?.colorHex ?? ""))
                 .annotation(position: .trailing) {
@@ -97,9 +109,12 @@ public struct ClusterCharts: View {
             .frame(height: CGFloat(insights.funnel.count) * 36 + 30)
         } legend: {
             Text(
-                "Days the whole chain happened, over the \(insights.funnelDays) of the last "
-                    + "\(ClusterInsights.windowDays) days answered for every habit in it. Counts add fractions of days."
+                "Days the whole chain happened, over the \(insights.funnelDays) of the last \(ClusterInsights.windowDays) days answered for every habit in it. Counts add fractions of days.",
+                bundle: .module
             )
         }
     }
+
+    private static let parentDays = String(localized: "On parent days", bundle: .module)
+    private static let allDays = String(localized: "All days", bundle: .module)
 }

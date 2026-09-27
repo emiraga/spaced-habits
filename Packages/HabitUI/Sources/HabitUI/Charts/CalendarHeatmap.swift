@@ -30,12 +30,12 @@ enum HeatmapCell: CaseIterable {
 
     var label: String {
         switch self {
-        case .answered: "Answered"
-        case .aggregated: "From a count"
-        case .inferred: "Estimated"
-        case .paused: "Paused"
-        case .blocked: "Blocked"
-        case .unknown: "Unknown"
+        case .answered: String(localized: "Answered", bundle: .module)
+        case .aggregated: String(localized: "From a count", bundle: .module)
+        case .inferred: String(localized: "Estimated", bundle: .module)
+        case .paused: ChartLabel.paused
+        case .blocked: ChartLabel.blocked
+        case .unknown: String(localized: "Unknown", bundle: .module)
         }
     }
 
@@ -110,7 +110,7 @@ public struct CalendarHeatmap: View {
     }
 
     public var body: some View {
-        ChartCard(title: "Calendar") {
+        ChartCard(title: String(localized: "Calendar", bundle: .module)) {
             grid
                 .frame(height: 7 * 15)
                 .accessibilityElement()
@@ -165,6 +165,7 @@ public struct CalendarHeatmap: View {
         let counts = Dictionary(grouping: recent.compactMap { HeatmapCell($0.source) }, by: { $0 }).mapValues(\.count)
         let parts = HeatmapCell.allCases
             .compactMap { style in counts[style].map { "\($0) \(style.label.lowercased())" } }
-        return "Calendar, last \(weeks) weeks: \(parts.joined(separator: ", "))"
+            .formatted(.list(type: .and))
+        return String(localized: "Calendar, last \(weeks) weeks: \(parts)", bundle: .module)
     }
 }

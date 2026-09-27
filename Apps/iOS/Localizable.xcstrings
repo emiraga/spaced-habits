@@ -1,0 +1,557 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@" : {
+
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ is not a habit ID." : {
+
+    },
+    "%@ is paused. It resumes %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is paused. It resumes %2$@."
+          }
+        }
+      }
+    },
+    "%@ of %lld answered days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$lld answered days"
+          }
+        }
+      }
+    },
+    "%@, %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, %3$@"
+          }
+        }
+      }
+    },
+    "%@." : {
+
+    },
+    "%lld new records" : {
+
+    },
+    "%lld scheduled." : {
+
+    },
+    "%lld updated" : {
+
+    },
+    "~%lldd" : {
+
+    },
+    "About" : {
+
+    },
+    "Account" : {
+
+    },
+    "Add a habit and Spaced Habits will ask about it only as often as it needs to." : {
+
+    },
+    "Add habit" : {
+
+    },
+    "Add time" : {
+
+    },
+    "Adherence, 30 days" : {
+
+    },
+    "Advanced" : {
+
+    },
+    "After %lld days" : {
+
+    },
+    "All days, 30 days" : {
+
+    },
+    "All habits" : {
+
+    },
+    "Allow notifications" : {
+
+    },
+    "Also keep parents" : {
+
+    },
+    "Answer Habit" : {
+
+    },
+    "Answers given before this hour count for the previous day." : {
+
+    },
+    "Blocked while a habit it depends on is paused" : {
+
+    },
+    "Blocked while a habit they depend on is paused: %@." : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cancel pause" : {
+
+    },
+    "Cancel vacation" : {
+
+    },
+    "Change the vacation from the Today screen." : {
+
+    },
+    "Charts" : {
+
+    },
+    "Check-ins" : {
+
+    },
+    "Cluster" : {
+
+    },
+    "Color" : {
+
+    },
+    "Connections" : {
+
+    },
+    "Custom" : {
+
+    },
+    "Dates" : {
+
+    },
+    "Day starts at" : {
+
+    },
+    "Days" : {
+
+    },
+    "Delay" : {
+
+    },
+    "Delay ${habit} for ${days} days" : {
+
+    },
+    "Delay Habit" : {
+
+    },
+    "Dependencies" : {
+
+    },
+    "Depends on" : {
+
+    },
+    "Done" : {
+
+    },
+    "Duration" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Edit cluster" : {
+
+    },
+    "Edit habit" : {
+
+    },
+    "Emoji (optional)" : {
+
+    },
+    "End now" : {
+
+    },
+    "End vacation now" : {
+
+    },
+    "Every %lld days" : {
+
+    },
+    "Every %lld days at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Every %1$lld days at %2$@"
+          }
+        }
+      }
+    },
+    "Every day" : {
+
+    },
+    "Every few days" : {
+
+    },
+    "Everything in the file was already here." : {
+
+    },
+    "Export CSV" : {
+
+    },
+    "Export JSON" : {
+
+    },
+    "From" : {
+
+    },
+    "Group habits you do together, like a morning routine." : {
+
+    },
+    "Habit" : {
+
+    },
+    "Habit ID" : {
+
+    },
+    "Habit not found" : {
+
+    },
+    "Habits" : {
+
+    },
+    "Habits and answers sync through your iCloud account to your other devices." : {
+
+    },
+    "Habits in a cluster are listed together on the Today screen." : {
+
+    },
+    "History" : {
+
+    },
+    "How often you aim to do this habit. While you're below the target, you'll get a check-in every day. Once you're above it, check-ins become less frequent." : {
+
+    },
+    "If you haven't answered for a while, the next check-in asks about at most this many recent days. Earlier days aren't asked about; they're estimated from your history." : {
+
+    },
+    "Import finished" : {
+
+    },
+    "Import JSON…" : {
+
+    },
+    "Importance" : {
+
+    },
+    "Include paused days" : {
+
+    },
+    "Insights" : {
+
+    },
+    "Insights appear once you've tracked a habit for a week." : {
+
+    },
+    "JSON holds everything and can be imported again. CSV opens in Numbers or Excel. Importing adds and updates habits and answers, and never deletes any." : {
+
+    },
+    "Keep asking" : {
+
+    },
+    "Keep asking during vacation" : {
+
+    },
+    "Last merge" : {
+
+    },
+    "Log ${habit} as done: ${done}" : {
+
+    },
+    "Log Habit" : {
+
+    },
+    "Logged %@ as not done today." : {
+
+    },
+    "Logged %@ for today." : {
+
+    },
+    "Look back up to %lld days" : {
+
+    },
+    "More important habits are asked first when several are due." : {
+
+    },
+    "More… (%lld more due)" : {
+
+    },
+    "Name" : {
+
+    },
+    "Needed by" : {
+
+    },
+    "New cluster" : {
+
+    },
+    "New cluster…" : {
+
+    },
+    "New habit" : {
+
+    },
+    "Next check-in" : {
+
+    },
+    "Next check-in: %@ on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Next check-in: %1$@ on %2$@."
+          }
+        }
+      }
+    },
+    "Next reminder" : {
+
+    },
+    "No answers yet" : {
+
+    },
+    "No habits yet" : {
+
+    },
+    "None" : {
+
+    },
+    "Not yet" : {
+
+    },
+    "Nothing is due, so there is nothing to notify about." : {
+
+    },
+    "Nothing to ask." : {
+
+    },
+    "Notifications are off for Spaced Habits." : {
+
+    },
+    "Notifications are quiet during this vacation." : {
+
+    },
+    "Nudge me when I go quiet" : {
+
+    },
+    "Off: a reminder at every time, even with nothing to answer." : {
+
+    },
+    "OK" : {
+
+    },
+    "On %@ days, 30 days" : {
+
+    },
+    "On vacation until %@" : {
+
+    },
+    "One notification after that many days without an answer, offering vacation mode for the gap." : {
+
+    },
+    "Only asked about on days you did these habits, and its adherence counts only those days. Pausing one of them pauses this too." : {
+
+    },
+    "Only when something is due" : {
+
+    },
+    "Opens today's check-in." : {
+
+    },
+    "Or leave them blocked: they resume with their parents." : {
+
+    },
+    "Other" : {
+
+    },
+    "Pause" : {
+
+    },
+    "Pause…" : {
+
+    },
+    "Paused" : {
+
+    },
+    "Paused · Resumes %@" : {
+
+    },
+    "Paused %@. Resumes %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Paused %1$@. Resumes %2$@."
+          }
+        }
+      }
+    },
+    "Paused days don't count against the habit, and its progress is frozen until it resumes." : {
+
+    },
+    "Pauses a habit from today. Its progress is frozen, not lost." : {
+
+    },
+    "Pick a past day to cover days you've already missed, for example while sick." : {
+
+    },
+    "Questions arrive as notifications you can answer without opening the app." : {
+
+    },
+    "Questions per session: %lld" : {
+
+    },
+    "Quiet all notifications" : {
+
+    },
+    "Quiet hours" : {
+
+    },
+    "Reason" : {
+
+    },
+    "Records whether you did a habit today." : {
+
+    },
+    "Remember choices for next time" : {
+
+    },
+    "Remind me" : {
+
+    },
+    "Reminder times inside quiet hours are skipped." : {
+
+    },
+    "Reminders" : {
+
+    },
+    "Rename “%@”…" : {
+
+    },
+    "Resumes %@" : {
+
+    },
+    "Review Habits" : {
+
+    },
+    "Save" : {
+
+    },
+    "Schedule" : {
+
+    },
+    "Scheduled pause" : {
+
+    },
+    "Settings" : {
+
+    },
+    "settings replaced" : {
+
+    },
+    "Spaced Habits couldn't open its data" : {
+
+    },
+    "Spaced Habits data (CSV)" : {
+
+    },
+    "Spaced Habits data (JSON)" : {
+
+    },
+    "Start" : {
+
+    },
+    "Starts" : {
+
+    },
+    "Sync" : {
+
+    },
+    "Target" : {
+
+    },
+    "Target: %@ of days" : {
+
+    },
+    "This vacation is scheduled." : {
+
+    },
+    "Time" : {
+
+    },
+    "Time %lld" : {
+
+    },
+    "Today" : {
+
+    },
+    "Turn on in iOS Settings" : {
+
+    },
+    "Uncheck at least one habit to pause." : {
+
+    },
+    "Unchecked habits are paused: no questions, and those days don't count against them." : {
+
+    },
+    "Until" : {
+
+    },
+    "Vacation" : {
+
+    },
+    "Vacation %@" : {
+
+    },
+    "Vacation mode pauses every habit that isn't kept. You can still change this when you start a vacation." : {
+
+    },
+    "Version" : {
+
+    },
+    "When on, paused days count as not done." : {
+
+    },
+    "You're on vacation." : {
+
+    },
+    "Your data" : {
+
+    }
+  },
+  "version" : "1.0"
+}
