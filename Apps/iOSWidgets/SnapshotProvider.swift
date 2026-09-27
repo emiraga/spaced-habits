@@ -42,7 +42,7 @@ struct SnapshotProvider: TimelineProvider {
     private static func entries(now: Date) -> [SnapshotEntry] {
         do {
             return try WidgetTimeline.entries(
-                store: TruthStore(container: StoreContainer.make(.appGroup)),
+                store: TruthStore(container: StoreContainer.make(.appGroup(syncs: false))),
                 timeZone: .current,
                 defaults: StoreContainer.sharedDefaults(),
                 now: now

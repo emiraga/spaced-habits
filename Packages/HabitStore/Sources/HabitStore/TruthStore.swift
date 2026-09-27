@@ -4,8 +4,10 @@ import SwiftData
 
 /// Where the SwiftData store lives.
 public enum StoreLocation: Sendable {
-    /// The App Group container shared with the widget extension (production).
-    case appGroup
+    /// The App Group container shared with the widget extension (production). The app and the watch app
+    /// sync it with CloudKit; the widget extension doesn't (`syncs: false`): SwiftData always records
+    /// persistent history, so the app's CloudKit mirror exports the extension's writes on its next run.
+    case appGroup(syncs: Bool)
     /// A store file at a URL (tests that relaunch).
     case file(URL)
     /// Nothing on disk (tests, previews).
@@ -16,9 +18,10 @@ public enum StoreError: Error, Equatable {
     case appGroupDefaultsUnavailable(String)
 }
 
-/// Builds the `ModelContainer` (DESIGN.md §10). No CloudKit until M7.
+/// Builds the `ModelContainer` (DESIGN.md §10).
 public enum StoreContainer {
     public static let appGroupID = "group.ga.emira.spacedhabits"
+    public static let cloudKitContainerID = "iCloud.ga.emira.spacedhabits"
 
     /// The App Group's defaults, shared by the app and its widget extension (the debug day offset, §6).
     public static func sharedDefaults() throws -> UserDefaults {
@@ -32,9 +35,10 @@ public enum StoreContainer {
 
     public static func make(_ location: StoreLocation) throws -> ModelContainer {
         let configuration = switch location {
-        case .appGroup:
+        case let .appGroup(syncs):
             ModelConfiguration(
-                schema: schema, groupContainer: .identifier(appGroupID), cloudKitDatabase: .none
+                schema: schema, groupContainer: .identifier(appGroupID),
+                cloudKitDatabase: syncs ? .private(cloudKitContainerID) : .none
             )
         case let .file(url):
             ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)

@@ -17,7 +17,7 @@ enum IntentModel {
             return live
         }
         return try AppModel(
-            store: TruthStore(container: StoreContainer.make(.appGroup)),
+            store: TruthStore(container: StoreContainer.make(.appGroup(syncs: false))),
             timeZone: .current,
             defaults: StoreContainer.sharedDefaults(),
             logsPresentedQuestions: false

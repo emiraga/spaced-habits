@@ -1,4 +1,5 @@
 import HabitCore
+import HabitStore
 import HabitUI
 import SwiftUI
 
@@ -7,6 +8,7 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(ErrorPresenter.self) private var errors
     @Environment(Notifier.self) private var notifier
+    @Environment(SyncMonitor.self) private var sync
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingErase = false
     private let buildInfo = BuildInfo(infoDictionary: Bundle.main.infoDictionary)
@@ -39,6 +41,7 @@ struct SettingsView: View {
                     )
                 }
             }
+            syncSection
             Section("About") {
                 LabeledContent("Version", value: buildInfo.displayString)
             }
@@ -66,6 +69,28 @@ struct SettingsView: View {
         )
     }
 
+    /// Account state and last successful merge (§10).
+    private var syncSection: some View {
+        Section {
+            LabeledContent("Account", value: sync.account.label)
+            LabeledContent(
+                "Last merge",
+                value: sync.lastMerge?.formatted(date: .abbreviated, time: .standard) ?? "Not yet"
+            )
+            // Without an account every setup fails; the account row already says why.
+            if sync.account == .available, let error = sync.lastError {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+        } header: {
+            Text("Sync")
+        } footer: {
+            Text("Habits and answers sync through your iCloud account to your other devices.")
+        }
+        .onAppear { sync.refreshAccount() }
+    }
+
     #if DEBUG
         /// §13 M2 checkpoint controls: shift the injected clock, seed data, start over.
         private var debugSection: some View {
@@ -87,6 +112,7 @@ struct SettingsView: View {
                         }
                     }
                 }
+                Button("Re-read and re-project all data") { errors.attempt { try model.reload() } }
                 Button("Add sample habits") { errors.attempt { try model.addSampleHabits() } }
                 Button("Erase all data", role: .destructive) { confirmingErase = true }
                     .confirmationDialog("Erase all habits and answers?", isPresented: $confirmingErase) {

@@ -144,8 +144,13 @@ in the app) both carry the App Group `group.ga.emira.spacedhabits` entitlement, 
 `DEVELOPMENT_TEAM` is `EZ6C73TWB8`; a device build needs the group registered for both bundle IDs
 under that team. The app declares the `spacedhabits` URL scheme for widget taps.
 
+Since M7 the app also carries the iCloud entitlement (CloudKit, container `iCloud.ga.emira.spacedhabits`),
+`aps-environment` and the `remote-notification` background mode for CloudKit's silent pushes. The widget
+extension doesn't sync (§10), so it has no iCloud entitlement. A device build needs the container
+registered under the team (Xcode → Signing & Capabilities → iCloud creates it).
+
 Still to add to `project.yml` in later milestones:
-- iCloud/CloudKit entitlement `iCloud.ga.emira.spacedhabits` (M7) on app, widgets and watch.
+- The same iCloud entitlement on the watch app (M7).
 - `SpacedHabitsWatch` (`application.watchapp2`, `Apps/watchOS`) and `SpacedHabitsWatchWidgets`
   (`Apps/watchOSWidgets`), embedded in the iOS app (M7), plus the watch scheme in `make gen`'s
   `xcode-build-server config` line.
@@ -637,7 +642,12 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 
 ## 10. Sync (CloudKit) and store constraints
 
-- `ModelContainer` with `ModelConfiguration(groupContainer: .identifier("group.…"), cloudKitDatabase: .private("iCloud.…"))`.
+- `ModelContainer` with `ModelConfiguration(groupContainer: .identifier("group.…"), cloudKitDatabase: .private("iCloud.…"))`
+  in the app and the watch app (`StoreLocation.appGroup(syncs: true)`). The widget extension opens the
+  same file with `cloudKitDatabase: .none`: SwiftData always records persistent history (the store has
+  `ATRANSACTION`/`ACHANGE` tables even without CloudKit), so the app's mirror exports the extension's
+  writes on its next run, and a widget timeline doesn't start a sync engine. Without an iCloud account
+  setup fails with `134400` and everything keeps working locally.
 - CloudKit-backed SwiftData constraints (enforce in `HabitStore`):
   - no `@Attribute(.unique)`; uniqueness is by UUID handled in code
   - every property has a default or is optional; every relationship is optional
@@ -652,9 +662,12 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 - Conflict policy: truth tables are append-only; edits to `Habit`, `Cluster`, `PauseEvent` and a
   `Question`'s `dismissedAt` are last-writer-wins per record, which is acceptable for single-user data. Projections are never
   synced.
-- On each remote change notification: re-project from the earliest changed day, reload widgets.
-- A "Sync status" row in Settings shows account state and last successful merge; a debug button
-  forces full re-projection.
+- `HabitStore` `SyncMonitor` observes `NSPersistentCloudKitContainer.eventChangedNotification` (SwiftData
+  posts it). After each successful import the app calls `AppModel.reload(newSession: false)`: truth is
+  re-read and fully re-projected (projection is always a full rebuild, §4.7), and `onRefresh` reloads
+  widgets and notifications. It isn't a new session, so "Later" cards stay hidden.
+- Settings → Sync shows the iCloud account state, the last successful merge and the last sync error;
+  a debug button re-reads and re-projects everything.
 
 ---
 

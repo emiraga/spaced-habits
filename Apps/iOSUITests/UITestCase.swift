@@ -20,8 +20,17 @@ class UITestCase: XCTestCase {
     func launchWithSampleHabits() {
         launch(resetData: true)
         app.buttons["Settings"].tap()
-        app.buttons["Add sample habits"].tap()
+        scrollTo(app.buttons["Add sample habits"]).tap()
         app.buttons["Done"].tap()
+    }
+
+    /// Swipes the first scroll view up until `element` is on screen: a `Form`'s offscreen rows aren't in
+    /// the accessibility tree at all (Settings → Debug sits below the fold).
+    func scrollTo(_ element: XCUIElement) -> XCUIElement {
+        for _ in 0 ..< 5 where !(element.exists && element.isHittable) {
+            app.collectionViews.firstMatch.swipeUp()
+        }
+        return element
     }
 
     /// Checks right away and only then polls: `XCTNSPredicateExpectation` waits a full second per poll.

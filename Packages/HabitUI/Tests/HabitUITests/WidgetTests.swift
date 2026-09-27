@@ -81,6 +81,25 @@ struct WidgetTests {
         #expect(try processes.store().load().questions == logged)
     }
 
+    /// A CloudKit merge mid-session (§10) drops cards answered elsewhere but keeps "Later" cards hidden;
+    /// returning to the app starts a new session, which brings them back.
+    @Test func syncReloadKeepsTheSession() throws {
+        let processes = try TwoProcesses()
+        defer { processes.cleanUp() }
+        _ = try addHabit(processes.app, "Gym")
+        _ = try addHabit(processes.app, "Read")
+        let (first, second) = try (#require(processes.app.questions.first), #require(processes.app.questions.last))
+        try processes.app.later(first)
+
+        try processes.intentModel().answerToday(second.habitID, done: true, channel: .watch)
+        try processes.app.reload(newSession: false)
+        #expect(processes.app.questions.isEmpty)
+        #expect(processes.app.todayStatus(of: second.habitID) == .done)
+
+        try processes.app.reload()
+        #expect(processes.app.questions.map(\.habitID) == [first.habitID])
+    }
+
     @Test func timelineHasAnEntryAtTheNextDayBoundary() throws {
         let processes = try TwoProcesses()
         defer { processes.cleanUp() }

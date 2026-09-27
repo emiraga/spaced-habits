@@ -11,11 +11,12 @@ struct AppBundleTests {
     }
 
     /// Background refresh reschedules notifications (DESIGN.md §8); iOS refuses unlisted task IDs.
-    @Test func backgroundRefreshIsDeclared() {
+    /// CloudKit's silent pushes wake the app to merge other devices' changes (§10).
+    @Test func backgroundModesAreDeclared() {
         let ids = Bundle.main.object(forInfoDictionaryKey: "BGTaskSchedulerPermittedIdentifiers") as? [String]
         let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
         #expect(ids == ["ga.emira.spacedhabits.refresh"])
-        #expect(modes?.contains("fetch") == true)
+        #expect(modes == ["fetch", "remote-notification"])
     }
 
     /// §6: the widget extension is embedded, and widget taps open `spacedhabits://` links.

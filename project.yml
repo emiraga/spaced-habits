@@ -29,7 +29,8 @@ targets:
     info:
       path: Apps/iOS/Info.plist
       properties:
-        UIBackgroundModes: [fetch]
+        # remote-notification: CloudKit's silent pushes (§10).
+        UIBackgroundModes: [fetch, remote-notification]
         BGTaskSchedulerPermittedIdentifiers: [ga.emira.spacedhabits.refresh]
         # Widget taps (DeepLink).
         CFBundleURLTypes:
@@ -43,6 +44,10 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.ga.emira.spacedhabits
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.ga.emira.spacedhabits
+        com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
     dependencies:
       - package: HabitCore
       - package: HabitStore

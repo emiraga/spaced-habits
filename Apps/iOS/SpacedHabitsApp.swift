@@ -12,7 +12,9 @@ struct SpacedHabitsApp: App {
     /// Nil when the data couldn't be opened. Created here, not in a view, so a background launch for a
     /// notification action finds its delegate (§8).
     private let notifier: Notifier?
-    @State private var errors = ErrorPresenter()
+    private let sync = SyncMonitor()
+    /// A constant, not @State: `init` captures it for sync merges, and an App is created once.
+    private let errors = ErrorPresenter()
     @Environment(\.scenePhase) private var scenePhase
     private let logger = Logger(subsystem: "ga.emira.spacedhabits", category: "app")
 
@@ -20,7 +22,7 @@ struct SpacedHabitsApp: App {
         LaunchMetrics.begin()
         let launch = Result {
             let model = try AppModel(
-                store: TruthStore(container: StoreContainer.make(.appGroup)),
+                store: TruthStore(container: StoreContainer.make(.appGroup(syncs: true))),
                 timeZone: .current,
                 defaults: StoreContainer.sharedDefaults()
             ) { SystemClock(calendar: $0) }
@@ -48,6 +50,10 @@ struct SpacedHabitsApp: App {
             WidgetCenter.shared.reloadAllTimelines()
         }
         self.notifier = notifier
+        // Another device's changes (§10). Not a new session: "Later" cards stay hidden.
+        sync.onMerge = { [errors] in
+            errors.attempt { try model.reload(newSession: false) }
+        }
         // Siri and Shortcuts act on this model when they run in the app (§6).
         IntentModel.live = model
         SpacedHabitsShortcuts.updateAppShortcutParameters()
@@ -60,6 +66,7 @@ struct SpacedHabitsApp: App {
                 RootView()
                     .environment(model)
                     .environment(notifier)
+                    .environment(sync)
                     .environment(errors)
                     .errorAlert(errors)
                     .onChange(of: scenePhase) { old, new in

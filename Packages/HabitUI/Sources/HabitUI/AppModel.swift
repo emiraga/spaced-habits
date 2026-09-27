@@ -83,9 +83,10 @@ public final class AppModel {
         try refresh()
     }
 
-    /// Re-reads truth, the day offset and the clock (other processes write the store: widgets, Siri, §6),
-    /// then starts a session.
-    public func reload() throws {
+    /// Re-reads truth, the day offset and the clock (other processes write the store: widgets, Siri, §6;
+    /// CloudKit and the watch merge into it, §10), then re-plans. `newSession` also brings back "Later"
+    /// cards and resets "More…": true on returning to the app, false when a sync lands mid-session.
+    public func reload(newSession: Bool = true) throws {
         let truth = try store.load()
         let dayOffset = defaults.integer(forKey: Self.dayOffsetKey)
         let clock = try Self.makeClock(
@@ -95,7 +96,11 @@ public final class AppModel {
         self.truth = truth
         self.dayOffset = dayOffset
         self.clock = clock
-        try startSession()
+        if newSession {
+            try startSession()
+        } else {
+            try refresh()
+        }
     }
 
     /// Records an answer. A `.delayed` answer also pauses the habit from today (§4.6).
