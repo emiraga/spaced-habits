@@ -66,9 +66,11 @@ public enum Dependencies {
 
     /// Evaluates the gate for a question covering `covers`, or nil if `parentIDs` is empty (ungated).
     ///
-    /// Open when every parent's mean ≥ `minParentMean` and the expected number of days on which all
-    /// parents were done (per-day product of parent values) ≥ `minExpectedParentDoneDays`. The shape is
-    /// conditional on those days: `perDay` lists only parent-done days, `count` totals `parentDoneDays`.
+    /// Open when every parent's mean ≥ `minParentMean` and the known number of days on which all parents
+    /// were done (per-day product of `knownValue`) ≥ `minExpectedParentDoneDays`, so a child waits until its
+    /// parents have been answered for the window. The shape is conditional on those days: `perDay` lists
+    /// parent-done days when each is exactly known (observed or Health), otherwise `count` totals
+    /// `parentDoneDays` and the user reconciles against the days they remember.
     public static func gate(
         parentIDs: [UUID],
         covers: ClosedRange<DayKey>,
@@ -78,7 +80,7 @@ public enum Dependencies {
         guard !parentIDs.isEmpty else { return nil }
         let means = parentIDs.map { (states[$0] ?? .initial(habitID: $0)).adherence.mean }
         guard means.allSatisfy({ $0 >= minParentMean }) else { return .closed }
-        let joint = jointParentValues(parentIDs: parentIDs, covers: covers, states: states, records: records)
+        let joint = jointParentValues(parentIDs: parentIDs, covers: covers, records: records)
         let expectedDoneDays = joint.reduce(0) { $0 + $1.value }
         guard expectedDoneDays >= minExpectedParentDoneDays else { return .closed }
         let context = ParentContext(parentIDs: parentIDs, parentDoneDays: Int(expectedDoneDays.rounded()))
@@ -88,49 +90,40 @@ public enum Dependencies {
         case .perDay:
             let days = joint.filter { $0.value >= parentDoneDayThreshold }.map(\.day)
             guard !days.isEmpty else { return .closed }
-            return .open(shape: .perDay(days: days), context: context)
+            let known = days.allSatisfy { day in
+                parentIDs.allSatisfy { [.observed, .health].contains(records[$0]?[day]?.source) }
+            }
+            return .open(shape: known ? .perDay(days: days) : .count(total: context.parentDoneDays), context: context)
         case .count:
             return .open(shape: .count(total: context.parentDoneDays), context: context)
         }
     }
 
-    /// Per day in `covers`, the expected value that all parents were done: the product of each parent's
-    /// `expectedValue`.
+    /// Per day in `covers`, the known value that all parents were done: the product of each parent's
+    /// `knownValue`.
     public static func jointParentValues(
         parentIDs: [UUID],
         covers: ClosedRange<DayKey>,
-        states: [UUID: SchedulerState],
         records: DayRecords
     ) -> [(day: DayKey, value: Double)] {
-        let means = parentIDs.map { (states[$0] ?? .initial(habitID: $0)).adherence.mean }
-        return covers.map { day in
-            (day, zip(parentIDs, means).reduce(1.0) { product, parent in
-                product * expectedValue(of: records[parent.0]?[day], mean: parent.1)
-            })
+        covers.map { day in
+            (day, parentIDs.reduce(1.0) { $0 * knownValue(of: records[$1]?[day]) })
         }
     }
 
-    /// Days in `covers` on which all parents were likely done (joint value ≥ `parentDoneDayThreshold`).
-    public static func parentDoneDays(
-        parentIDs: [UUID],
-        covers: ClosedRange<DayKey>,
-        states: [UUID: SchedulerState],
-        records: DayRecords
-    ) -> [DayKey] {
-        jointParentValues(parentIDs: parentIDs, covers: covers, states: states, records: records)
+    /// Days in `covers` on which all parents were known done (joint value ≥ `parentDoneDayThreshold`).
+    public static func parentDoneDays(parentIDs: [UUID], covers: ClosedRange<DayKey>, records: DayRecords) -> [DayKey] {
+        jointParentValues(parentIDs: parentIDs, covers: covers, records: records)
             .filter { $0.value >= parentDoneDayThreshold }
             .map(\.day)
     }
 
-    /// A parent's expected done value on a day: 0 while paused or blocked, the posterior mean when
-    /// nothing is known (no record, unknown, not yet due), else the projected value.
-    static func expectedValue(of record: DayRecord?, mean: Double) -> Double {
-        guard let record else { return mean }
-        switch record.source {
-        case .paused, .blocked: return 0
-        case .unknown, .notYetDue: return mean
-        case .observed, .aggregated, .health, .inferred: return record.value
-        }
+    /// What evidence says about a parent's day: the value of an observed, aggregated or Health record, else
+    /// 0. Inferred days are guesses; building a child's question on them asks about days the parent may
+    /// not have happened, and truthful "no" answers then bias P(child | parent) down.
+    static func knownValue(of record: DayRecord?) -> Double {
+        guard let record, record.source.feedsModel else { return 0 }
+        return record.value
     }
 }
 

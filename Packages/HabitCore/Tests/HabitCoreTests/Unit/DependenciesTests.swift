@@ -111,7 +111,7 @@ struct DependenciesGateTests {
             parentIDs: [gym], covers: window(1), states: states, records: [gym: records(gym, [0: 1])]
         )
         #expect(done == .open(shape: .singleDay, context: ParentContext(parentIDs: [gym], parentDoneDays: 1)))
-        // Unanswered today: expected value is the mean (0.9), short of one expected done day.
+        // Unanswered today: nothing is known about the parent yet.
         #expect(Dependencies.gate(parentIDs: [gym], covers: window(1), states: states, records: [:]) == .closed)
         let skipped = Dependencies.gate(
             parentIDs: [gym], covers: window(1), states: states, records: [gym: records(gym, [0: 0])]
@@ -140,12 +140,31 @@ struct DependenciesGateTests {
         #expect(gate == .open(shape: .count(total: 4), context: ParentContext(parentIDs: [gym], parentDoneDays: 4)))
     }
 
-    @Test func pausedParentDaysCountAsNotDoneAndMissingDaysUseMean() {
-        var parentRecords = records(gym, [3: 1, 2: 1], source: .paused)
+    @Test func onlyParentEvidenceCounts() {
+        var parentRecords = records(gym, [4: 1], source: .paused)
+        parentRecords.merge(records(gym, [3: 0.9], source: .inferred)) { $1 }
+        parentRecords.merge(records(gym, [2: 1], source: .health)) { $1 }
         parentRecords.merge(records(gym, [1: 1])) { $1 }
-        // Days 3 and 2 paused (0), day 1 observed (1), day 0 missing (mean 0.9): round(1.9) = 2.
+        // Paused, inferred and missing (day 0) days count 0; Health and observed days count: 2 known days.
         let gate = Dependencies.gate(
-            parentIDs: [gym], covers: window(4), states: [gym: strongState(gym)], records: [gym: parentRecords]
+            parentIDs: [gym], covers: window(5), states: [gym: strongState(gym)], records: [gym: parentRecords]
+        )
+        #expect(gate == .open(shape: .count(total: 2), context: ParentContext(parentIDs: [gym], parentDoneDays: 2)))
+        let guessedOnly = Dependencies.gate(
+            parentIDs: [gym],
+            covers: window(3),
+            states: [gym: strongState(gym)],
+            records: [gym: records(gym, [2: 0.9, 1: 0.9, 0: 0.9], source: .inferred)]
+        )
+        #expect(guessedOnly == .closed)
+    }
+
+    @Test func perDayFallsBackToCountWhenParentDaysAreAggregated() {
+        let gate = Dependencies.gate(
+            parentIDs: [gym],
+            covers: window(3),
+            states: [gym: strongState(gym)],
+            records: [gym: records(gym, [2: 2.0 / 3, 1: 2.0 / 3, 0: 2.0 / 3], source: .aggregated)]
         )
         #expect(gate == .open(shape: .count(total: 2), context: ParentContext(parentIDs: [gym], parentDoneDays: 2)))
     }

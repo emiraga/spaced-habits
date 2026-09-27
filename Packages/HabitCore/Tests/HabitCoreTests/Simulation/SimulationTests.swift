@@ -1,0 +1,89 @@
+import Foundation
+import HabitCore
+import HabitSimulation
+import Testing
+
+/// The engine's acceptance tests (DESIGN.md §4.8): synthetic users, 180 days, seeded.
+struct SimulationTests {
+    /// Full weeks only: the 180-day run ends in a partial week.
+    private func fullWeeks(_ result: SimulationResult, habit: Int) -> [Int] {
+        Array(result.questionsPerWeek(habit: habit).prefix(result.truth[habit].count / 7))
+    }
+
+    @Test func steadyUserIsAskedLessAndInferredWell() throws {
+        let result = try Simulator.run(.steady(probability: 0.95))
+        let weeks = fullWeeks(result, habit: 0)
+        // From week 4 on, every 4-week window averages under 1.5 questions a week.
+        for start in 3 ... weeks.count - 4 {
+            let window = weeks[start ..< start + 4]
+            #expect(Double(window.reduce(0, +)) / 4 < 1.5, "weeks \(start + 1)–\(start + 4): \(Array(window))")
+        }
+        // Inferred days: the average inferred value is within 0.15 of the true rate on those days.
+        let inferred = result.truth[0].indices.compactMap { index -> (Double, Double)? in
+            guard let record = result.record(habit: 0, day: index), record.source == .inferred else { return nil }
+            return (record.value, result.truth[0][index] ? 1 : 0)
+        }
+        #expect(inferred.count >= 30)
+        let meanInferred = inferred.map(\.0).reduce(0, +) / Double(inferred.count)
+        let meanTruth = inferred.map(\.1).reduce(0, +) / Double(inferred.count)
+        #expect(abs(meanInferred - meanTruth) < 0.15)
+    }
+
+    @Test func flakyUserIsAskedAlmostDaily() throws {
+        let result = try Simulator.run(.flaky(probability: 0.5))
+        let weeks = fullWeeks(result, habit: 0)
+        #expect(weeks.allSatisfy { $0 >= 5 }, "\(weeks)")
+    }
+
+    @Test func collapseIsDetectedWithinTenDays() throws {
+        let result = try Simulator.run(.collapsing(before: 0.95, after: 0.1, collapseDay: 60))
+        let target = result.habits[0].targetAdherence
+        let detected = try #require((60 ..< 180).first { (result.live[0][$0]?.mean ?? 1) < target })
+        #expect(detected - 60 <= 10, "detected on day \(detected)")
+    }
+
+    @Test func vacationFreezesStateAndReentersOnce() throws {
+        let pause = 60 ... 73
+        let result = try Simulator.run(.vacation(probability: 0.9, pause: pause))
+        #expect(pause.allSatisfy { result.asks[0][$0] == nil })
+        let frozen = try #require(result.live[0][pause.lowerBound - 1])
+        for day in pause {
+            let point = try #require(result.live[0][day])
+            #expect(point.mean == frozen.mean && point.standardDeviation == frozen.standardDeviation, "day \(day)")
+        }
+        let reentries = result.asks[0].indices.filter { result.asks[0][$0]?.reason == .reentry }
+        #expect(reentries == [pause.upperBound + 1])
+        let reentry = try #require(result.asks[0][pause.upperBound + 1])
+        #expect(reentry.question.covers.lowerBound == result.day(pause.upperBound + 1))
+    }
+
+    @Test func dependentIsAskedOnlyWhenParentHappenedAndLearnsConditional() throws {
+        let result = try Simulator.run(.dependentPair(parent: 0.9, childGivenParent: 0.8))
+        var childQuestions = 0
+        for (index, ask) in result.asks[1].enumerated() {
+            guard let ask else { continue }
+            childQuestions += 1
+            #expect(ask.question.parentContext != nil)
+            let parentDone = ask.question.covers.contains { result.truth[0][result.start.days(to: $0)] }
+            #expect(parentDone, "asked about the child on day \(index) though the parent never happened")
+        }
+        #expect(childQuestions > 0)
+        // Estimated P(child | parent) over the first 60 days: evidence days that are not excluded.
+        let evidence = (0 ..< 60).compactMap { result.record(habit: 1, day: $0) }
+            .filter { $0.source.feedsModel && !$0.conditionalDenominatorExcluded }
+        #expect(evidence.count >= 20)
+        let estimate = evidence.map(\.value).reduce(0, +) / Double(evidence.count)
+        #expect(abs(estimate - 0.8) < 0.1, "estimated P(child | parent) = \(estimate)")
+    }
+
+    /// Question and answer IDs are random, so compare everything that doesn't carry them.
+    @Test func runsAreReproducible() throws {
+        let first = try Simulator.run(.dependentPair())
+        let second = try Simulator.run(.dependentPair())
+        #expect(first.habits == second.habits)
+        #expect(first.live == second.live)
+        #expect(first.projected.series == second.projected.series)
+        #expect(first.projected.states == second.projected.states)
+        #expect(SimulationTable.render(first) == SimulationTable.render(second))
+    }
+}

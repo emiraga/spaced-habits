@@ -134,19 +134,17 @@ struct QuestionPlannerDueTests {
         #expect(try planner().dueReason(habit: thin, state: state, today: today) == .uncertain)
     }
 
-    @Test func spotCheckOnlyOnLongNaturalIntervals() throws {
+    @Test func spotCheckOnlyOnLongAskIntervals() throws {
         let steady = habit()
         #expect(try planner(spotCheckRate: 1)
             .dueReason(habit: steady, state: steadyState(for: steady), today: today) == .spotCheck)
-        // mean ≈ 0.82, sd just under threshold: natural interval is short, so no spot check.
+        // mean ≈ 0.82, sd just under threshold: ask interval is short, so no spot check.
         let shortInterval = SchedulerState(
             habitID: steady.id, alpha: 7, beta: 1.5, lastCoveredDay: today.adding(days: -1),
             lastAskedDay: today.adding(days: -1)
         )
-        let interval = try shortInterval.adherence.naturalIntervalDays(
-            threshold: Settings.default.uncertaintyThreshold, decayRate: Settings.default.decayPerDay, maxDays: 30
-        )
-        #expect(interval <= SpotCheck.minNaturalIntervalDays)
+        let interval = try shortInterval.adherence.askIntervalDays(target: steady.targetAdherence, settings: .default)
+        #expect(interval <= SpotCheck.minAskIntervalDays)
         #expect(try planner(spotCheckRate: 1).dueReason(habit: steady, state: shortInterval, today: today) == nil)
     }
 }
@@ -253,6 +251,7 @@ struct QuestionPlannerRankingTests {
             clock: clock()
         )
         #expect(plan.questions.count == 3)
+        #expect(plan.presented.map(\.habitID) == plan.questions.map(\.habitID))
         #expect(plan.queued.count == 1)
         let asked = Set(plan.questions.map(\.habitID) + plan.queued.map(\.habitID))
         #expect(asked == Set(habits.prefix(4).map(\.id)))

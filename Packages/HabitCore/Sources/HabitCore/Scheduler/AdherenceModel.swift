@@ -78,22 +78,34 @@ public struct AdherenceModel: Sendable, Hashable {
         try observe(value: record.value, weight: Self.weight(for: record))
     }
 
-    /// Days from now until decay alone makes the habit uncertain (`sd > threshold`), in `1...maxDays`.
-    /// Already-uncertain habits return 1; if even the prior is within `threshold`, `maxDays`. This is the
-    /// "ask interval" shown in the UI and charts; it ignores the other due rules (§4.2), which the planner
-    /// applies separately.
-    public func naturalIntervalDays(threshold: Double, decayRate: Double, maxDays: Int) throws -> Int {
+    /// The "ask interval" (§4.1): days from now until decay alone makes the habit due by §4.2 rules 1–3
+    /// (`sd > threshold`, `mean < target`, or `maxDays` reached), in `1...maxDays`. 1 if rule 1 or 2
+    /// already holds. Shown in the UI and charts, and the "> 7 days" test of rule 5.
+    public func askIntervalDays(threshold: Double, target: Double, decayRate: Double, maxDays: Int) throws -> Int {
         guard maxDays >= 1 else { throw InputError.maxDaysNotPositive(maxDays) }
-        guard standardDeviation <= threshold else { return 1 }
-        // Decay moves the mean toward 0.5 and shrinks evidence, so sd only grows: the first crossing wins.
+        func isDue(_ model: AdherenceModel) -> Bool {
+            model.standardDeviation > threshold || model.mean < target
+        }
+        guard !isDue(self) else { return 1 }
+        // Decay moves the mean monotonically toward 0.5 and only grows sd: the first crossing wins.
         var model = self
         for day in 1 ... maxDays {
             try model.decay(days: 1, rate: decayRate)
-            if model.standardDeviation > threshold {
+            if isDue(model) {
                 return day
             }
         }
         return maxDays
+    }
+
+    /// `askIntervalDays` with the engine settings and a habit's target.
+    public func askIntervalDays(target: Double, settings: Settings) throws -> Int {
+        try askIntervalDays(
+            threshold: settings.uncertaintyThreshold,
+            target: target,
+            decayRate: settings.decayPerDay,
+            maxDays: settings.maxIntervalDays
+        )
     }
 }
 

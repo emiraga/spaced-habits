@@ -91,7 +91,7 @@ public enum Projection {
                 settings: truth.settings,
                 today: today
             )
-            let output = try projector.run(unavailable: unavailable, parentStates: states, parentRecords: records)
+            let output = try projector.run(unavailable: unavailable, parentRecords: records)
             records[habit.id] = output.records
             states[habit.id] = output.state
             series[habit.id] = output.series
@@ -125,10 +125,9 @@ private struct HabitProjector {
 
     func run(
         unavailable: [DayKey: [UUID: Unavailability]],
-        parentStates: [UUID: SchedulerState],
         parentRecords: DayRecords
     ) throws -> Output {
-        let answered = answeredDays(parentStates: parentStates, parentRecords: parentRecords)
+        let answered = answeredDays(parentRecords: parentRecords)
         // Paused and blocked days count as covered too (below): questions never reach into a pause.
         var lastCovered = lastCoveredByEvidence
         var model = AdherenceModel.prior
@@ -235,11 +234,8 @@ private struct HabitProjector {
     }
 
     /// Day values stated by answers. `count` answers are spread evenly (O1): `done / total` on each day of
-    /// `covers`, or for a gated habit on each parent-done day (the days the question was about).
-    private func answeredDays(
-        parentStates: [UUID: SchedulerState],
-        parentRecords: DayRecords
-    ) -> [DayKey: AnsweredDay] {
+    /// `covers`, or for a gated habit on each known parent-done day (the days the question was about).
+    private func answeredDays(parentRecords: DayRecords) -> [DayKey: AnsweredDay] {
         var result: [DayKey: AnsweredDay] = [:]
         for answer in answers {
             func set(_ days: some Sequence<DayKey>, _ value: Double?, _ source: DaySource) {
@@ -258,7 +254,7 @@ private struct HabitProjector {
                 }
             case let .count(done, total):
                 let parentDone = Dependencies.parentDoneDays(
-                    parentIDs: parentIDs, covers: answer.covers, states: parentStates, records: parentRecords
+                    parentIDs: parentIDs, covers: answer.covers, records: parentRecords
                 )
                 let days = parentIDs.isEmpty || parentDone.isEmpty ? Array(answer.covers) : parentDone
                 set(days, Double(done) / Double(total), .aggregated)
@@ -272,10 +268,6 @@ private struct HabitProjector {
     }
 
     private func interval(of model: AdherenceModel) throws -> Int {
-        try model.naturalIntervalDays(
-            threshold: settings.uncertaintyThreshold,
-            decayRate: settings.decayPerDay,
-            maxDays: settings.maxIntervalDays
-        )
+        try model.askIntervalDays(target: habit.targetAdherence, settings: settings)
     }
 }

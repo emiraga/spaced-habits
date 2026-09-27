@@ -86,7 +86,7 @@ struct AdherenceModelTests {
         #expect(throws: AdherenceModel.InputError.negativeDays(-1)) { try model.decay(days: -1, rate: rate) }
         #expect(throws: AdherenceModel.InputError.decayRateOutOfRange(0)) { try model.decay(days: 1, rate: 0) }
         #expect(throws: AdherenceModel.InputError.maxDaysNotPositive(0)) {
-            try model.naturalIntervalDays(threshold: threshold, decayRate: rate, maxDays: 0)
+            try model.askIntervalDays(threshold: threshold, target: 0.8, decayRate: rate, maxDays: 0)
         }
         #expect(model == .prior)
     }
@@ -97,7 +97,8 @@ struct AdherenceModelTests {
         #expect(isClose(steady.alpha, 1 + (1 - pow(0.92, 60)) / (1 - 0.92), tolerance: 1e-9))
         #expect(steady.mean > 0.9)
         #expect(steady.standardDeviation < 0.07)
-        let interval = try steady.naturalIntervalDays(threshold: threshold, decayRate: rate, maxDays: 30)
+        // Uncertainty (rule 1) crosses on day ~15, before the mean decays below 0.8 (day ~18).
+        let interval = try steady.askIntervalDays(threshold: threshold, target: 0.8, decayRate: rate, maxDays: 30)
         #expect((14 ... 17).contains(interval))
     }
 
@@ -111,16 +112,30 @@ struct AdherenceModelTests {
         #expect(abs(flaky.mean - 0.5) < 0.05)
         #expect(flaky.standardDeviation < threshold)
         #expect(flaky.mean < Habit.defaultTargetAdherence)
+        // So its ask interval is 1, and with a target it never reaches it would follow the sd crossing.
+        #expect(try flaky.askIntervalDays(threshold: threshold, target: 0.8, decayRate: rate, maxDays: 30) == 1)
+        #expect(try flaky.askIntervalDays(threshold: threshold, target: 0.4, decayRate: rate, maxDays: 30) > 1)
+    }
+
+    /// Decay pulls the mean toward 0.5, so a habit just above target becomes due by rule 2 first.
+    @Test func meanDecayingBelowTargetShortensInterval() throws {
+        let steady = try model(answering: 1, days: 60)
+        let lenient = try steady.askIntervalDays(threshold: threshold, target: 0.8, decayRate: rate, maxDays: 30)
+        let strict = try steady.askIntervalDays(threshold: threshold, target: 0.9, decayRate: rate, maxDays: 30)
+        #expect(strict < lenient)
+        #expect(try steady.askIntervalDays(threshold: threshold, target: 0.95, decayRate: rate, maxDays: 30) == 1)
     }
 
     @Test func intervalGrowsWithEvidenceAndIsCapped() throws {
         let intervals = try [1, 3, 7, 14, 30].map {
-            try model(answering: 1, days: $0).naturalIntervalDays(threshold: threshold, decayRate: rate, maxDays: 30)
+            try model(answering: 1, days: $0)
+                .askIntervalDays(threshold: threshold, target: 0.8, decayRate: rate, maxDays: 30)
         }
         #expect(intervals == intervals.sorted())
-        #expect(try AdherenceModel.prior.naturalIntervalDays(threshold: threshold, decayRate: rate, maxDays: 30) == 1)
+        #expect(try AdherenceModel.prior
+            .askIntervalDays(threshold: threshold, target: 0, decayRate: rate, maxDays: 30) == 1)
         let confident = AdherenceModel(alpha: 500, beta: 1)
-        #expect(try confident.naturalIntervalDays(threshold: threshold, decayRate: 0.999, maxDays: 30) == 30)
+        #expect(try confident.askIntervalDays(threshold: threshold, target: 0.8, decayRate: 0.999, maxDays: 30) == 30)
     }
 
     @Test func schedulerStateExposesModel() {

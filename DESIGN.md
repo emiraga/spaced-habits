@@ -93,16 +93,16 @@ SpacedHabits/
 ├── Packages/
 │   ├── HabitCore/              # PURE logic. No SwiftUI/UIKit/SwiftData imports. Fully tested.
 │   │   ├── Sources/HabitCore/
-│   │   │   ├── Model/          # Habit, Question, Events, DayRecord, Settings
-│   │   │   ├── Scheduler/      # AdherenceModel, QuestionPlanner, SessionBudget, SpotCheck
-│   │   │   ├── Projection/     # EventLog -> DayRecords (materialization)
-│   │   │   ├── Dependencies/   # DAG validation, gating, conditional metrics
-│   │   │   ├── Pauses/         # pause/vacation semantics, re-entry
+│   │   │   ├── Model/          # Habit, Question, Events, DayRecord, Settings, Truth
+│   │   │   ├── Scheduler/      # AdherenceModel, QuestionPlanner, SpotCheck, Dependencies, Pauses
+│   │   │   ├── Projection/     # Truth -> DayRecords + SchedulerState (materialization)
 │   │   │   ├── Export/         # CSV/JSON encoders, schema versioning
 │   │   │   └── Support/        # DayKey, DayCalendar, Clock, RandomSource
+│   │   ├── Sources/HabitSimulation/  # §4.8 synthetic users + day-by-day driver (not shipped)
+│   │   ├── Sources/simulate/   # `swift run simulate <scenario>`: prints the 180-day table
 │   │   └── Tests/HabitCoreTests/
 │   │       ├── Unit/
-│   │       └── Simulation/     # synthetic users; asserts question counts fall with adherence
+│   │       └── Simulation/     # §4.8 acceptance tests
 │   ├── HabitStore/             # SwiftData models + CloudKit config + mapping to HabitCore types
 │   └── HabitUI/                # Shared SwiftUI views (question cards, habit rows, charts)
 ├── Apps/
@@ -238,14 +238,16 @@ Decay is what makes questions come back: as evidence ages, `n` shrinks, `sd` gro
 habit becomes due again. Lots of consistent yeses → large `n` → long time before `sd` crosses the
 threshold. Paused days apply **no decay** (state is frozen).
 
-**Natural interval** (`AdherenceModel.naturalIntervalDays`, stored as
+**Ask interval** (`AdherenceModel.askIntervalDays`, stored as
 `SchedulerState.currentIntervalDays`): the number of days, in `1...maxIntervalDays`, until decay
-alone pushes `sd` above `uncertaintyThreshold`; 1 if it already is. Decay only ever increases `sd`
-(the mean moves toward 0.5 and `n` shrinks), so this is the first crossing. It is the "ask
+alone makes the habit due by §4.2 rules 1–3: `sd` above `uncertaintyThreshold`, the mean below the
+habit's target, or `maxIntervalDays`. It is 1 if rule 1 or 2 already holds. Decay only increases
+`sd` and moves the mean monotonically toward 0.5, so the first crossing wins. It is the "ask
 interval" in the UI and charts and the "> 7 days" test of §4.2 rule 5. With the defaults, a habit
 answered "yes" every day settles at `alpha ≈ 13.5, beta = 1, sd ≈ 0.06` and an interval of
-~15 days; an exact 50/50 habit settles at `sd ≈ 0.13` (below threshold), so only rule 2 keeps
-asking it daily.
+~15 days. An exact 50/50 habit settles at `sd ≈ 0.13`, below threshold, so an sd-only interval
+would claim ~7 days while rule 2 asks it daily. That mismatch (seen in the M1 `flaky` simulation)
+is why the interval includes rules 2 and 3.
 
 ### 4.2 When is a habit due?
 
@@ -257,7 +259,7 @@ A habit is due if **any** of:
 2. `mean < habit.targetAdherence` and `lastAskedDay < today` — struggling habits get daily attention.
 3. `today - lastCoveredDay >= settings.maxIntervalDays` — hard ceiling.
 4. `state.forcedReentryCheck` — first day after a pause ends.
-5. Spot check: with probability `settings.spotCheckRate`, only when the natural interval is > 7 days.
+5. Spot check: with probability `settings.spotCheckRate`, only when the ask interval (§4.1) is > 7 days.
    Keeps the model calibrated against silent collapse. Decided **once per (habit, day)**, not per
    planner run: hash `(habit.id, today)` with a stable hash (not Swift's `Hasher`, which is
    seeded per process) to a value in `0..<1` and compare it to `spotCheckRate`. Re-opening the app,
@@ -319,21 +321,26 @@ inert: the planner, projection and UI must read parents through `habit.gateParen
 cycle validation. The editor creates `.gate` edges only and does not expose the mode.
 
 **Gating** (`Scheduler/Dependencies.swift`, `Gate`). A dependent habit `B` with gate-parent `A` is
-only due when, over `B`'s prospective `covers` window, `A`'s expected done-days ≥ 1 and
-`A.mean ≥ 0.5`. Otherwise asking about `B` produces noise. A parent's expected value on a day is its
-projected `value`, 0 if `.paused`/`.blocked`, and its posterior mean if there is no record or it is
-`.unknown`/`.notYetDue`. Consequence: a single-day question about `B` today waits until `A` has been
-answered "done" today. Multiple gate parents: every mean ≥ 0.5 (AND), and the per-day value is the
-product over parents, so "done days" means days on which all parents were done. Gate edges to
-archived parents are ignored (an archived parent gets no evidence and would gate forever).
+only due when, over `B`'s prospective `covers` window, `A`'s **known** done-days ≥ 1 and
+`A.mean ≥ 0.5`. Otherwise asking about `B` produces noise. Only evidence counts: a parent day's value
+is its record `value` if the source is observed, aggregated or health, and 0 otherwise (inferred,
+unknown, missing, paused, blocked). Using inferred parent days was tried and rejected. The §4.8
+dependent-pair simulation showed cards asking about `B` on days `A` never happened; truthful "no"
+answers then biased `P(B|A)` from 0.80 to 0.70. So `B` waits until `A` has been answered for the
+window, and follows `A`'s question schedule. Clients must build questions at presentation time
+(§4.4), so a `B` card shown after `A`'s answer in the same session sees it. Multiple gate parents:
+every mean ≥ 0.5 (AND), and the per-day value is the product over parents, so "done days" means
+days on which all parents were done. Gate edges to archived parents are ignored (an archived
+parent gets no evidence and would gate forever).
 
 **Conditional metric.** `B`'s adherence is `P(B | A)`, not `P(B)`:
 
 - `parentContext.parentDoneDays = round(Σ A.dayRecords[day].value for day in covers)`.
 - The `count` question reads: *"You did A on 4 of 6 days. On how many of those 4 did you do B?"*
   `total` = `parentDoneDays`, not `coverDays`.
-- Per-day shape: only show toggles for days where `A.value ≥ 0.5`; if there are none, the gate is
-  closed.
+- Per-day shape: only show toggles for days where `A.value ≥ 0.5`, and only when each of those
+  days is exactly known (observed or Health). If any is aggregated, the card falls back to `count`
+  so the user reconciles against the days they remember. No such days: the gate is closed.
 - Projection: on days where `A.value == 0` (observed), `B` gets `source = .observed, value = 0`
   with a flag `conditionalDenominatorExcluded = true` so charts can compute both `P(B)` and
   `P(B|A)`.
@@ -407,17 +414,22 @@ M-series Mac (0.37 s debug).
 
 ### 4.8 Simulation test harness
 
-`Tests/Simulation/` runs synthetic users through the planner for 180 days with a seeded RNG:
+`Sources/HabitSimulation` drives synthetic users through the real planner and projection for 180
+days with a seeded RNG. Habit IDs are seeded too, because spot checks hash them. Each day it answers
+up to `sessionBudget` questions truthfully and re-plans after each answer, as the app does.
+`Tests/HabitCoreTests/Simulation/` asserts, and `swift run simulate <scenario>` prints the day table:
 
-- `SteadyUser(p: 0.95)` → assert questions/week falls below 1.5 by week 4 and inferred-day error
-  (|inferred value − true value|) stays < 0.15.
-- `FlakyUser(p: 0.5)` → assert asked ≥ 5 days/week throughout.
-- `CollapsingUser(p: 0.95 for 60 days, then 0.1)` → assert the collapse is detected (mean < target)
-  within 10 days thanks to spot checks and the max-interval ceiling.
-- `VacationUser` → assert zero questions during the pause, exactly one re-entry check after, and
-  frozen state across it.
-- `DependentPair(A: 0.9, B|A: 0.8)` → assert B is never asked when A is failing, and the estimated
-  `P(B|A)` is within 0.1 of truth by day 60.
+- `steady` (p 0.95) → from week 4 on, every 4-week window averages < 1.5 questions/week. Over
+  inferred days, |mean inferred value − true rate| < 0.15. Per-day error can't meet that bound: a
+  miss is 0 against an inferred ~0.85.
+- `flaky` (p 0.5) → asked ≥ 5 days in every full week.
+- `collapsing` (p 0.95 for 60 days, then 0.1) → the end-of-day mean the engine actually held (not
+  the retrospective projection) drops below target within 10 days. Seed 42: day 67.
+- `vacation` (p 0.9, paused days 60–73) → no questions during the pause, frozen mean/sd across it,
+  exactly one `.reentry` question (day 74) covering only that day.
+- `dependent-pair` (A 0.9, B|A 0.8) → every B question has parent context and a window in which A
+  truly happened. `P(B|A)` estimated from B's non-excluded evidence days 0–59 is within 0.1 of 0.8.
+  Seed 42: 0.784; 0.805 over 180 days.
 
 These are the acceptance tests for the engine. They must pass before UI work begins (Milestone 1).
 
@@ -597,22 +609,10 @@ build.
 
 ### M0 — Scaffold — done (2026-09-27)
 
-### M1 — Engine (2–3 days)
+### M1 — Engine — done (2026-09-27)
 
-Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`), `Model/` (all types in §3.3),
-`Scheduler/AdherenceModel` (§4.1), `Scheduler/QuestionPlanner` + `SpotCheck` (§4.2–4.4),
-`Scheduler/Dependencies` (DAG validation, topological order, gating, conditional context; §4.5),
-`Scheduler/Pauses` (delay → `PauseEvent`, paused/blocked per day; §4.6), `Projection.rebuild`
-(§4.7, including pause freeze, re-entry and backdating).
-
-Deliver in `HabitCore`: the simulation harness (§4.8). Add a tiny `Scripts/simulate.swift`
-(or a `swift run` executable target) that prints a 180-day table for a chosen synthetic user.
-
-Checkpoint:
-- `swift test --package-path Packages/HabitCore` passes, including all five simulations.
-- Running the simulator executable shows ask intervals growing for the steady user and staying
-  at 1 for the flaky user. Paste that table into the commit message.
-- Projection determinism test passes (same input → identical output, twice).
+`Support/`, `Model/` (§3.3), `Scheduler/` (§4.1–4.6), `Projection/` (§4.7) and the simulation
+harness with the `simulate` executable (§4.8). Checkpoint evidence is in the final M1 commit.
 
 ### M2 — Daily driver, single device (2–3 days)
 
@@ -779,6 +779,12 @@ documented manual checkpoint, not a flaky automated test.
 
 Decide during the relevant milestone, then move the answer into the section it governs.
 
+- O6. Rule 2 (`mean < target`) compares against a *decayed* mean. Decay pulls the mean toward 0.5,
+  so a steady 0.95 habit drops below a 0.8 target ~10–12 days after its last answer, and rule 2
+  fires before rule 1 would. The `steady` simulation still meets §4.8, but most of its questions are
+  tagged `belowTarget`, and its ask interval (§4.1) is set by that crossing. Consider comparing the
+  target against the undecayed mean or a lower credible bound. Revisit before M9 (insights read
+  these reasons).
 - O2. Should the "Later" dismissal count toward staleness, or be entirely stateless? Stateless
   for M2; revisit if users report nagging.
 - O3. Third vacation behavior "keep but relaxed" (reduced target). Not in v1.

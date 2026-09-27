@@ -3,8 +3,8 @@ import Foundation
 /// Spot checks (DESIGN.md §4.2 rule 5): decided once per (habit, day) from a stable hash, so every
 /// planner run on every device agrees and the effective rate stays at `Settings.spotCheckRate`.
 public enum SpotCheck {
-    /// Spot checks only apply once the natural interval is longer than this.
-    public static let minNaturalIntervalDays = 7
+    /// Spot checks only apply once the ask interval is longer than this.
+    public static let minAskIntervalDays = 7
 
     /// Uniform-looking value in `0..<1` for `(habitID, day)`. Stable across processes, launches and
     /// platforms: SplitMix64 finalizers over the UUID bytes (big-endian) and the day number, not `Hasher`.

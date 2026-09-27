@@ -34,6 +34,8 @@ public struct DueHabit: Sendable, Hashable {
 /// One session's output (§4.4): at most `sessionBudget` questions; the rest wait behind "More…".
 public struct SessionPlan: Sendable, Hashable {
     public let questions: [Question]
+    /// Why each question is asked; aligned with `questions`.
+    public let presented: [DueHabit]
     /// Due but over budget, in priority order.
     public let queued: [DueHabit]
 }
@@ -70,12 +72,8 @@ public struct QuestionPlanner: Sendable {
         if model.standardDeviation > settings.uncertaintyThreshold {
             return .uncertain
         }
-        let interval = try model.naturalIntervalDays(
-            threshold: settings.uncertaintyThreshold,
-            decayRate: settings.decayPerDay,
-            maxDays: settings.maxIntervalDays
-        )
-        guard interval > SpotCheck.minNaturalIntervalDays else { return nil }
+        let interval = try model.askIntervalDays(target: habit.targetAdherence, settings: settings)
+        guard interval > SpotCheck.minAskIntervalDays else { return nil }
         return SpotCheck.isSpotCheck(habitID: habit.id, day: today, rate: settings.spotCheckRate) ? .spotCheck : nil
     }
 
@@ -190,10 +188,17 @@ public struct QuestionPlanner: Sendable {
         let ranked = try rankedCandidates(
             habits: habits, states: states, records: records, unavailable: unavailable, today: today
         )
-        let questions = ranked.prefix(settings.sessionBudget).compactMap {
-            question(habit: $0.habit, state: $0.state, today: today, createdAt: clock.now(), gate: $0.gate)
+        let shown = ranked.prefix(settings.sessionBudget).compactMap { candidate in
+            question(
+                habit: candidate.habit, state: candidate.state, today: today, createdAt: clock.now(),
+                gate: candidate.gate
+            ).map { ($0, candidate.due) }
         }
-        return SessionPlan(questions: questions, queued: ranked.dropFirst(settings.sessionBudget).map(\.due))
+        return SessionPlan(
+            questions: shown.map(\.0),
+            presented: shown.map(\.1),
+            queued: ranked.dropFirst(settings.sessionBudget).map(\.due)
+        )
     }
 
     private struct Candidate {
