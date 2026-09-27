@@ -36,6 +36,20 @@ public struct DayCalendar: Sendable, Equatable {
         return hour < dayStartHour ? key.adding(days: -1) : key
     }
 
+    /// The instant at local wall-clock `time` on the civil date `date` (not a habit day: 01:00 on the 28th
+    /// belongs to habit day 27 when the day starts at 04:00). A time skipped by a DST jump resolves to the
+    /// same offset after the jump (02:30 → 03:30).
+    public func date(_ date: DayKey, at time: TimeOfDay) -> Date {
+        let civil = date.components
+        let parts = DateComponents(
+            year: civil.year, month: civil.month, day: civil.day, hour: time.hour, minute: time.minute
+        )
+        guard let instant = gregorian.date(from: parts) else {
+            preconditionFailure("Gregorian calendar can't build \(date) \(time.hour):\(time.minute)")
+        }
+        return instant
+    }
+
     private var gregorian: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone

@@ -111,6 +111,27 @@ struct DayCalendarTests {
         #expect(try cal.dayKey(for: date("2026-11-01T04:00:00", "America/New_York")).description == "2026-11-01")
     }
 
+    @Test func dateAtTimeUsesTheCivilDate() throws {
+        let cal = try calendar("Europe/Sarajevo")
+        let day = try #require(DayKey("2026-09-28"))
+        #expect(try cal.date(day, at: TimeOfDay(hour: 20, minute: 30)) == date(
+            "2026-09-28T20:30:00",
+            "Europe/Sarajevo"
+        ))
+        let early = try cal.date(day, at: TimeOfDay(hour: 1, minute: 0))
+        #expect(try early == date("2026-09-28T01:00:00", "Europe/Sarajevo"))
+        #expect(cal.dayKey(for: early).description == "2026-09-27")
+    }
+
+    @Test func dateAtTimeSkippedByDSTMovesForward() throws {
+        let cal = try calendar("America/New_York")
+        let day = try #require(DayKey("2026-03-08"))
+        #expect(try cal.date(day, at: TimeOfDay(hour: 2, minute: 30)) == date(
+            "2026-03-08T03:30:00",
+            "America/New_York"
+        ))
+    }
+
     @Test(arguments: [-1, 24])
     func rejectsOutOfRangeDayStartHour(_ hour: Int) {
         #expect(throws: DayCalendar.ValidationError.dayStartHourOutOfRange(hour)) {

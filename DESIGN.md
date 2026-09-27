@@ -561,9 +561,20 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 - Scheduling: local notifications computed from `NotificationSettings.cadence`, clipped by quiet
   hours, and only scheduled when `onlyWhenQuestionsDue` finds ≥ 1 due habit at that time
   (re-evaluated on each app foreground and via `BGAppRefreshTask`).
+  `HabitCore` `NotificationPlanner.plan(truth, calendar, now)` (pure) decides it; the app replaces
+  every pending request with its output. A slot's content is what the app would plan at that instant
+  if nothing were answered first: `Projection.rebuild` and the session planner run with a clock at the
+  slot (cached per day), so decay, pauses, gates and spot checks all apply and the first notification
+  lands on the Today screen's "Next check-in" day. It plans 7 days ahead (longer for
+  `.everyNDays(n)` with n > 7), at most 60 requests (iOS keeps 64). `.everyNDays(n)` fires on every
+  n-th day since the last answer (before any, since the first habit's `createdDay`), so it means "if I
+  haven't checked in for n days". A time before `dayStartHour` belongs to the previous habit day.
 - Content: the top-priority question text, so the user can answer without opening anything.
   Group multiple due habits into one notification ("3 habits to review") when > 1.
-- Silence nudge (§4.6) and vacation-quiet toggle both live here.
+- Silence nudge (§4.6) and vacation-quiet toggle both live here. The nudge replaces the first
+  slot on day `lastActiveDay + nudgeAfterSilentDays` (any cadence time, even off an `.everyNDays`
+  day) unless a pause is active then; once that day has passed it is not re-sent. A vacation with
+  "Quiet all notifications" silences every slot on its days, kept habits included.
 - Never notify about a paused or blocked habit.
 
 ---
