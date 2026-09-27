@@ -340,7 +340,9 @@ archived parents are ignored (an archived parent gets no evidence and would gate
 
 **Pause propagation.** If gate-parent `A` is paused on a day, `B`'s DayRecord is `.blocked` (not
 `.paused`), so the user can distinguish "I paused protein" from "protein was moot because gym was
-paused". A paused `.sequence` parent has no effect on its children.
+paused". Blocking is transitive (a child of a blocked habit is blocked) and a habit's own pause wins
+over blocked. A paused `.sequence` parent has no effect on its children. `Pauses.unavailable(on:)`
+computes both for a day; the planner takes its keys as `unavailable`.
 
 ### 4.6 Pauses and vacation
 
@@ -579,9 +581,10 @@ build.
 
 Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`), `Model/` (all types in §3.3),
 `Scheduler/AdherenceModel` (§4.1), `Scheduler/QuestionPlanner` + `SpotCheck` (§4.2–4.4),
-`Scheduler/Dependencies` (DAG validation, topological order, gating, conditional context; §4.5).
+`Scheduler/Dependencies` (DAG validation, topological order, gating, conditional context; §4.5),
+`Scheduler/Pauses` (delay → `PauseEvent`, paused/blocked per day; §4.6).
 
-Deliver in `HabitCore`: `Pauses` (freeze, re-entry, backdating),
+Deliver in `HabitCore`: `Pauses` freeze/re-entry/backdating (applied by the projection) (freeze, re-entry, backdating),
 `Projection.rebuild`, and the simulation harness (§4.8). Add a tiny `Scripts/simulate.swift`
 (or a `swift run` executable target) that prints a 180-day table for a chosen synthetic user.
 
