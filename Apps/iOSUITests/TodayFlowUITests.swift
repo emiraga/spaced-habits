@@ -58,11 +58,11 @@ final class TodayFlowUITests: XCTestCase {
 
     func testGapProducesCountCard() {
         launchWithSampleHabits()
-        openSettings()
+        // Advancing closes Settings, so reopen it for each day.
         for _ in 0 ..< 3 {
+            openSettings()
             app.buttons["Advance one day"].tap()
         }
-        app.buttons["Done"].tap()
         // Created three days ago and never answered: four uncovered days.
         let countPrompts = app.staticTexts.matching(identifier: "How many of the last 4 days?")
         XCTAssertTrue(count(countPrompts, equals: 3))

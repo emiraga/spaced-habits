@@ -60,7 +60,11 @@ struct SettingsView: View {
         private var debugSection: some View {
             Section {
                 LabeledContent("Today", value: "\(model.today) (+\(model.dayOffset) days)")
-                Button("Advance one day") { errors.attempt { try model.advanceDay() } }
+                Button("Advance one day") {
+                    if errors.attempt({ try model.advanceDay() }) {
+                        dismiss()
+                    }
+                }
                 Button("Add sample habits") { errors.attempt { try model.addSampleHabits() } }
                 Button("Erase all data", role: .destructive) { confirmingErase = true }
                     .confirmationDialog("Erase all habits and answers?", isPresented: $confirmingErase) {
