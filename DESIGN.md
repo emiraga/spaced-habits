@@ -260,7 +260,7 @@ failing parent (§4.5), or `lastCoveredDay == today`.
 ### 4.3 Question construction
 
 ```
-gapDays = today - lastCoveredDay            (or today - createdDay for new habits)
+gapDays = today - lastCoveredDay            (or today - createdDay + 1 for new habits, D19)
 coverDays = min(gapDays, habit.maxRecallGapDays)
 covers = (today - coverDays + 1) ... today
 shape = coverDays == 1 ? .singleDay
@@ -285,7 +285,7 @@ score(h) = uncertainty(h) * importanceWeight(h) * staleness(h)
     uncertainty = sd (0...0.5)
     importanceWeight = 1 / 1.5 / 2 for low / normal / high
     staleness = 1 + (today - lastAskedDay) / 7
-    forcedReentryCheck and mean < target get a fixed bonus so they surface first
+    order: forcedReentryCheck first, then mean < target, then score (D20); ties by habit ID
 present top settings.sessionBudget (default 3); rest remain queued with a "More…" affordance
 ```
 
@@ -559,10 +559,11 @@ build.
 ### M1 — Engine (2–3 days)
 
 Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`), `Model/` (all types in §3.3),
-`Scheduler/AdherenceModel` (§4.1).
+`Scheduler/AdherenceModel` (§4.1), `Scheduler/QuestionPlanner` + `SpotCheck` (§4.2–4.4; pauses and
+gating arrive as an `unavailable` set, D20).
 
 Deliver in `HabitCore`:
-`QuestionPlanner` (due rules, shapes, budget, prioritization, spot checks), `Dependencies`
+`Dependencies`
 (DAG validation, gating, conditional context), `Pauses` (freeze, re-entry, backdating),
 `Projection.rebuild`, and the simulation harness (§4.8). Add a tiny `Scripts/simulate.swift`
 (or a `swift run` executable target) that prints a 180-day table for a chosen synthetic user.
@@ -785,6 +786,13 @@ Decided:
   invalidates the stored workspace path), hence living in `gen`. The LSP reads per-file flags
   from build logs: run `make build` once afterwards, then reload the editor window. Add the
   watch scheme's line when `SpacedHabitsWatch` lands (M7).
+- D19 (2026-09-27, M1). A never-covered habit's gap counts `createdDay` itself
+  (`today - createdDay + 1`); the original formula gave a gap of 0 on the creation day, so a new
+  habit could not be asked about until the next day.
+- D20 (2026-09-27, M1). §4.4's "fixed bonus" for re-entry and below-target habits is a sort tier
+  instead (re-entry > below target > everything else, then score, then habit ID): a constant bonus
+  can be overtaken by staleness, which is unbounded. `QuestionPlanner` does not know about pauses
+  or parents; callers pass habits that are paused, blocked or gated today as `unavailable`.
 
 Open (decide during the relevant milestone and record here):
 - O1. Should aggregated answers be spread evenly (`value = N/K` per day) or placed on the days
