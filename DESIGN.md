@@ -641,10 +641,12 @@ recall gap), habit detail with a plain history list (no charts yet), Settings wi
 and day start hour. Seed data behind a debug flag.
 
 Checkpoint:
-- Install on a physical iPhone. Create three habits, answer questions for three simulated days
+- Install on a physical iPhone. Create three habits, answer questions for eight simulated days
   (use a debug "advance day" control in Settings that shifts the injected `Clock`).
-- Confirm: a habit answered "yes" three days running is not asked on day 4; a habit answered
-  "no" is asked daily; a four-day gap produces a `count` card.
+- Confirm: a habit answered "yes" every time is asked less often by day 7 (§4.8 `steady`, seed 42:
+  asked days 1–5, not days 6–7, then one per-day card on day 8 covering days 6–8; a few "yes"
+  answers are too little evidence to skip day 4); a habit answered "no" is asked daily; a four-day
+  gap produces a `count` card.
 - Kill and relaunch: state persists. Cold launch < 400 ms measured with Instruments or `os_signpost`.
 
 ### M3 — Pauses and vacation (1–2 days)
