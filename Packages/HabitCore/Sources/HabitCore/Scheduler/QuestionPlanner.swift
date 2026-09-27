@@ -41,8 +41,8 @@ public struct SessionPlan: Sendable, Hashable {
 /// Decides which habits are due, what to ask and in what order (DESIGN.md §4.2–4.4). Pure: all inputs
 /// are values, today comes from the injected `Clock`.
 ///
-/// Pauses, paused parents and failing gate parents (§4.5, §4.6) are decided outside the planner and
-/// passed in as `unavailable` habit IDs.
+/// Gated habits (§4.5) are gated here from the parents' projected `records`. Pauses and paused parents
+/// (§4.6) are decided outside the planner and passed in as `unavailable` habit IDs.
 public struct QuestionPlanner: Sendable {
     public let settings: Settings
 
@@ -104,9 +104,47 @@ public struct QuestionPlanner: Sendable {
         }
     }
 
-    public func question(habit: Habit, state: SchedulerState, today: DayKey, createdAt: Date) -> Question? {
+    /// The question for `habit`, conditioned on its `gate` (from `gate(habit:...)`); nil when nothing is
+    /// uncovered or the gate is closed.
+    public func question(
+        habit: Habit,
+        state: SchedulerState,
+        today: DayKey,
+        createdAt: Date,
+        gate: Gate? = nil
+    ) -> Question? {
         guard let covers = covers(habit: habit, state: state, today: today) else { return nil }
-        return Question(habitID: habit.id, covers: covers, shape: Self.shape(for: covers), createdAt: createdAt)
+        switch gate {
+        case nil:
+            return Question(habitID: habit.id, covers: covers, shape: Self.shape(for: covers), createdAt: createdAt)
+        case let .open(shape, context):
+            return Question(
+                habitID: habit.id,
+                covers: covers,
+                shape: shape,
+                createdAt: createdAt,
+                parentContext: context
+            )
+        case .closed:
+            return nil
+        }
+    }
+
+    // MARK: Gating (§4.5)
+
+    /// The gate over the habit's prospective `covers`, or nil if it has no active gate parents or nothing
+    /// is uncovered. `byID` must contain every parent; habits without a state use `SchedulerState.initial`.
+    public func gate(
+        habit: Habit,
+        byID: [UUID: Habit],
+        states: [UUID: SchedulerState],
+        records: DayRecords,
+        today: DayKey
+    ) throws -> Gate? {
+        let state = states[habit.id] ?? .initial(habitID: habit.id)
+        guard let covers = covers(habit: habit, state: state, today: today) else { return nil }
+        let parentIDs = try Dependencies.activeGateParentIDs(of: habit, in: byID)
+        return Dependencies.gate(parentIDs: parentIDs, covers: covers, states: states, records: records)
     }
 
     // MARK: Prioritization and budget (§4.4)
@@ -125,28 +163,35 @@ public struct QuestionPlanner: Sendable {
         return state.adherence.standardDeviation * Self.importanceWeight(habit.importance) * staleness
     }
 
-    /// All due, available habits in presentation order: priority tier, then score, then habit ID so
-    /// ties are deterministic. Habits without a state use `SchedulerState.initial`.
+    /// All due, available, ungated-or-open habits in presentation order: priority tier, then score, then
+    /// habit ID so ties are deterministic. Habits without a state use `SchedulerState.initial`. `habits`
+    /// must include every gate parent; `records` are the projected days used for gating.
     public func rankedDue(
         habits: [Habit],
         states: [UUID: SchedulerState],
+        records: DayRecords,
         unavailable: Set<UUID>,
         today: DayKey
     ) throws -> [DueHabit] {
-        try rankedCandidates(habits: habits, states: states, unavailable: unavailable, today: today).map(\.due)
+        try rankedCandidates(
+            habits: habits, states: states, records: records, unavailable: unavailable, today: today
+        ).map(\.due)
     }
 
     /// Plans a session: questions for the top `sessionBudget` due habits, the rest queued.
     public func session(
         habits: [Habit],
         states: [UUID: SchedulerState],
+        records: DayRecords,
         unavailable: Set<UUID> = [],
         clock: some Clock
     ) throws -> SessionPlan {
         let today = clock.today()
-        let ranked = try rankedCandidates(habits: habits, states: states, unavailable: unavailable, today: today)
+        let ranked = try rankedCandidates(
+            habits: habits, states: states, records: records, unavailable: unavailable, today: today
+        )
         let questions = ranked.prefix(settings.sessionBudget).compactMap {
-            question(habit: $0.habit, state: $0.state, today: today, createdAt: clock.now())
+            question(habit: $0.habit, state: $0.state, today: today, createdAt: clock.now(), gate: $0.gate)
         }
         return SessionPlan(questions: questions, queued: ranked.dropFirst(settings.sessionBudget).map(\.due))
     }
@@ -154,25 +199,32 @@ public struct QuestionPlanner: Sendable {
     private struct Candidate {
         let habit: Habit
         let state: SchedulerState
+        let gate: Gate?
         let due: DueHabit
     }
 
     private func rankedCandidates(
         habits: [Habit],
         states: [UUID: SchedulerState],
+        records: DayRecords,
         unavailable: Set<UUID>,
         today: DayKey
     ) throws -> [Candidate] {
+        let byID = try Dependencies.index(habits)
         var candidates: [Candidate] = []
         for habit in habits where !unavailable.contains(habit.id) {
             let state = states[habit.id] ?? .initial(habitID: habit.id)
             guard let reason = try dueReason(habit: habit, state: state, today: today) else { continue }
+            let gate = try gate(habit: habit, byID: byID, states: states, records: records, today: today)
+            if gate == .closed {
+                continue
+            }
             let due = DueHabit(
                 habitID: habit.id,
                 reason: reason,
                 score: score(habit: habit, state: state, today: today)
             )
-            candidates.append(Candidate(habit: habit, state: state, due: due))
+            candidates.append(Candidate(habit: habit, state: state, gate: gate, due: due))
         }
         return candidates.sorted { lhs, rhs in
             let (left, right) = (lhs.due, rhs.due)

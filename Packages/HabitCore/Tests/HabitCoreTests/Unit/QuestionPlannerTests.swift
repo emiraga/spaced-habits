@@ -220,6 +220,7 @@ struct QuestionPlannerRankingTests {
         let ranked = try planner().rankedDue(
             habits: [uncertainHigh, struggling, reentry],
             states: states,
+            records: [:],
             unavailable: [],
             today: today
         )
@@ -231,7 +232,13 @@ struct QuestionPlannerRankingTests {
     @Test func tiesBreakByHabitID() throws {
         let first = try habit(id: #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001")))
         let second = try habit(id: #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002")))
-        let ranked = try planner().rankedDue(habits: [second, first], states: [:], unavailable: [], today: today)
+        let ranked = try planner().rankedDue(
+            habits: [second, first],
+            states: [:],
+            records: [:],
+            unavailable: [],
+            today: today
+        )
         #expect(ranked.map(\.habitID) == [first.id, second.id])
     }
 
@@ -241,6 +248,7 @@ struct QuestionPlannerRankingTests {
         let plan = try planner(sessionBudget: 3).session(
             habits: habits,
             states: [:],
+            records: [:],
             unavailable: [paused.id],
             clock: clock()
         )

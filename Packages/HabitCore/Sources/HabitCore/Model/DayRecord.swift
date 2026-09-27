@@ -32,6 +32,9 @@ public struct DayRecord: Codable, Sendable, Hashable {
     }
 }
 
+/// Projected records keyed by habit, then day.
+public typealias DayRecords = [UUID: [DayKey: DayRecord]]
+
 /// How we know a day's value (principle 1.1: honest data).
 public enum DaySource: String, Codable, Sendable, Hashable, CaseIterable {
     /// The user answered about this specific day (singleDay / perDay).

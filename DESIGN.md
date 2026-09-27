@@ -265,8 +265,9 @@ A habit is due if **any** of:
    regardless of how often the planner runs.
 
 A habit is **never** due if: it is paused today, archived, blocked by a paused parent, gated by a
-failing parent (§4.5), or `lastCoveredDay == today`. `QuestionPlanner` knows nothing about pauses
-or parents: callers pass the paused, blocked and gated habits as `unavailable`.
+failing parent (§4.5), or `lastCoveredDay == today`. `QuestionPlanner` gates dependents itself from
+the projected `DayRecords` it is given (§4.5); it knows nothing about pauses: callers pass the paused
+and blocked habits as `unavailable`.
 
 ### 4.3 Question construction
 
@@ -317,16 +318,22 @@ inert: the planner, projection and UI must read parents through `habit.gateParen
 `habit.allParentIDs`, so a `.sequence` edge (e.g. from a JSON import) changes nothing except
 cycle validation. The editor creates `.gate` edges only and does not expose the mode.
 
-**Gating.** A dependent habit `B` with gate-parent `A` is only due when, over `B`'s prospective
-`covers` window, `A`'s expected done-days ≥ 1 and `A.mean ≥ 0.5`. Otherwise asking about `B`
-produces noise. Multiple gate parents: all must pass (AND) in v1.
+**Gating** (`Scheduler/Dependencies.swift`, `Gate`). A dependent habit `B` with gate-parent `A` is
+only due when, over `B`'s prospective `covers` window, `A`'s expected done-days ≥ 1 and
+`A.mean ≥ 0.5`. Otherwise asking about `B` produces noise. A parent's expected value on a day is its
+projected `value`, 0 if `.paused`/`.blocked`, and its posterior mean if there is no record or it is
+`.unknown`/`.notYetDue`. Consequence: a single-day question about `B` today waits until `A` has been
+answered "done" today. Multiple gate parents: every mean ≥ 0.5 (AND), and the per-day value is the
+product over parents, so "done days" means days on which all parents were done. Gate edges to
+archived parents are ignored (an archived parent gets no evidence and would gate forever).
 
 **Conditional metric.** `B`'s adherence is `P(B | A)`, not `P(B)`:
 
 - `parentContext.parentDoneDays = round(Σ A.dayRecords[day].value for day in covers)`.
 - The `count` question reads: *"You did A on 4 of 6 days. On how many of those 4 did you do B?"*
   `total` = `parentDoneDays`, not `coverDays`.
-- Per-day shape: only show toggles for days where `A.value ≥ 0.5`.
+- Per-day shape: only show toggles for days where `A.value ≥ 0.5`; if there are none, the gate is
+  closed.
 - Projection: on days where `A.value == 0` (observed), `B` gets `source = .observed, value = 0`
   with a flag `conditionalDenominatorExcluded = true` so charts can compute both `P(B)` and
   `P(B|A)`.
@@ -571,11 +578,10 @@ build.
 ### M1 — Engine (2–3 days)
 
 Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`), `Model/` (all types in §3.3),
-`Scheduler/AdherenceModel` (§4.1), `Scheduler/QuestionPlanner` + `SpotCheck` (§4.2–4.4).
+`Scheduler/AdherenceModel` (§4.1), `Scheduler/QuestionPlanner` + `SpotCheck` (§4.2–4.4),
+`Scheduler/Dependencies` (DAG validation, topological order, gating, conditional context; §4.5).
 
-Deliver in `HabitCore`:
-`Dependencies`
-(DAG validation, gating, conditional context), `Pauses` (freeze, re-entry, backdating),
+Deliver in `HabitCore`: `Pauses` (freeze, re-entry, backdating),
 `Projection.rebuild`, and the simulation harness (§4.8). Add a tiny `Scripts/simulate.swift`
 (or a `swift run` executable target) that prints a 180-day table for a chosen synthetic user.
 
