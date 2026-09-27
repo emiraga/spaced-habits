@@ -3,6 +3,7 @@ import HabitStore
 import HabitUI
 import os
 import SwiftUI
+import UIKit
 
 @main
 struct SpacedHabitsApp: App {
@@ -26,6 +27,10 @@ struct SpacedHabitsApp: App {
                 // UI tests start from an empty store and today's real date.
                 if ProcessInfo.processInfo.arguments.contains("-resetData") {
                     try model.eraseAll()
+                }
+                // UI tests skip animations: every sheet and push otherwise costs an idle wait.
+                if ProcessInfo.processInfo.arguments.contains("-disableAnimations") {
+                    UIView.setAnimationsEnabled(false)
                 }
             #endif
             return model

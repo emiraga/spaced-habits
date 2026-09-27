@@ -689,8 +689,10 @@ harness with the `simulate` executable (§4.8). Checkpoint evidence is in the fi
 
 `HabitStore` (one `TruthRecord` model in the App Group container, §10), `HabitUI` `AppModel` and
 cards, Today / habit detail / editor / Settings screens, debug "Advance one day" and seed data.
-`AppModelTests.checkpointEightDays` drives the §4.8 `steady` day 1–8 expectations; `TodayFlowUITests`
-covers relaunch persistence and count cards (screenshots `Docs/checkpoints/m2-*.png`). Physical
+`AppModelTests.checkpointEightDays` drives the §4.8 `steady` day 1–8 expectations, including the count
+card after a gap; `TodayFlowUITests` covers relaunch persistence (screenshots `Docs/checkpoints/m2-*.png`).
+The count-card XCUITest was dropped as a duplicate: it cost ~18 s per `make test`. UI tests launch with
+`-disableAnimations` (debug builds) so sheets don't hold up every tap. Physical
 iPhone 16 Pro: "yes" habits fade, "no" habits are asked daily, a 4+ day gap gives a count card, and
 answers survive kill and relaunch. `LaunchMetrics` cold launch on that device: 80–82 ms from process
 start (3 runs). Launch it with `xcrun devicectl device process launch --console --terminate-existing
