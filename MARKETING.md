@@ -69,11 +69,10 @@ tracker,routine,daily,goals,streak,reminder,self,improvement,watch,widget,produc
 > • Connected habits: if you skipped the gym, it won't ask about your protein shake.
 > • Delay, don't fail: pause a habit for a week and your progress is kept.
 > • Vacation mode: one switch pauses everything except the habits you choose.
-> • Apple Health: a logged workout completes your gym habit automatically.
 > • Reminders only when there's something to answer, and quiet hours are respected.
 >
 > **Answer anywhere**
-> Answer from Home Screen and Lock Screen widgets, Apple Watch, or straight from a
+> Answer from Home Screen and Lock Screen widgets, Apple Watch, Siri, or straight from a
 > notification. Everything stays in sync.
 >
 > **Your data stays yours**
@@ -88,7 +87,15 @@ tracker,routine,daily,goals,streak,reminder,self,improvement,watch,widget,produc
 4. Honest history, no fake streaks.
 5. Skipped the gym? It won't ask about the shake.
 6. Answer from your wrist or Lock Screen.
-7. Apple Health fills in workouts for you.
+7. Just tell Siri you did it.
+
+### App Store Connect answers
+
+- **App Privacy:** Data Not Collected. Habits live on the device and in the user's own iCloud
+  (private CloudKit database), which Apple doesn't count as developer collection. Matches the
+  privacy manifests (DESIGN.md §2).
+- **Export compliance:** exempt; `ITSAppUsesNonExemptEncryption = NO` is in every build.
+- Apple Health isn't shipped (DESIGN.md O7). Add it back to the copy only when it is.
 
 ## Short pitch
 
