@@ -887,12 +887,3 @@ Open (decide during the relevant milestone and record here):
 - O5. Whether to expose model parameters (decay, threshold) in Settings or keep them hidden
   behind an "advanced" section. Advanced section for v1.
 
-Changelog:
-- 2026-09-27 — initial version.
-- 2026-09-27 — renamed to Spaced Habits; dependencies changed to typed edges with a mode (D8),
-  M4 checkpoint extended, export/import formats updated.
-- 2026-09-27 — M0 scaffold landed; D9–D12 recorded; logging subsystem is
-  `ga.emira.spacedhabits`.
-- 2026-09-27 — hosted CI dropped (D13).
-- 2026-09-27 — removed implemented M0 instructions (§2.2 sketches, M0 deliverables).
-- 2026-09-27 — M1 `Support/` landed; §3.1 reduced to binding rules; spot checks per day (D14).
