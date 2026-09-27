@@ -24,7 +24,7 @@ make build         # iOS simulator build via xcodebuild + xcbeautify
 make test          # HabitCore via `swift test`, app targets via xcodebuild
 make lint          # swiftlint --strict
 make format        # swiftformat . (run this, don't hand-format)
-make format-check  # what CI runs
+make format-check  # what `make ci` runs
 make ci            # gen + format-check + lint + test — must pass before push
 ```
 

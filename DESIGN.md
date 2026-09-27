@@ -58,7 +58,7 @@ interval is itself the progress metric.
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Language | Swift, **Swift 6 language mode**, strict concurrency | Warnings as errors in CI |
+| Language | Swift, **Swift 6 language mode**, strict concurrency | Warnings as errors |
 | Min deployment | iOS 17 / watchOS 10 | Raise if a required API needs it; document why |
 | Xcode | Latest stable | Pin in `.xcode-version` |
 | UI | SwiftUI everywhere | UIKit only for wrapped edge cases |
@@ -70,12 +70,12 @@ interval is itself the progress metric.
 | Charts | Swift Charts | |
 | Tests | **Swift Testing** (`import Testing`) for new code; XCTest only where required (UI tests) | |
 | Project generation | **XcodeGen** (`project.yml`) | `.xcodeproj` is generated and git-ignored |
-| Formatting | **SwiftFormat** (`.swiftformat`) | Run on save + pre-commit + CI check |
-| Linting | **SwiftLint** (`.swiftlint.yml`) | `--strict` in CI |
+| Formatting | **SwiftFormat** (`.swiftformat`) | Run on save + pre-commit + `make ci` check |
+| Linting | **SwiftLint** (`.swiftlint.yml`) | `--strict` |
 | Build output | **xcbeautify** | |
 | Tool pinning | `Brewfile` (+ optional `mise`) | Everyone builds with the same tool versions |
 | Task runner | `Makefile` | `make gen / build / test / lint / format / ci` |
-| CI | GitHub Actions on macOS | Runs `make ci` on every push to `main` |
+| CI | None hosted; `make ci` locally | Run before every push (D13) |
 | Git hooks | `pre-commit` (or `lefthook`) | format + lint on staged files |
 
 ### 2.1 Module layout
@@ -88,7 +88,6 @@ SpacedHabits/
 ├── .swiftformat
 ├── .swiftlint.yml
 ├── .xcode-version
-├── .github/workflows/ci.yml
 ├── DESIGN.md                   # this file
 ├── Packages/
 │   ├── HabitCore/              # PURE logic. No SwiftUI/UIKit/SwiftData imports. Fully tested.
@@ -236,8 +235,7 @@ Disable `line_length` (SwiftFormat owns it) and `todo`. `excluded: [SpacedHabits
 
 `.gitignore`: `*.xcodeproj/`, `DerivedData/`, `.build/`, `*.xcuserstate`, `xcuserdata/`, `.DS_Store`.
 
-CI (`.github/workflows/ci.yml`): `runs-on: macos-latest`, select Xcode from `.xcode-version`,
-`brew bundle`, `make ci`. Cache SwiftPM `.build` directories.
+No hosted CI (D13): `make ci` run locally before every push is the gate.
 
 ---
 
@@ -766,13 +764,12 @@ build.
 ### M0 — Scaffold (½ day)
 
 Deliver: repo layout from §2.1, `project.yml`, `Makefile`, `Brewfile`, `.swiftformat`,
-`.swiftlint.yml`, `.gitignore`, `.xcode-version`, CI workflow, empty `HabitCore` /
+`.swiftlint.yml`, `.gitignore`, `.xcode-version`, empty `HabitCore` /
 `HabitStore` / `HabitUI` packages with one trivial test each, empty iOS app showing
 "Spaced Habits" and a build number.
 
 Checkpoint:
 - `make setup && make gen && make ci` passes locally with zero warnings.
-- CI is green on the first push.
 - App launches on an iOS simulator.
 
 ### M1 — Engine (2–3 days)
@@ -927,7 +924,7 @@ the app described in §1; M5–M8 make it frictionless; M9–M11 make it shippab
 | Manual | checkpoints above | anything involving notifications, widgets, Health, CloudKit, Watch |
 
 All tests run in `make ci`. Anything that needs a physical device or an iCloud account is a
-documented manual checkpoint, not a flaky CI test.
+documented manual checkpoint, not a flaky automated test.
 
 ---
 
@@ -935,7 +932,7 @@ documented manual checkpoint, not a flaky CI test.
 
 1. Read this document before each milestone; update it when a decision changes. Add a dated line
    under §16 for every deviation.
-2. Run `make format && make lint && make test` before declaring any task done. CI must be green.
+2. Run `make format && make lint && make test` before declaring any task done; `make ci` must be green before pushing.
 3. `HabitCore` stays dependency-free and UI-free. If you need a platform API in the engine, you
    are in the wrong module — pass the value in instead.
 4. Commit directly to `main` in small, atomic commits; no branches or pull requests. Include the
@@ -979,6 +976,8 @@ Decided:
   not in M0.
 - D12 (2026-09-27, M0). SwiftLint `trailing_comma` is disabled: SwiftFormat owns trailing
   commas (same reasoning as `line_length`).
+- D13 (2026-09-27, M0). No hosted CI (GitHub Actions removed): `make ci` run locally before
+  every push is the gate. GitHub's macOS runners did not have Xcode 27 when M0 landed.
 
 Open (decide during the relevant milestone and record here):
 - O1. Should aggregated answers be spread evenly (`value = N/K` per day) or placed on the days
@@ -996,3 +995,4 @@ Changelog:
   M4 checkpoint extended, export/import formats updated.
 - 2026-09-27 — M0 scaffold landed; D9–D12 recorded; logging subsystem is
   `com.emiraga.spacedhabits`.
+- 2026-09-27 — hosted CI dropped (D13).
