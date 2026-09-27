@@ -73,6 +73,7 @@ interval is itself the progress metric.
 | Formatting | **SwiftFormat** (`.swiftformat`) | Run on save + pre-commit + `make ci` check |
 | Linting | **SwiftLint** (`.swiftlint.yml`) | `--strict` |
 | Build output | **xcbeautify** | |
+| Editor LSP | **xcode-build-server** | Lets SourceKit-LSP (VS Code, etc.) resolve app-target flags; `make gen` writes `buildServer.json` |
 | Tool pinning | `Brewfile` (+ optional `mise`) | Everyone builds with the same tool versions |
 | Task runner | `Makefile` | `make gen / build / test / lint / format / ci` |
 | CI | None hosted; `make ci` locally | Run before every push (D13) |
@@ -778,6 +779,12 @@ Decided:
   allowlisting short names: `AnswerValue.yes/.no` → `.done/.notDone`, `count(done:of:)` →
   `count(done:total:)`, `QuestionShape.count(of:)` → `.count(total:)`, `Cadence.everyNDays(_:at:)` →
   `everyNDays(_:time:)`. User-facing copy still says Yes / No.
+- D18 (2026-09-27, M1). `make gen` also runs `xcode-build-server config` for the `SpacedHabits`
+  scheme, writing a git-ignored `buildServer.json` so SourceKit-LSP editors understand the app
+  target. It must re-run after every `xcodegen generate` (the regenerated `.xcodeproj`
+  invalidates the stored workspace path), hence living in `gen`. The LSP reads per-file flags
+  from build logs: run `make build` once afterwards, then reload the editor window. Add the
+  watch scheme's line when `SpacedHabitsWatch` lands (M7).
 
 Open (decide during the relevant milestone and record here):
 - O1. Should aggregated answers be spread evenly (`value = N/K` per day) or placed on the days

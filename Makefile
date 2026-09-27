@@ -7,8 +7,9 @@ setup:        ## install pinned tools
 	brew bundle
 	pre-commit install
 
-gen:          ## regenerate SpacedHabits.xcodeproj from project.yml
+gen:          ## regenerate SpacedHabits.xcodeproj from project.yml + refresh buildServer.json for SourceKit-LSP
 	xcodegen generate
+	xcode-build-server config -project SpacedHabits.xcodeproj -scheme SpacedHabits
 
 build: gen
 	$(XCODEBUILD) -destination 'generic/platform=iOS Simulator' build | xcbeautify
@@ -36,4 +37,4 @@ format-check:
 ci: gen format-check lint test
 
 clean:
-	rm -rf SpacedHabits.xcodeproj DerivedData .build Packages/*/.build
+	rm -rf SpacedHabits.xcodeproj buildServer.json DerivedData .build Packages/*/.build
