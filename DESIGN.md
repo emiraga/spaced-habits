@@ -98,15 +98,16 @@ SpacedHabits/
 │   │   │   ├── Model/          # Habit, Question, Events, DayRecord, Settings, Truth
 │   │   │   ├── Scheduler/      # AdherenceModel, QuestionPlanner, SpotCheck, Dependencies, Pauses
 │   │   │   ├── Projection/     # Truth -> DayRecords + SchedulerState (materialization)
+│   │   │   ├── Insights/       # §12 chart data: AdherenceFilter, HabitInsights, Overview, ClusterInsights
 │   │   │   ├── Export/         # CSV/JSON encoders, schema versioning
 │   │   │   └── Support/        # DayKey, DayCalendar, Clock, RandomSource
-│   │   ├── Sources/HabitSimulation/  # §4.8 synthetic users + day-by-day driver (not shipped)
-│   │   ├── Sources/simulate/   # `swift run simulate <scenario>`: prints the 180-day table
+│   │   ├── Sources/HabitSimulation/  # §4.8 synthetic users + day-by-day driver, LargeFixture (not shipped)
+│   │   ├── Sources/simulate/   # `swift run simulate <scenario> [--end day] [--json]`: 180-day table or Truth fixture
 │   │   └── Tests/HabitCoreTests/
 │   │       ├── Unit/
 │   │       └── Simulation/     # §4.8 acceptance tests
 │   ├── HabitStore/             # SwiftData models + CloudKit config + mapping to HabitCore types
-│   └── HabitUI/                # AppModel (session, answers, edits; shared with watch/widgets later) + SwiftUI components (cards, glyphs, charts)
+│   └── HabitUI/                # AppModel (session, answers, edits; shared with watch/widgets later) + SwiftUI components (cards, glyphs); Charts/ (§12)
 ├── Apps/
 │   ├── iOS/                    # Spaced Habits (iOS app target) + Assets.xcassets
 │   ├── iOSTests/               # app-hosted unit tests (Swift Testing)
@@ -481,6 +482,11 @@ up to `sessionBudget` questions truthfully and re-plans after each answer, as th
 
 These are the acceptance tests for the engine. They must pass before UI work begins (Milestone 1).
 
+`simulate <scenario> --json` prints the run's `Truth` instead of the table, and `--end yyyy-MM-dd` moves the
+run to end on that day. A debug build launched with `-importFixture <path>` writes such a file into its
+store (`AppModel.importFixture`; the simulator app reads host paths). Pass the app's current day as `--end`:
+before `dayStartHour` that is still yesterday. M10's JSON import replaces this debug path for real data.
+
 ---
 
 ## 5. User interface (iOS)
@@ -747,6 +753,26 @@ Overall:
 
 Every chart has a data-source legend. Do not show a chart if fewer than 7 non-paused days exist.
 
+Implemented in M9. Data is computed in `HabitCore/Insights` (pure, tested), drawn by `HabitUI/Charts`:
+- **Adherence counts evidence only** (`AdherenceFilter`): observed, aggregated and Health days. Inferred and
+  unknown days never count. For a gated habit the default is `P(B|A)`; `includingParentMisses` gives `P(B)`.
+  "Include paused days" (stored in `@AppStorage`, shared by Insights and habit detail) makes paused and blocked
+  days count as not done; off, they are left out and shown only as bands. Rolling lines break across windows
+  with nothing to count instead of bridging them.
+- **Questions per day** counts distinct (habit, day) pairs across logged questions and answers
+  (`covers.upperBound`): widget and Siri answers log no question, and a card shown again after "Later" logs a
+  second one. Vacation pauses are the bands on this chart; per-habit timelines band that habit's paused and
+  blocked days.
+- **Regressions** need ≥ 3 counted days in both windows. The **funnel** runs along the cluster's longest gate
+  chain over the last 30 days that have evidence for every member; aggregated days add their fraction.
+  **Stacked adherence** is per member per 7-day week, 12 weeks. The day-of-week heatmap is habits × weekdays
+  plus an "All habits" row.
+- The **calendar heatmap** is a `Canvas`, not Swift Charts: hatching, stripes and dotted outlines are paths
+  there. It shows the last 26 weeks; one `HeatmapCell.draw` renders both cells and legend.
+- Chart x values are noon UTC on the civil date, labeled in UTC (`ChartDay`), like `DayFormat`.
+- Insight cards: regressions, then delayed-often (`Pauses.frequentlyDelayedHabitIDs` rule), then autonomy.
+- Insights is a lazy `List`: every section's data is computed on open, charts draw as they scroll in.
+
 ---
 
 ## 13. Implementation plan
@@ -781,7 +807,7 @@ start (3 runs). Launch it with `xcrun devicectl device process launch --console 
 Pause sheet (card "Delay…" and habit detail, backdated or scheduled), Resumes-on label and
 extend / end now in detail, Vacation sheet (checklist from `vacationBehavior`, remember toggle,
 "Also keep parents", quiet toggle, scheduled start) with a Today banner, re-entry check,
-`Pauses.frequentlyDelayedHabitIDs` (card UI in M9). The three checkpoints (delay 3 days, backdate
+`Pauses.frequentlyDelayedHabitIDs` (its card is on the Insights screen since M9). The three checkpoints (delay 3 days, backdate
 over answered days, vacation with one kept habit remembered) are `HabitUI` `PauseTests.checkpoint*`,
 driven through `AppModel` and "Advance one day". They're not XCUITests because those took ~20 s per
 advanced day and hung the simulator.
@@ -886,7 +912,19 @@ Checkpoint:
 - Bind Gym to workouts ≥ 20 min; log a workout in the Health app; Gym is marked done for today
   and is not asked about; history shows the `.health` glyph.
 
-### M9 — Charts and insights (2 days)
+### M9 — Charts and insights — done (2026-09-28)
+
+`HabitCore/Insights`, `HabitUI/Charts`, the Insights screen (Today toolbar, `spacedhabits://insights`) and a
+charts section in habit detail (§12). Automated: `HabitCore` `InsightsTests` / `OverviewTests`, `HabitUI`
+`ChartTests.checkpointSteadyAskIntervalRises` (steady run exported as a fixture, imported through
+`importFixture`: 1 day for the first 4 days, ≥ 7 over the last 30) and
+`ChartTests.checkpointChartsRenderFastForThreeYearsOfThirtyHabits` (`LargeFixture`, debug build, best of 3
+runs: data plus drawing < 100 ms for habit detail, for the Insights screen's first screenful and for each
+further cluster section; measured 65, 51 and ~10 ms on an M-series Mac), and `TodayFlowUITests` opening
+Insights. Screenshots of the imported steady run: `Docs/checkpoints/m9-*.png`. A freshly booted iOS 27
+simulator saturates the Mac for minutes (load average > 100): single timing runs failed and `xcodebuild`
+stalled with no output until the simulator had settled, hence best of 3.
+
 
 Deliver: all charts in §12 in `HabitUI/Charts`, Insights screen, insight cards (delays,
 regressions, autonomy score), data-source legends, pause bands, "include paused days" toggle.
