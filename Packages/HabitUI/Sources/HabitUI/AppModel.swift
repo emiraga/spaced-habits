@@ -107,14 +107,6 @@ public final class AppModel {
         }
     }
 
-    /// Applies the other device's writes (the watch bridge, §7) and re-plans if anything changed. Not a new
-    /// session, like a CloudKit merge (§10).
-    public func merge(_ changes: [TruthChange]) throws {
-        if try store.merge(changes) {
-            try reload(newSession: false)
-        }
-    }
-
     /// Records an answer. A `.delayed` answer also pauses the habit from today (§4.6).
     public func answer(_ question: Question, with value: AnswerValue) throws {
         try record(question, value, delayReason: .manual, channel: channel)

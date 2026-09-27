@@ -128,15 +128,22 @@ public struct QuestionCard: View {
         }
     }
 
+    /// One row on the phone; stacked where a row doesn't fit (the watch, large Dynamic Type).
     private var footer: some View {
-        HStack(spacing: 16) {
-            Button("Don't remember") { onAnswer(.dontRemember) }
-            Button("Delay…", action: onDelay)
-            Button("Later", action: onLater)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 16) { footerButtons }
+                .frame(minHeight: 44)
+            VStack(alignment: .leading, spacing: 4) { footerButtons }
         }
         .font(.subheadline)
         .buttonStyle(.borderless)
-        .frame(minHeight: 44)
+    }
+
+    @ViewBuilder private var footerButtons: some View {
+        Button("Don't remember") { onAnswer(.dontRemember) }
+            .lineLimit(1)
+        Button("Delay…", action: onDelay)
+        Button("Later", action: onLater)
     }
 
     @ViewBuilder
@@ -200,5 +207,24 @@ public struct QuestionCard: View {
         case .normal: "normal"
         case .high: "high"
         }
+    }
+}
+
+public extension AppModel {
+    /// The card for a planned question, with its habit's parents, ask interval and guess filled in (§5.2).
+    /// Nil if the habit is gone. Shared by the phone's and the watch's Today screens.
+    func card(
+        for question: Question,
+        onAnswer: @escaping (AnswerValue) -> Void,
+        onDelay: @escaping () -> Void,
+        onLater: @escaping () -> Void
+    ) -> QuestionCard? {
+        guard let habit = habit(question.habitID) else { return nil }
+        let state = state(of: habit.id)
+        return QuestionCard(
+            question: question, habit: habit, parentNames: parentNames(for: question),
+            intervalDays: state.currentIntervalDays, guess: state.adherence.mean, today: today,
+            onAnswer: onAnswer, onDelay: onDelay, onLater: onLater
+        )
     }
 }

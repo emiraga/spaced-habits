@@ -42,6 +42,11 @@ public enum DayFormat {
         days <= 1 ? "Asking daily" : "Asking every ~\(days) days"
     }
 
+    /// "S" for Sunday: the watch's 7-day strip (§7).
+    public static func weekdayInitial(_ day: DayKey) -> String {
+        noonUTC(day).formatted(Date.FormatStyle(timeZone: .gmt).weekday(.narrow))
+    }
+
     public static func percent(_ value: Double) -> String {
         value.formatted(.percent.precision(.fractionLength(0)))
     }

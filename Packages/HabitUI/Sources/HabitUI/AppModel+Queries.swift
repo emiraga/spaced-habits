@@ -60,3 +60,18 @@ public extension AppModel {
             .min { ($0.day, $0.habit.name) < ($1.day, $1.habit.name) }
     }
 }
+
+public extension AppModel {
+    /// The glyphs of the last `days` days, oldest first, from the habit's first day at the earliest: the
+    /// watch's 7-day strip (§7). Today shows as in the habit list (due / not due unless answered).
+    func recentStatuses(of habit: Habit, days: Int = 7) -> [(day: DayKey, status: DayStatus)] {
+        let first = max(habit.createdDay, today.adding(days: 1 - days))
+        guard first <= today else { return [] }
+        return (first ... today).map { day in
+            if day == today {
+                return (day, todayStatus(of: habit.id))
+            }
+            return (day, projected.records[habit.id]?[day].map(DayStatus.init(record:)) ?? .unknown)
+        }
+    }
+}

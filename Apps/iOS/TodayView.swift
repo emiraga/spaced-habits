@@ -75,27 +75,21 @@ struct TodayView: View {
 
     @ViewBuilder
     private func card(for question: Question) -> some View {
-        if let habit = model.habit(question.habitID) {
-            let state = model.state(of: habit.id)
-            QuestionCard(
-                question: question,
-                habit: habit,
-                parentNames: model.parentNames(for: question),
-                intervalDays: state.currentIntervalDays,
-                guess: state.adherence.mean,
-                today: model.today,
-                onAnswer: { value in
-                    withAnimation {
-                        if errors.attempt({ try model.answer(question, with: value) }) {
-                            answers += 1
-                        }
+        if let card = model.card(
+            for: question,
+            onAnswer: { value in
+                withAnimation {
+                    if errors.attempt({ try model.answer(question, with: value) }) {
+                        answers += 1
                     }
-                },
-                onDelay: { delaying = question },
-                onLater: { withAnimation { _ = errors.attempt { try model.later(question) } } }
-            )
-            .id(question.id)
-            .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
+                }
+            },
+            onDelay: { delaying = question },
+            onLater: { withAnimation { _ = errors.attempt { try model.later(question) } } }
+        ) {
+            card
+                .id(question.id)
+                .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
         }
     }
 

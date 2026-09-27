@@ -53,4 +53,25 @@ struct WatchSyncTests {
         // Planning the merged habit logs its question, which is a write of the watch's own.
         #expect(Set(echoed.map(\.kind)) == ["question"])
     }
+
+    /// The watch's 7-day strip: from the habit's first day, today as in the habit list. After one answer the
+    /// model is too uncertain to infer, so the unanswered days are unknown (§4.7).
+    @Test func recentStatusesStartAtTheHabitsFirstDay() throws {
+        let model = try Harness().model()
+        let gym = try addHabit(model, "Gym")
+        #expect(model.recentStatuses(of: gym).map(\.status) == [.due])
+        try model.answer(#require(model.questions.first), with: .done)
+        for _ in 0 ..< 3 {
+            try model.advanceDay()
+        }
+        let strip = model.recentStatuses(of: gym)
+        #expect(strip.map(\.day) == Array(start ... start.adding(days: 3)))
+        #expect(strip.map(\.status) == [.done, .unknown, .unknown, .due])
+        #expect(strip.map { DayFormat.weekdayInitial($0.day) } == ["S", "M", "T", "W"])
+
+        for _ in 0 ..< 6 {
+            try model.advanceDay()
+        }
+        #expect(model.recentStatuses(of: gym).map(\.day) == Array(start.adding(days: 3) ... start.adding(days: 9)))
+    }
 }

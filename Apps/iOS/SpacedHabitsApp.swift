@@ -12,6 +12,9 @@ struct SpacedHabitsApp: App {
     /// Nil when the data couldn't be opened. Created here, not in a view, so a background launch for a
     /// notification action finds its delegate (§8).
     private let notifier: Notifier?
+    /// Sends this device's writes to the watch and merges the watch's (§7). Nil when the store couldn't
+    /// be opened.
+    private let bridge: WatchBridge?
     private let sync = SyncMonitor()
     /// A constant, not @State: `init` captures it for sync merges, and an App is created once.
     private let errors = ErrorPresenter()
@@ -20,16 +23,23 @@ struct SpacedHabitsApp: App {
 
     init() {
         LaunchMetrics.begin()
+        let errors = errors
+        var bridge: WatchBridge?
         let launch = Result {
+            let store = try TruthStore(container: StoreContainer.make(.appGroup(syncs: true)))
+            // Before the model: its first session's questions are writes the watch should get.
+            bridge = WatchBridge(store: store, errors: errors)
             let model = try AppModel(
-                store: TruthStore(container: StoreContainer.make(.appGroup(syncs: true))),
-                timeZone: .current,
-                defaults: StoreContainer.sharedDefaults()
+                store: store, timeZone: .current, defaults: StoreContainer.sharedDefaults()
             ) { SystemClock(calendar: $0) }
             #if DEBUG
                 // UI tests start from an empty store and today's real date.
                 if ProcessInfo.processInfo.arguments.contains("-resetData") {
                     try model.eraseAll()
+                }
+                // Simulator checks of the watch bridge (§7): something for the watch to receive.
+                if ProcessInfo.processInfo.arguments.contains("-sampleHabits"), model.truth.habits.isEmpty {
+                    try model.addSampleHabits()
                 }
                 // UI tests skip animations: every sheet and push otherwise costs an idle wait.
                 if ProcessInfo.processInfo.arguments.contains("-disableAnimations") {
@@ -39,10 +49,12 @@ struct SpacedHabitsApp: App {
             return model
         }
         _launch = State(initialValue: launch)
+        self.bridge = bridge
         guard case let .success(model) = launch else {
             notifier = nil
             return
         }
+        bridge?.model = model
         let notifier = Notifier(model: model)
         // Every change to truth, settings or the day: replan notifications, redraw widgets (§6, §8).
         model.onRefresh = { [weak notifier] in

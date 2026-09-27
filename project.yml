@@ -25,7 +25,8 @@ targets:
   SpacedHabits:
     type: application
     platform: iOS
-    sources: [Apps/iOS, Apps/Shared]
+    # Apps/WatchBridge: WatchConnectivity to the watch app (§7).
+    sources: [Apps/iOS, Apps/Shared, Apps/WatchBridge]
     info:
       path: Apps/iOS/Info.plist
       properties:
@@ -53,6 +54,7 @@ targets:
       - package: HabitStore
       - package: HabitUI
       - target: SpacedHabitsWidgets
+      - target: SpacedHabitsWatch
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ga.emira.spacedhabits
@@ -95,6 +97,40 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Spaced Habits
         TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+  SpacedHabitsWatch:
+    type: application
+    platform: watchOS
+    sources: [Apps/watchOS, Apps/WatchBridge]
+    info:
+      path: Apps/watchOS/Info.plist
+      properties:
+        WKApplication: true
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+    entitlements:
+      path: Apps/watchOS/SpacedHabitsWatch.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.ga.emira.spacedhabits
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.ga.emira.spacedhabits
+        com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
+    dependencies:
+      - package: HabitCore
+      - package: HabitStore
+      - package: HabitUI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ga.emira.spacedhabits.watchkitapp
+        PRODUCT_NAME: SpacedHabitsWatch
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Spaced Habits
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: ga.emira.spacedhabits
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "4"
         SKIP_INSTALL: YES
   SpacedHabitsTests:
     type: bundle.unit-test

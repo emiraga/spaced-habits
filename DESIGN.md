@@ -111,7 +111,8 @@ SpacedHabits/
 │   ├── iOSUITests/             # XCUITest smoke flows; the app erases its data on `-resetData` (debug builds)
 │   ├── iOSWidgets/             # WidgetKit extension (iOS): question + status widgets
 │   ├── Shared/                 # compiled into app and widget extension: AnswerHabitIntent, IntentModel
-│   ├── watchOS/                # Spaced Habits Watch app (Assets.xcassets parked here until M7)
+│   ├── watchOS/                # Spaced Habits Watch app: Today cards, habit list, habit quick view
+│   ├── WatchBridge/            # WatchConnectivity (§7), compiled into the iOS and watch apps
 │   └── watchOSWidgets/         # Complications / Smart Stack
 ├── Docs/
 │   ├── Brand/                  # SVG marks, App Store 1024 icon
@@ -149,11 +150,13 @@ Since M7 the app also carries the iCloud entitlement (CloudKit, container `iClou
 extension doesn't sync (§10), so it has no iCloud entitlement. A device build needs the container
 registered under the team (Xcode → Signing & Capabilities → iCloud creates it).
 
+`SpacedHabitsWatch` (M7) is a single-target watchOS app (`type: application`, `platform: watchOS`,
+`WKApplication`, `WKCompanionAppBundleIdentifier`; not the legacy `application.watchapp2` + extension
+pair), bundle ID `ga.emira.spacedhabits.watchkitapp`, embedded in the iOS app's `Watch/` folder, so the
+iOS scheme builds it. It has the same App Group and iCloud entitlements as the app.
+
 Still to add to `project.yml` in later milestones:
-- The same iCloud entitlement on the watch app (M7).
-- `SpacedHabitsWatch` (`application.watchapp2`, `Apps/watchOS`) and `SpacedHabitsWatchWidgets`
-  (`Apps/watchOSWidgets`), embedded in the iOS app (M7), plus the watch scheme in `make gen`'s
-  `xcode-build-server config` line.
+- `SpacedHabitsWatchWidgets` (`Apps/watchOSWidgets`), embedded in the watch app (M7).
 - HealthKit entitlement and `NSHealthShareUsageDescription`: "Spaced Habits reads workouts to
   auto-complete matching habits." (M8).
 
@@ -582,18 +585,26 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 
 ## 7. Watch app
 
-- Thin SwiftUI app using `HabitUI` cards sized for the wrist. Screens: Today (cards), habit list,
-  a single-habit quick view. No editor, no charts beyond a 7-day sparkline.
+- Thin SwiftUI app using `HabitUI` cards (`AppModel.card(for:)`, shared with the phone; the card's footer
+  stacks where a row doesn't fit). Screens, as vertical pages: Today (cards; "Delay…" offers 1, 3, 7 or
+  14 days, while backdating and vacations stay on the phone) and the habit list, which opens a quick view:
+  a 7-day glyph strip (`AppModel.recentStatuses`: glyphs rather than a sparkline, so the source of each
+  day stays visible, §1.1), the ask interval and the next check-in. No editor, no charts. With no habits,
+  Today says to add them on the iPhone.
 - Data: own SwiftData store with the same CloudKit container (truth), **plus** `WatchConnectivity`
-  for immediacy. Both sides send every local write as a `TruthChange` (kind, UUID, `HabitCore` JSON,
-  `updatedAt`; `TruthStore.onChange`, reported after the save) via `transferUserInfo`, which queues
-  while the other device is unreachable. The receiver calls `AppModel.merge`: latest `updatedAt` wins
+  for immediacy. Both sides send every local write as `TruthChange`s (kind, UUID, `HabitCore` JSON,
+  `updatedAt`; `TruthStore.onChange`, reported after the save): by `sendMessage` (50 per message, under
+  the ~64 KB limit) while the other device is reachable, else by `transferUserInfo`, which queues while
+  it's unreachable and is also the fallback when a message fails. (Simulators deliver messages but not
+  user-info or file transfers, so only the message path can be checked there.) The `WatchBridge` hooks the
+  store before `AppModel` is created, so the first session's logged questions are sent too.
+  The receiver calls `AppModel.merge`: latest `updatedAt` wins
   per `(kind, id)`, each value is validated like a local write, merged changes aren't echoed back, and
   a change delivered twice (WatchConnectivity and CloudKit) is stored once. The watch plans its own
   session with the same `AppModel` (`channel: .watch`) rather than receiving the phone's plan: the plan
   is a function of truth, so sending truth keeps one code path and works standalone. A watch with an
-  empty store asks the phone for `TruthStore.allChanges()` (sent as a file) instead of waiting for
-  CloudKit.
+  empty store asks the phone for `TruthStore.allChanges()` on activation and whenever the phone becomes
+  reachable, instead of waiting for CloudKit; the phone replies by messages if reachable, else as a file.
 - Runs standalone if the phone is unreachable; CloudKit catches up later.
 
 ---
