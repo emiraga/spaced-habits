@@ -92,13 +92,13 @@ SpacedHabits/
 ├── Packages/
 │   ├── HabitCore/              # PURE logic. No SwiftUI/UIKit/SwiftData imports. Fully tested.
 │   │   ├── Sources/HabitCore/
-│   │   │   ├── Model/          # Habit, Question, Answer, PauseEvent, DayRecord, DayKey
+│   │   │   ├── Model/          # Habit, Question, Answer, PauseEvent, DayRecord
 │   │   │   ├── Scheduler/      # AdherenceModel, QuestionPlanner, SessionBudget, SpotCheck
 │   │   │   ├── Projection/     # EventLog -> DayRecords (materialization)
 │   │   │   ├── Dependencies/   # DAG validation, gating, conditional metrics
 │   │   │   ├── Pauses/         # pause/vacation semantics, re-entry
 │   │   │   ├── Export/         # CSV/JSON encoders, schema versioning
-│   │   │   └── Support/        # Clock, RNG protocols, Calendar helpers
+│   │   │   └── Support/        # DayKey, DayCalendar, Clock, RandomSource
 │   │   └── Tests/HabitCoreTests/
 │   │       ├── Unit/
 │   │       └── Simulation/     # synthetic users; asserts question counts fall with adherence
@@ -144,15 +144,14 @@ SwiftData `@Model` classes and converts in both directions.
 
 ### 3.1 Time
 
-- `DayKey`: a value type wrapping `yyyy-MM-dd` in the user's **local calendar**. All habit data is
-  keyed by `DayKey`, never by `Date`. Store the timezone identifier alongside each answer for
-  audit purposes.
-- Day boundary: configurable "day starts at" hour (default 04:00) so late-night answers count for
-  the intended day. Implement once in `Support/Calendar.swift`; nothing else may compute day
-  boundaries.
-- `Clock` protocol (`now() -> Date`, `today() -> DayKey`) and `RandomSource` protocol are injected
-  into every scheduler entry point. Production uses system clock and `SystemRandomNumberGenerator`;
-  tests use fixed/seeded versions.
+Implemented in `HabitCore/Support/` (M1): `DayKey`, `DayCalendar` (day starts at
+`settings.dayStartHour`, default 04:00), `Clock` and `RandomSource`. Rules that still bind new code:
+
+- All habit data is keyed by `DayKey`, never by `Date`. Store the timezone identifier alongside
+  each answer for audit purposes.
+- Only `DayCalendar.dayKey(for:)` maps instants to days; nothing else may compute day boundaries.
+- Every scheduler entry point takes an injected `Clock`; code that needs randomness takes a
+  `RandomSource` (tests and simulations use `FixedClock` / `SeededRandomSource`).
 
 ### 3.2 Source-of-truth vs projection
 
@@ -357,7 +356,11 @@ A habit is due if **any** of:
 3. `today - lastCoveredDay >= settings.maxIntervalDays` — hard ceiling.
 4. `state.forcedReentryCheck` — first day after a pause ends.
 5. Spot check: with probability `settings.spotCheckRate`, only when the natural interval is > 7 days.
-   Keeps the model calibrated against silent collapse.
+   Keeps the model calibrated against silent collapse. Decided **once per (habit, day)**, not per
+   planner run (D14): hash `(habit.id, today)` with a stable hash (not Swift's `Hasher`, which is
+   seeded per process) to a value in `0..<1` and compare it to `spotCheckRate`. Re-opening the app,
+   the widget and the watch therefore all agree, and the effective rate stays at `spotCheckRate`
+   regardless of how often the planner runs.
 
 A habit is **never** due if: it is paused today, archived, blocked by a paused parent, gated by a
 failing parent (§4.5), or `lastCoveredDay == today`.
@@ -663,7 +666,9 @@ build.
 
 ### M1 — Engine (2–3 days)
 
-Deliver in `HabitCore`: all types in §3.3, `DayKey` + calendar helpers, `AdherenceModel`,
+Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`).
+
+Deliver in `HabitCore`: all types in §3.3, `AdherenceModel`,
 `QuestionPlanner` (due rules, shapes, budget, prioritization, spot checks), `Dependencies`
 (DAG validation, gating, conditional context), `Pauses` (freeze, re-entry, backdating),
 `Projection.rebuild`, and the simulation harness (§4.8). Add a tiny `Scripts/simulate.swift`
@@ -867,6 +872,10 @@ Decided:
   commas (same reasoning as `line_length`).
 - D13 (2026-09-27, M0). No hosted CI (GitHub Actions removed): `make ci` run locally before
   every push is the gate. GitHub's macOS runners did not have Xcode 27 when M0 landed.
+- D14 (2026-09-27, M1). Spot checks (§4.2 rule 5) are decided once per habit per day from a stable
+  hash of `(habit.id, day)`, not by a fresh random draw on each planner run. A per-run draw would
+  make the effective rate grow with how often the app is opened and let phone, widget and watch
+  disagree. Trade-off: spot-check days are predictable in principle, which is irrelevant here.
 
 Open (decide during the relevant milestone and record here):
 - O1. Should aggregated answers be spread evenly (`value = N/K` per day) or placed on the days
@@ -886,3 +895,4 @@ Changelog:
   `ga.emira.spacedhabits`.
 - 2026-09-27 — hosted CI dropped (D13).
 - 2026-09-27 — removed implemented M0 instructions (§2.2 sketches, M0 deliverables).
+- 2026-09-27 — M1 `Support/` landed; §3.1 reduced to binding rules; spot checks per day (D14).
