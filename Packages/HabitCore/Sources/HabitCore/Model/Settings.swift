@@ -109,7 +109,7 @@ public struct NotificationSettings: Codable, Sendable, Hashable {
     }
 }
 
-/// Local wall-clock time (D16: replaces `DateComponents`, which carries calendar and time zone baggage).
+/// Local wall-clock time. Not `DateComponents`, which carries calendar and time zone baggage.
 public struct TimeOfDay: Codable, Sendable, Hashable, Comparable {
     public let hour: Int
     public let minute: Int
@@ -145,7 +145,7 @@ public struct TimeOfDay: Codable, Sendable, Hashable, Comparable {
 }
 
 /// Hours during which no notification fires: `[startHour, endHour)`, wrapping past midnight when
-/// `startHour > endHour` (22 → 7 is 22:00–06:59). D16: `ClosedRange<Int>` can't express the wrap.
+/// `startHour > endHour` (22 → 7 is 22:00–06:59). `ClosedRange<Int>` can't express the wrap.
 public struct QuietHours: Codable, Sendable, Hashable {
     public let startHour: Int
     public let endHour: Int

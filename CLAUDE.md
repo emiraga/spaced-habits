@@ -13,7 +13,8 @@ milestone plan. Read the relevant section before starting any task.
   (test output, simulation table, screenshot paths) in the commit message. Don't start the next
   milestone until the checkpoint passes.
 - If a decision changes or an Apple API doesn't behave as `DESIGN.md` assumes, update
-  `DESIGN.md` (§16 decisions log, dated) in the same commit as the code.
+  the section of `DESIGN.md` it governs in the same commit as the code. There is no separate
+  decisions log; §16 holds open questions only.
 
 ## Commands
 
@@ -49,5 +50,5 @@ Fast inner loop for engine work: `swift test --package-path Packages/HabitCore`.
 ## Don't
 
 - Don't skip or weaken a failing test to get green.
-- Don't leave TODOs without a matching entry in `DESIGN.md` §16.
+- Don't leave TODOs without a matching open question in `DESIGN.md` §16.
 - Don't touch milestone N+1 features while milestone N's checkpoint is unverified.

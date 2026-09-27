@@ -60,7 +60,7 @@ interval is itself the progress metric.
 |---|---|---|
 | Language | Swift, **Swift 6 language mode**, strict concurrency | Warnings as errors |
 | Min deployment | iOS 17 / watchOS 10 | Raise if a required API needs it; document why |
-| Xcode | Latest stable | Pin in `.xcode-version` |
+| Xcode | 27.0 | Pinned in `.xcode-version`; `make` calls `xcrun swift` so SwiftPM uses this toolchain, not whatever `swift` is first on `PATH` |
 | UI | SwiftUI everywhere | UIKit only for wrapped edge cases |
 | Persistence | SwiftData in an App Group container | Shared by app + widget extension |
 | Sync | SwiftData + CloudKit private database | Plus WatchConnectivity for low-latency phone↔watch |
@@ -73,10 +73,10 @@ interval is itself the progress metric.
 | Formatting | **SwiftFormat** (`.swiftformat`) | Run on save + pre-commit + `make ci` check |
 | Linting | **SwiftLint** (`.swiftlint.yml`) | `--strict` |
 | Build output | **xcbeautify** | |
-| Editor LSP | **xcode-build-server** | Lets SourceKit-LSP (VS Code, etc.) resolve app-target flags; `make gen` writes `buildServer.json` |
+| Editor LSP | **xcode-build-server** | `make gen` writes a git-ignored `buildServer.json` for the `SpacedHabits` scheme (must re-run after every `xcodegen generate`); run `make build` once, then reload the editor |
 | Tool pinning | `Brewfile` (+ optional `mise`) | Everyone builds with the same tool versions |
 | Task runner | `Makefile` | `make gen / build / test / lint / format / ci` |
-| CI | None hosted; `make ci` locally | Run before every push (D13) |
+| CI | None hosted; `make ci` locally | Run before every push. GitHub's macOS runners lacked Xcode 27 at M0 |
 | Git hooks | `pre-commit` (or `lefthook`) | format + lint on staged files |
 
 ### 2.1 Module layout
@@ -124,15 +124,22 @@ swapped or tuned without touching the apps.
 ### 2.2 Tooling
 
 The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swiftlint.yml`,
-`.pre-commit-config.yaml`, `.xcode-version`) landed in M0 and are the source of truth; see
-D9–D13 for where they deviate from the original sketch. No hosted CI (D13).
+`.pre-commit-config.yaml`, `.xcode-version`) landed in M0 and are the source of truth. Notes:
+
+- Package manifests use `swift-tools-version: 6.2` for `.treatAllWarnings(as: .error)`
+  (warnings-as-errors without `unsafeFlags`), and list `.macOS(.v14)` so `swift test` runs on the Mac.
+- `make test` runs `swift test` for all three packages plus the app-hosted `SpacedHabitsTests`
+  target via xcodebuild; package test targets are not in the Xcode scheme.
+- Bundle ID prefix `ga.emira.spacedhabits`. Info.plist is generated from build settings
+  (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`); there is no checked-in Info.plist.
 
 Still to add to `project.yml` in later milestones:
 - App Group `group.ga.emira.spacedhabits` entitlement on the app (M2) and widget extension (M6).
 - `SpacedHabitsWidgets` iOS app extension from `Apps/iOSWidgets` (M6).
 - iCloud/CloudKit entitlement `iCloud.ga.emira.spacedhabits` (M7) on app, widgets and watch.
 - `SpacedHabitsWatch` (`application.watchapp2`, `Apps/watchOS`) and `SpacedHabitsWatchWidgets`
-  (`Apps/watchOSWidgets`), embedded in the iOS app (M7).
+  (`Apps/watchOSWidgets`), embedded in the iOS app (M7), plus the watch scheme in `make gen`'s
+  `xcode-build-server config` line.
 - HealthKit entitlement and `NSHealthShareUsageDescription`: "Spaced Habits reads workouts to
   auto-complete matching habits." (M8).
 
@@ -151,6 +158,8 @@ Implemented in `HabitCore/Support/` (M1): `DayKey`, `DayCalendar` (day starts at
 - All habit data is keyed by `DayKey`, never by `Date`. Store the timezone identifier alongside
   each answer for audit purposes.
 - Only `DayCalendar.dayKey(for:)` maps instants to days; nothing else may compute day boundaries.
+- A habit's history starts at `Habit.createdDay`, fixed by `DayCalendar` at creation. Never
+  re-derive it from `createdAt`: that would move if the time zone or day-start hour changes.
 - Every scheduler entry point takes an injected `Clock`; code that needs randomness takes a
   `RandomSource` (tests and simulations use `FixedClock` / `SeededRandomSource`).
 
@@ -175,15 +184,16 @@ Implemented in `HabitCore/Model/` (M1) as `Sendable`, `Codable`, `Hashable` valu
 the reference for fields and defaults:
 
 - `Habit.swift`: `Habit` (+ `HabitKind`, `Importance`, `VacationBehavior`, `HealthBinding`),
-  `Dependency` / `DependencyMode` (D8), `Cluster`.
+  `Dependency` / `DependencyMode` (§4.5), `Cluster`.
 - `Question.swift`: `Question`, `QuestionShape` (`.singleDay` / `.perDay(days:)` / `.count(total:)`),
   `ParentContext`.
 - `Events.swift`: truth events `Answer` / `AnswerValue` / `Channel`, `PauseEvent` / `PauseReason`,
   `HealthObservation`.
 - `DayRecord.swift`: derived `DayRecord` (with `conditionalDenominatorExcluded`, §4.5), `DaySource`
-  (`feedsModel` encodes D4), `SchedulerState`.
+  (`feedsModel` encodes the §4.1 weights), `SchedulerState`.
 - `Settings.swift`: `Settings` (`.default` holds the tunables used throughout §4),
-  `NotificationSettings`, `TimeOfDay`, `QuietHours` (D16).
+  `NotificationSettings`, `TimeOfDay` (not `DateComponents`: no calendar/time-zone baggage),
+  `QuietHours` (half-open hours that wrap past midnight; `ClosedRange<Int>` like `22...7` traps).
 
 Rules that still bind new code:
 
@@ -249,19 +259,20 @@ A habit is due if **any** of:
 4. `state.forcedReentryCheck` — first day after a pause ends.
 5. Spot check: with probability `settings.spotCheckRate`, only when the natural interval is > 7 days.
    Keeps the model calibrated against silent collapse. Decided **once per (habit, day)**, not per
-   planner run (D14): hash `(habit.id, today)` with a stable hash (not Swift's `Hasher`, which is
+   planner run: hash `(habit.id, today)` with a stable hash (not Swift's `Hasher`, which is
    seeded per process) to a value in `0..<1` and compare it to `spotCheckRate`. Re-opening the app,
    the widget and the watch therefore all agree, and the effective rate stays at `spotCheckRate`
    regardless of how often the planner runs.
 
 A habit is **never** due if: it is paused today, archived, blocked by a paused parent, gated by a
-failing parent (§4.5), or `lastCoveredDay == today`.
+failing parent (§4.5), or `lastCoveredDay == today`. `QuestionPlanner` knows nothing about pauses
+or parents: callers pass the paused, blocked and gated habits as `unavailable`.
 
 ### 4.3 Question construction
 
 ```
-gapDays = today - lastCoveredDay            (or today - createdDay + 1 for new habits, D19)
-coverDays = min(gapDays, habit.maxRecallGapDays)
+gapDays = today - lastCoveredDay            (or today - createdDay + 1 for new habits)
+coverDays = min(gapDays, habit.maxRecallGapDays)   (default 7, adjustable per habit)
 covers = (today - coverDays + 1) ... today
 shape = coverDays == 1 ? .singleDay
       : coverDays <= 3 ? .perDay
@@ -285,7 +296,8 @@ score(h) = uncertainty(h) * importanceWeight(h) * staleness(h)
     uncertainty = sd (0...0.5)
     importanceWeight = 1 / 1.5 / 2 for low / normal / high
     staleness = 1 + (today - lastAskedDay) / 7
-    order: forcedReentryCheck first, then mean < target, then score (D20); ties by habit ID
+    order: forcedReentryCheck first, then mean < target, then score; ties by habit ID
+    (tiers rather than a score bonus: staleness is unbounded and would overtake any fixed bonus)
 present top settings.sessionBudget (default 3); rest remain queued with a "More…" affordance
 ```
 
@@ -307,7 +319,7 @@ cycle validation. The editor creates `.gate` edges only and does not expose the 
 
 **Gating.** A dependent habit `B` with gate-parent `A` is only due when, over `B`'s prospective
 `covers` window, `A`'s expected done-days ≥ 1 and `A.mean ≥ 0.5`. Otherwise asking about `B`
-produces noise. Multiple gate parents: all must pass (AND). Keep it AND in v1; document as a decision.
+produces noise. Multiple gate parents: all must pass (AND) in v1.
 
 **Conditional metric.** `B`'s adherence is `P(B | A)`, not `P(B)`:
 
@@ -559,8 +571,7 @@ build.
 ### M1 — Engine (2–3 days)
 
 Done: `Support/` (`DayKey`, `DayCalendar`, `Clock`, `RandomSource`), `Model/` (all types in §3.3),
-`Scheduler/AdherenceModel` (§4.1), `Scheduler/QuestionPlanner` + `SpotCheck` (§4.2–4.4; pauses and
-gating arrive as an `unavailable` set, D20).
+`Scheduler/AdherenceModel` (§4.1), `Scheduler/QuestionPlanner` + `SpotCheck` (§4.2–4.4).
 
 Deliver in `HabitCore`:
 `Dependencies`
@@ -717,8 +728,8 @@ documented manual checkpoint, not a flaky automated test.
 
 ## 15. Working agreements for the implementing agent
 
-1. Read this document before each milestone; update it when a decision changes. Add a dated line
-   under §16 for every deviation.
+1. Read this document before each milestone; when a decision changes, update the section it
+   governs (not a separate log).
 2. Run `make format && make lint && make test` before declaring any task done; `make ci` must be green before pushing.
 3. `HabitCore` stays dependency-free and UI-free. If you need a platform API in the engine, you
    are in the wrong module — pass the value in instead.
@@ -735,66 +746,10 @@ documented manual checkpoint, not a flaky automated test.
 
 ---
 
-## 16. Decisions and open questions
+## 16. Open questions
 
-Decided:
-- D1. Boolean habits only in v1; `HabitKind` reserved for quantity later.
-- D2. Multiple parents are AND-gated.
-- D3. Pauses freeze scheduler state; one forced re-entry check after resume; no decay penalty.
-- D4. Inferred days never feed the adherence model (weight 0). Only observed/aggregated/health do.
-- D5. Recall cap default 7 days, per-habit adjustable; days beyond the cap are inferred, not asked.
-- D6. Event-sourced-lite store; projections are derived and never synced.
-- D7. Vacation checklist edits persist to `vacationBehavior` by default (toggle visible).
-- D8. Dependencies are `[Dependency { parentID, mode }]` from day one, not `[UUID]`. v1 creates
-  only `.gate`; `.sequence` is reserved for habit stacking (ATOMIC_HABITS_IDEAS.md F2) and is
-  inert everywhere except DAG validation, store/sync and export/import. Chosen so F2 becomes a
-  UI-and-planner change with no data migration.
-- D9 (2026-09-27, M0). Toolchain pinned to Xcode 27.0 (`.xcode-version`); package manifests use
-  `swift-tools-version: 6.2` for `.treatAllWarnings(as: .error)` (warnings-as-errors without
-  `unsafeFlags`). `make test` runs `xcrun swift test` so SwiftPM uses the Xcode toolchain, not
-  whatever `swift` is first on `PATH` (a swiftly 6.3 toolchain failed against the macOS 28 SDK).
-- D10 (2026-09-27, M0). `make test` runs `swift test` for all three packages (on macOS, hence
-  `.macOS(.v14)` in their platforms) plus the app-hosted `SpacedHabitsTests` target via
-  xcodebuild; package test targets are not in the Xcode scheme.
-- D11 (2026-09-27, M0). Bundle ID prefix `ga.emira.spacedhabits` replaces `com.example`.
-  Info.plist is generated from build settings (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`)
-  instead of a checked-in `Apps/iOS/Info.plist`. Entitlements (App Group, iCloud, HealthKit)
-  and the widget/watch targets are added in the milestones that need them (M2/M6/M7/M8),
-  not in M0.
-- D12 (2026-09-27, M0). SwiftLint `trailing_comma` is disabled: SwiftFormat owns trailing
-  commas (same reasoning as `line_length`).
-- D13 (2026-09-27, M0). No hosted CI (GitHub Actions removed): `make ci` run locally before
-  every push is the gate. GitHub's macOS runners did not have Xcode 27 when M0 landed.
-- D14 (2026-09-27, M1). Spot checks (§4.2 rule 5) are decided once per habit per day from a stable
-  hash of `(habit.id, day)`, not by a fresh random draw on each planner run. A per-run draw would
-  make the effective rate grow with how often the app is opened and let phone, widget and watch
-  disagree. Trade-off: spot-check days are predictable in principle, which is irrelevant here.
-- D15 (2026-09-27, M1). `Habit` stores `createdDay: DayKey`, fixed at creation by `DayCalendar`.
-  §4.3/§4.7 start a habit's history there instead of re-deriving a day from `createdAt`, which
-  would move if the user later changes time zone or day-start hour.
-- D16 (2026-09-27, M1). `NotificationSettings` uses `TimeOfDay(hour, minute)` instead of
-  `DateComponents` (no calendar/time-zone baggage, trivially `Codable`), and
-  `quietHours: QuietHours(startHour, endHour)` (half-open, wraps past midnight) instead of
-  `ClosedRange<Int>`: `22...7` traps at runtime.
-- D17 (2026-09-27, M1). Case and label renames to satisfy SwiftLint `identifier_name` rather than
-  allowlisting short names: `AnswerValue.yes/.no` → `.done/.notDone`, `count(done:of:)` →
-  `count(done:total:)`, `QuestionShape.count(of:)` → `.count(total:)`, `Cadence.everyNDays(_:at:)` →
-  `everyNDays(_:time:)`. User-facing copy still says Yes / No.
-- D18 (2026-09-27, M1). `make gen` also runs `xcode-build-server config` for the `SpacedHabits`
-  scheme, writing a git-ignored `buildServer.json` so SourceKit-LSP editors understand the app
-  target. It must re-run after every `xcodegen generate` (the regenerated `.xcodeproj`
-  invalidates the stored workspace path), hence living in `gen`. The LSP reads per-file flags
-  from build logs: run `make build` once afterwards, then reload the editor window. Add the
-  watch scheme's line when `SpacedHabitsWatch` lands (M7).
-- D19 (2026-09-27, M1). A never-covered habit's gap counts `createdDay` itself
-  (`today - createdDay + 1`); the original formula gave a gap of 0 on the creation day, so a new
-  habit could not be asked about until the next day.
-- D20 (2026-09-27, M1). §4.4's "fixed bonus" for re-entry and below-target habits is a sort tier
-  instead (re-entry > below target > everything else, then score, then habit ID): a constant bonus
-  can be overtaken by staleness, which is unbounded. `QuestionPlanner` does not know about pauses
-  or parents; callers pass habits that are paused, blocked or gated today as `unavailable`.
+Decide during the relevant milestone, then move the answer into the section it governs.
 
-Open (decide during the relevant milestone and record here):
 - O1. Should aggregated answers be spread evenly (`value = N/K` per day) or placed on the days
   the model finds most likely? Even spread is simpler and more honest; decide in M1.
 - O2. Should the "Later" dismissal count toward staleness, or be entirely stateless? Stateless

@@ -51,7 +51,7 @@ public enum DaySource: String, Codable, Sendable, Hashable, CaseIterable {
     /// Future / today-before-answer placeholder (display only).
     case notYetDue
 
-    /// Whether days with this source update the adherence model (§4.1, D4).
+    /// Whether days with this source update the adherence model (§4.1).
     public var feedsModel: Bool {
         switch self {
         case .observed, .aggregated, .health: true

@@ -13,7 +13,7 @@ public enum DueReason: String, Codable, Sendable, Hashable, CaseIterable {
     /// Rule 5: calibration check on a long natural interval.
     case spotCheck
 
-    /// Sort tier ahead of the score (§4.4, D20): re-entry checks first, then struggling habits.
+    /// Sort tier ahead of the score (§4.4): re-entry checks first, then struggling habits.
     var priorityTier: Int {
         switch self {
         case .reentry: 2

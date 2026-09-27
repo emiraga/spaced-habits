@@ -10,7 +10,7 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
     public var emoji: String?
     public var colorHex: String
     public var createdAt: Date
-    /// The habit day it was created on, fixed at creation by `DayCalendar` (D15). First day of its history.
+    /// The habit day it was created on, fixed at creation by `DayCalendar` (§3.1). First day of its history.
     public var createdDay: DayKey
     public var archivedAt: Date?
     public var kind: HabitKind
@@ -20,7 +20,7 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
     public var targetAdherence: Double
     /// ≥ 1. Questions never cover more than this many days (§4.3).
     public var maxRecallGapDays: Int
-    /// Persisted and remembered by the vacation sheet (§4.6, D7).
+    /// Persisted and remembered by the vacation sheet (§4.6).
     public var vacationBehavior: VacationBehavior
     /// Parent edges. Parent IDs (all modes) must form a DAG; see `Dependencies.validate`.
     public var dependencies: [Dependency]
@@ -105,7 +105,7 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
     }
 }
 
-/// v1 habits are boolean per day (D1). `quantity(unit:target:)` is reserved.
+/// v1 habits are boolean per day (§1.2). `quantity(unit:target:)` is reserved.
 public enum HabitKind: String, Codable, Sendable, Hashable {
     case boolean
 }
@@ -121,7 +121,7 @@ public enum VacationBehavior: String, Codable, Sendable, Hashable {
     case keep
 }
 
-/// One edge from a habit to a parent habit (D8).
+/// One edge from a habit to a parent habit (§4.5).
 public struct Dependency: Codable, Sendable, Hashable {
     public let parentID: UUID
     public var mode: DependencyMode

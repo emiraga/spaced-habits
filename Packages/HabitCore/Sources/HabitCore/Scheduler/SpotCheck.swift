@@ -1,6 +1,6 @@
 import Foundation
 
-/// Spot checks (DESIGN.md §4.2 rule 5, D14): decided once per (habit, day) from a stable hash, so every
+/// Spot checks (DESIGN.md §4.2 rule 5): decided once per (habit, day) from a stable hash, so every
 /// planner run on every device agrees and the effective rate stays at `Settings.spotCheckRate`.
 public enum SpotCheck {
     /// Spot checks only apply once the natural interval is longer than this.

@@ -36,7 +36,7 @@ seeds them. Habit rows never show anchors; the Today screen never asks about the
 
 ## F2. Dependency edge mode: `gate` vs `sequence`
 
-**Status: model prep done in v1** (DESIGN.md D8). `Habit.dependencies` is already
+**Status: model prep done in v1** (DESIGN.md §4.5). `Habit.dependencies` is already
 `[Dependency { parentID, mode }]`, `DependencyMode` has both cases, `.sequence` edges already
 round-trip through store, sync and export, and the planner/projection already read only
 `gateParentIDs`. What remains is making `.sequence` edges *do* something and letting users create them.
@@ -166,7 +166,7 @@ record whether the full or minimal version was done.
 **Why.** Showing up is the vote; lowering the bar during a slump keeps the identity intact and
 gets the user back to the full version faster than a string of no's.
 
-**Model.** `Habit.minimalVersion: String?`; `AnswerValue.yes(minimal: Bool)` (and a
+**Model.** `Habit.minimalVersion: String?`; `AnswerValue.done(minimal: Bool)` (and a
 `minimalCount` in `.count`). `DayRecord.minimal: Bool`.
 
 **Projection.** Minimal counts as value 1.0 for adherence (decision: it is a yes). Track the

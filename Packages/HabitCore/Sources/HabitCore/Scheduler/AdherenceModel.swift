@@ -45,12 +45,12 @@ public struct AdherenceModel: Sendable, Hashable {
         variance.squareRoot()
     }
 
-    /// Weight of a day with `source` in the model update: 1 for observed/aggregated/health, 0 otherwise (D4).
+    /// Weight of a day with `source` in the model update: 1 for observed/aggregated/health, 0 otherwise (§4.1).
     public static func weight(for source: DaySource) -> Double {
         source.feedsModel ? 1 : 0
     }
 
-    /// Applies `days` elapsed days of decay at `rate` per day. Paused days must not be passed here (D3).
+    /// Applies `days` elapsed days of decay at `rate` per day. Paused days must not be passed here (§4.6).
     public mutating func decay(days: Int, rate: Double) throws {
         guard days >= 0 else { throw InputError.negativeDays(days) }
         guard rate > 0, rate <= 1 else { throw InputError.decayRateOutOfRange(rate) }
