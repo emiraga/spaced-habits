@@ -41,6 +41,11 @@ struct SpacedHabitsApp: App {
                 if ProcessInfo.processInfo.arguments.contains("-sampleHabits"), model.truth.habits.isEmpty {
                     try model.addSampleHabits()
                 }
+                // §13 M9 checkpoint: chart a simulated history (`simulate <scenario> --json`).
+                let arguments = ProcessInfo.processInfo.arguments
+                if let flag = arguments.firstIndex(of: "-importFixture"), flag + 1 < arguments.count {
+                    try model.importFixture(at: URL(filePath: arguments[flag + 1]))
+                }
                 // UI tests skip animations: every sheet and push otherwise costs an idle wait.
                 if ProcessInfo.processInfo.arguments.contains("-disableAnimations") {
                     UIView.setAnimationsEnabled(false)

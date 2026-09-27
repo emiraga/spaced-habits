@@ -40,8 +40,12 @@ struct TodayView: View {
         .refreshable { errors.attempt { try model.startSession() } }
         .navigationTitle("Today")
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
+            ToolbarItemGroup(placement: .topBarLeading) {
                 Button("Settings", systemImage: "gearshape") { showingSettings = true }
+                NavigationLink(value: InsightsDestination()) {
+                    Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
+                }
+                .disabled(model.activeHabits.isEmpty)
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button("Vacation", systemImage: "beach.umbrella") { showingVacation = true }

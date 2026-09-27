@@ -20,7 +20,7 @@ let package = Package(
         ),
         .testTarget(
             name: "HabitUITests",
-            dependencies: ["HabitUI"],
+            dependencies: ["HabitUI", .product(name: "HabitSimulation", package: "HabitCore")],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
     ]

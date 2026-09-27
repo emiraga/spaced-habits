@@ -2,11 +2,12 @@ import HabitCore
 import HabitUI
 import SwiftUI
 
-/// Ask interval, 30-day adherence, pauses, dependencies and a plain history list (DESIGN.md §5.1; charts
-/// arrive in M9).
+/// Ask interval, 30-day adherence, charts (§12), pauses, dependencies and a plain history list (DESIGN.md
+/// §5.1).
 struct HabitDetailView: View {
     let habitID: UUID
     @Environment(AppModel.self) private var model
+    @AppStorage(ChartSettings.includePausedKey) private var includePaused = false
     @State private var editing = false
     @State private var pausing = false
 
@@ -14,6 +15,13 @@ struct HabitDetailView: View {
         if let habit = model.habit(habitID) {
             List {
                 Section { summary(of: habit) }
+                Section("Charts") {
+                    HabitCharts(
+                        insights: model.insights(of: habit, filter: AdherenceFilter(includingPaused: includePaused)),
+                        color: Color(hex: habit.colorHex)
+                    )
+                    Toggle("Include paused days", isOn: $includePaused)
+                }
                 connections(of: habit)
                 ForEach(model.pauses(of: habitID)) { pause in
                     PauseSection(pause: pause)

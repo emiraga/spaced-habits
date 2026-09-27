@@ -168,7 +168,7 @@ struct WidgetTests {
 struct DeepLinkTests {
     @Test func roundTripsThroughURL() {
         let habit = UUID()
-        for link in [DeepLink.today, .habit(habit)] {
+        for link in [DeepLink.today, .habit(habit), .insights] {
             #expect(DeepLink(url: link.url) == link)
         }
         #expect(DeepLink.habit(habit).url.absoluteString == "spacedhabits://habit/\(habit.uuidString)")
@@ -180,6 +180,7 @@ struct DeepLinkTests {
             "spacedhabits://habit/not-a-uuid",
             "spacedhabits://habit",
             "spacedhabits://settings",
+            "spacedhabits://insights/extra",
         ] {
             #expect(try DeepLink(url: #require(URL(string: string))) == nil, "\(string)")
         }

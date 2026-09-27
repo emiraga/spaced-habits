@@ -27,20 +27,17 @@ public extension AppModel {
     }
 
     /// Mean value over the last `days` days that carry evidence (observed, aggregated, Health), and how
-    /// many such days there were. Nil without evidence: inferred days are the model's guess, not adherence.
-    /// For a gated habit this is P(habit | parents) (§4.5); `includingParentMisses` adds the days its
-    /// parents were not done, giving P(habit).
+    /// many such days there were (`AdherenceFilter`). Nil without evidence: inferred days are the model's
+    /// guess, not adherence. For a gated habit this is P(habit | parents) (§4.5); `includingParentMisses`
+    /// adds the days its parents were not done, giving P(habit).
     func adherence(
         of habitID: UUID,
         days: Int = 30,
         includingParentMisses: Bool = false
     ) -> (mean: Double, days: Int)? {
         let since = today.adding(days: 1 - days)
-        let evidence = (projected.records[habitID] ?? [:]).values.filter {
-            $0.day >= since && $0.source.feedsModel && (includingParentMisses || !$0.conditionalDenominatorExcluded)
-        }
-        guard !evidence.isEmpty else { return nil }
-        return (evidence.map(\.value).reduce(0, +) / Double(evidence.count), evidence.count)
+        return AdherenceFilter(includingParentMisses: includingParentMisses)
+            .mean(of: (projected.records[habitID] ?? [:]).values.filter { $0.day >= since })
     }
 
     /// When a habit that isn't due today will next be asked (§5.1 empty state). Nil if due or archived.
