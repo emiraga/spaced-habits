@@ -17,7 +17,7 @@ Spaced Habits inverts this. It treats each habit check-in as a **measurement**, 
 adaptive scheduler (in the spirit of spaced-repetition software) to ask about a habit **only as
 often as needed to stay confident about it**:
 
-- A habit you keep consistently gets asked about less and less often (weekly, then rarely).
+- A habit you keep consistently gets asked about less and less often (every week or two).
 - A habit you struggle with gets asked about daily.
 - When a question does arrive after a gap, it covers the whole gap ("how many of the last 5 days?"),
   and the app fills in the intervening days from that answer.
@@ -238,16 +238,27 @@ Decay is what makes questions come back: as evidence ages, `n` shrinks, `sd` gro
 habit becomes due again. Lots of consistent yeses → large `n` → long time before `sd` crosses the
 threshold. Paused days apply **no decay** (state is frozen).
 
+Decay also pulls `mean` toward 0.5, which says nothing about the user: it is forgetting, not
+evidence of struggling. So the model also keeps **`answeredMean`**: `mean` right after the latest
+day that fed it, left alone by decay and moved only by new evidence (nil before any). §4.2 rule 2
+compares the target against `answeredMean`, never the decayed `mean`. Without the prior's pull
+toward 0.5 (a prior-free evidence ratio was tried), a 50/50 habit that answers "yes" twice looks
+like a 100% habit, so the smoothed mean is what gets frozen.
+
 **Ask interval** (`AdherenceModel.askIntervalDays`, stored as
 `SchedulerState.currentIntervalDays`): the number of days, in `1...maxIntervalDays`, until decay
-alone makes the habit due by §4.2 rules 1–3: `sd` above `uncertaintyThreshold`, the mean below the
-habit's target, or `maxIntervalDays`. It is 1 if rule 1 or 2 already holds. Decay only increases
-`sd` and moves the mean monotonically toward 0.5, so the first crossing wins. It is the "ask
-interval" in the UI and charts and the "> 7 days" test of §4.2 rule 5. With the defaults, a habit
-answered "yes" every day settles at `alpha ≈ 13.5, beta = 1, sd ≈ 0.06` and an interval of
-~15 days. An exact 50/50 habit settles at `sd ≈ 0.13`, below threshold, so an sd-only interval
-would claim ~7 days while rule 2 asks it daily. That mismatch (seen in the M1 `flaky` simulation)
-is why the interval includes rules 2 and 3.
+alone makes the habit due by §4.2 rules 1–3. It is 1 if rule 1 or 2 already holds. Decay never moves
+`answeredMean`, so rule 2 holds now or never; otherwise the interval is the first day `sd` crosses
+`uncertaintyThreshold` (decay only increases `sd`), capped at `maxIntervalDays`. It is the "ask
+interval" in the UI and charts and the "> 7 days" test of §4.2 rule 5. An exact 50/50 habit settles
+at `sd ≈ 0.13`, below threshold, so an sd-only interval would claim ~7 days while rule 2 asks it
+daily; that mismatch (M1 `flaky` simulation) is why the interval includes rules 2 and 3.
+
+**Two weeks is the design ceiling.** Decay caps evidence: daily "yes" settles at `alpha ≈ 13.5,
+beta = 1, sd ≈ 0.06`, and `sd` crosses the threshold ~16 days after the last answer, whatever the
+history. `maxIntervalDays = 14` makes that ceiling explicit. In practice evidence is lower (one
+check-in feeds at most `maxRecallGapDays` = 7 days; the rest are inferred and feed nothing), so a
+95% habit settles at a 9–12 day interval (§4.8 `steady`). Longer intervals are a non-goal.
 
 ### 4.2 When is a habit due?
 
@@ -256,8 +267,10 @@ is why the interval includes rules 2 and 3.
 A habit is due if **any** of:
 
 1. `sd > settings.uncertaintyThreshold` (evidence too thin/old) — the normal path.
-2. `mean < habit.targetAdherence` and `lastAskedDay < today` — struggling habits get daily attention.
-3. `today - lastCoveredDay >= settings.maxIntervalDays` — hard ceiling.
+2. `answeredMean < habit.targetAdherence` and `lastAskedDay < today` — struggling habits get daily
+   attention. `answeredMean` (§4.1), not the decayed `mean`: a habit is never "struggling" just
+   because it has not been asked for a while.
+3. `today - lastCoveredDay >= settings.maxIntervalDays` (default 14) — hard ceiling.
 4. `state.forcedReentryCheck` — first day after a pause ends.
 5. Spot check: with probability `settings.spotCheckRate`, only when the ask interval (§4.1) is > 7 days.
    Keeps the model calibrated against silent collapse. Decided **once per (habit, day)**, not per
@@ -299,7 +312,7 @@ score(h) = uncertainty(h) * importanceWeight(h) * staleness(h)
     uncertainty = sd (0...0.5)
     importanceWeight = 1 / 1.5 / 2 for low / normal / high
     staleness = 1 + (today - lastAskedDay) / 7
-    order: forcedReentryCheck first, then mean < target, then score; ties by habit ID
+    order: forcedReentryCheck first, then below target (rule 2), then score; ties by habit ID
     (tiers rather than a score bonus: staleness is unbounded and would overtake any fixed bonus)
 present top settings.sessionBudget (default 3); rest remain queued with a "More…" affordance
 ```
@@ -421,10 +434,15 @@ up to `sessionBudget` questions truthfully and re-plans after each answer, as th
 
 - `steady` (p 0.95) → from week 4 on, every 4-week window averages < 1.5 questions/week. Over
   inferred days, |mean inferred value − true rate| < 0.15. Per-day error can't meet that bound: a
-  miss is 0 against an inferred ~0.85.
-- `flaky` (p 0.5) → asked ≥ 5 days in every full week.
+  miss is 0 against an inferred ~0.85. Seed 42: asked every 9–12 days, all by rule 1 after the first
+  week (none tagged `belowTarget`).
+- `flaky` (p 0.5) → asked on ≥ 80% of days, and never unasked for more than `maxIntervalDays`.
+  Not "every week": a long lucky streak lifts `answeredMean` above target and legitimately earns a
+  break until the next check-in. Seed 42: 170/180 days; a 14-day "yes" run (days 133–146) earned
+  a 10-day break, then 2 of 7 put it back on daily questions.
 - `collapsing` (p 0.95 for 60 days, then 0.1) → the end-of-day mean the engine actually held (not
-  the retrospective projection) drops below target within 10 days. Seed 42: day 67.
+  the retrospective projection) drops below target within 10 days. Seed 42: day 62. Detection
+  waits for the next check-in, so it can take up to the ask interval (≤ 14 days) in general.
 - `vacation` (p 0.9, paused days 60–73) → no questions during the pause, frozen mean/sd across it,
   exactly one `.reentry` question (day 74) covering only that day.
 - `dependent-pair` (A 0.9, B|A 0.8) → every B question has parent context and a window in which A
@@ -779,12 +797,6 @@ documented manual checkpoint, not a flaky automated test.
 
 Decide during the relevant milestone, then move the answer into the section it governs.
 
-- O6. Rule 2 (`mean < target`) compares against a *decayed* mean. Decay pulls the mean toward 0.5,
-  so a steady 0.95 habit drops below a 0.8 target ~10–12 days after its last answer, and rule 2
-  fires before rule 1 would. The `steady` simulation still meets §4.8, but most of its questions are
-  tagged `belowTarget`, and its ask interval (§4.1) is set by that crossing. Consider comparing the
-  target against the undecayed mean or a lower credible bound. Revisit before M9 (insights read
-  these reasons).
 - O2. Should the "Later" dismissal count toward staleness, or be entirely stateless? Stateless
   for M2; revisit if users report nagging.
 - O3. Third vacation behavior "keep but relaxed" (reduced target). Not in v1.

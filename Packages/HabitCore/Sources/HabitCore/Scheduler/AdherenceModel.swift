@@ -13,6 +13,10 @@ public struct AdherenceModel: Sendable, Hashable {
     public private(set) var alpha: Double
     /// Pseudo-count for "didn't".
     public private(set) var beta: Double
+    /// `mean` right after the latest evidence; decay leaves it alone. Nil with no evidence. Compared
+    /// against the habit's target (§4.2 rule 2), so silence alone never makes a habit "struggling":
+    /// decay pulls `mean` toward 0.5, but only new answers move this.
+    public private(set) var answeredMean: Double?
 
     public enum InputError: Error, Equatable {
         case valueOutOfRange(Double)
@@ -22,9 +26,16 @@ public struct AdherenceModel: Sendable, Hashable {
         case maxDaysNotPositive(Int)
     }
 
-    public init(alpha: Double, beta: Double) {
+    /// `answeredMean` defaults to the current mean, as if the evidence had just been observed.
+    public init(alpha: Double, beta: Double, answeredMean: Double? = nil) {
         self.alpha = alpha
         self.beta = beta
+        self.answeredMean = answeredMean ?? Self.defaultAnsweredMean(alpha: alpha, beta: beta)
+    }
+
+    /// The mean if there is any evidence beyond the prior, else nil.
+    static func defaultAnsweredMean(alpha: Double, beta: Double) -> Double? {
+        alpha + beta > priorAlpha + priorBeta ? alpha / (alpha + beta) : nil
     }
 
     /// Total evidence `alpha + beta`.
@@ -43,6 +54,11 @@ public struct AdherenceModel: Sendable, Hashable {
     /// 0...0.5. Compared against `Settings.uncertaintyThreshold` (§4.2 rule 1).
     public var standardDeviation: Double {
         variance.squareRoot()
+    }
+
+    /// §4.2 rule 2: as of the latest answer, the habit is done less often than `target`.
+    public func isBelowTarget(_ target: Double) -> Bool {
+        answeredMean.map { $0 < target } ?? false
     }
 
     /// Weight of a day with `source` in the model update: 1 for observed/aggregated/health, 0 otherwise (§4.1).
@@ -65,6 +81,9 @@ public struct AdherenceModel: Sendable, Hashable {
         guard weight >= 0 else { throw InputError.negativeWeight(weight) }
         alpha += value * weight
         beta += (1 - value) * weight
+        if weight > 0 {
+            answeredMean = mean
+        }
     }
 
     /// Weight of a projected day: its source weight, or 0 when it is excluded from a gated habit's
@@ -79,19 +98,17 @@ public struct AdherenceModel: Sendable, Hashable {
     }
 
     /// The "ask interval" (§4.1): days from now until decay alone makes the habit due by §4.2 rules 1–3
-    /// (`sd > threshold`, `mean < target`, or `maxDays` reached), in `1...maxDays`. 1 if rule 1 or 2
+    /// (`sd > threshold`, below target, or `maxDays` reached), in `1...maxDays`. 1 if rule 1 or 2
     /// already holds. Shown in the UI and charts, and the "> 7 days" test of rule 5.
     public func askIntervalDays(threshold: Double, target: Double, decayRate: Double, maxDays: Int) throws -> Int {
         guard maxDays >= 1 else { throw InputError.maxDaysNotPositive(maxDays) }
-        func isDue(_ model: AdherenceModel) -> Bool {
-            model.standardDeviation > threshold || model.mean < target
-        }
-        guard !isDue(self) else { return 1 }
-        // Decay moves the mean monotonically toward 0.5 and only grows sd: the first crossing wins.
+        // Decay never changes `answeredMean`, so rule 2 holds now or not at all.
+        guard standardDeviation <= threshold, !isBelowTarget(target) else { return 1 }
+        // Decay only grows sd: the first crossing wins.
         var model = self
         for day in 1 ... maxDays {
             try model.decay(days: 1, rate: decayRate)
-            if isDue(model) {
+            if model.standardDeviation > threshold {
                 return day
             }
         }
@@ -112,10 +129,11 @@ public struct AdherenceModel: Sendable, Hashable {
 public extension SchedulerState {
     /// The adherence posterior stored in this state.
     var adherence: AdherenceModel {
-        get { AdherenceModel(alpha: alpha, beta: beta) }
+        get { AdherenceModel(alpha: alpha, beta: beta, answeredMean: answeredMean) }
         set {
             alpha = newValue.alpha
             beta = newValue.beta
+            answeredMean = newValue.answeredMean
         }
     }
 

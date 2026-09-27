@@ -92,14 +92,15 @@ struct AdherenceModelTests {
     }
 
     /// Daily "yes" converges to alpha ≈ 1 + 1/(1 - d) = 13.5, beta = 1: confident, asked every ~2 weeks.
+    /// Rule 1 alone (sd) would wait ~16 days; the 14-day ceiling (rule 3) comes first.
     @Test func steadyYesBecomesConfidentWithLongInterval() throws {
         let steady = try model(answering: 1, days: 60)
         #expect(isClose(steady.alpha, 1 + (1 - pow(0.92, 60)) / (1 - 0.92), tolerance: 1e-9))
         #expect(steady.mean > 0.9)
         #expect(steady.standardDeviation < 0.07)
-        // Uncertainty (rule 1) crosses on day ~15, before the mean decays below 0.8 (day ~18).
         let interval = try steady.askIntervalDays(threshold: threshold, target: 0.8, decayRate: rate, maxDays: 30)
-        #expect((14 ... 17).contains(interval))
+        #expect((15 ... 17).contains(interval))
+        #expect(try steady.askIntervalDays(target: 0.8, settings: .default) == Settings.default.maxIntervalDays)
     }
 
     /// A 50/50 habit is below the sd threshold too, so only the mean < target rule keeps it daily (§4.2 rule 2).
@@ -112,18 +113,43 @@ struct AdherenceModelTests {
         #expect(abs(flaky.mean - 0.5) < 0.05)
         #expect(flaky.standardDeviation < threshold)
         #expect(flaky.mean < Habit.defaultTargetAdherence)
-        // So its ask interval is 1, and with a target it never reaches it would follow the sd crossing.
+        // So its ask interval is 1; with a target it meets, it follows the sd crossing.
         #expect(try flaky.askIntervalDays(threshold: threshold, target: 0.8, decayRate: rate, maxDays: 30) == 1)
         #expect(try flaky.askIntervalDays(threshold: threshold, target: 0.4, decayRate: rate, maxDays: 30) > 1)
     }
 
-    /// Decay pulls the mean toward 0.5, so a habit just above target becomes due by rule 2 first.
-    @Test func meanDecayingBelowTargetShortensInterval() throws {
+    /// Decay pulls `mean` toward 0.5 but leaves `answeredMean` alone, so silence alone never makes a
+    /// habit "below target" (O6). Only new evidence moves it.
+    @Test func answeredMeanIgnoresDecay() throws {
+        #expect(AdherenceModel.prior.answeredMean == nil)
+        #expect(!AdherenceModel.prior.isBelowTarget(0.8))
+        var mostly = AdherenceModel.prior
+        for day in 0 ..< 20 {
+            try mostly.decay(days: 1, rate: rate)
+            try mostly.observe(value: day % 10 == 0 ? 0 : 1, weight: 1)
+        }
+        let answered = try #require(mostly.answeredMean)
+        #expect(answered == mostly.mean)
+        #expect(answered > 0.8)
+        try mostly.decay(days: 30, rate: rate)
+        #expect(mostly.mean < 0.8)
+        #expect(mostly.answeredMean == answered)
+        #expect(!mostly.isBelowTarget(0.8))
+        // Zero-weight days (inferred, paused, ...) are not answers either.
+        try mostly.observe(value: 0, weight: 0)
+        #expect(mostly.answeredMean == answered)
+        try mostly.observe(value: 0, weight: 1)
+        #expect(mostly.isBelowTarget(0.8))
+    }
+
+    /// Rule 2 holds now or never, so a target only matters when the evidence is already below it.
+    @Test func targetDoesNotShortenIntervalAboveIt() throws {
         let steady = try model(answering: 1, days: 60)
         let lenient = try steady.askIntervalDays(threshold: threshold, target: 0.8, decayRate: rate, maxDays: 30)
         let strict = try steady.askIntervalDays(threshold: threshold, target: 0.9, decayRate: rate, maxDays: 30)
-        #expect(strict < lenient)
-        #expect(try steady.askIntervalDays(threshold: threshold, target: 0.95, decayRate: rate, maxDays: 30) == 1)
+        #expect(strict == lenient)
+        let mediocre = try model(answering: 0.7, days: 60)
+        #expect(try mediocre.askIntervalDays(threshold: threshold, target: 0.8, decayRate: rate, maxDays: 30) == 1)
     }
 
     @Test func intervalGrowsWithEvidenceAndIsCapped() throws {

@@ -4,15 +4,15 @@
 
 Most habit apps make you check a box every day, forever. Spaced Habits doesn't. It borrows an
 idea from spaced-repetition flashcards: once you've shown you can keep a habit, it stops
-asking so often. Struggling with something? You'll hear about it daily. Nailing it? Maybe once
-a week, then rarely. The goal is an app that quietly gets out of your way.
+asking so often. Struggling with something? You'll hear about it daily. Nailing it? Every week
+or two. The goal is an app that quietly gets out of your way.
 
 ## How it works
 
 - **Smart check-ins.** Open the app and answer at most a few quick questions. "Did you go to the
   gym today?" If it's been a while: "How many of the last five days?" That's it.
-- **Fading questions.** Consistent habits are asked about less and less. The shrinking check-in
-  interval *is* your progress.
+- **Fading questions.** Consistent habits are asked about less and less, and going quiet never
+  counts against you. The growing gap between check-ins *is* your progress.
 - **Honest history.** Days you were asked about and days the app filled in from your answers
   are always shown differently. No fake streaks, no pretending.
 - **Connected habits.** Protein shake after the gym? Tell the app. It won't nag you about the

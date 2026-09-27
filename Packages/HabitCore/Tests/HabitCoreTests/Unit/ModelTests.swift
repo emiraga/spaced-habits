@@ -205,7 +205,7 @@ struct SettingsTests {
         #expect(settings.spotCheckRate == 0.05)
         #expect(settings.uncertaintyThreshold == 0.15)
         #expect(settings.decayPerDay == 0.92)
-        #expect(settings.maxIntervalDays == 30)
+        #expect(settings.maxIntervalDays == 14)
         #expect(settings.notifications.onlyWhenQuestionsDue)
         try settings.validate()
         #expect(try roundTrip(settings) == settings)

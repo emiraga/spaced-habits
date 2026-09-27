@@ -29,10 +29,14 @@ struct SimulationTests {
         #expect(abs(meanInferred - meanTruth) < 0.15)
     }
 
+    /// Not "every week": a long lucky streak (seed 42: 14 yeses, days 133–146) lifts the mean above
+    /// target and legitimately earns a break, until the next check-in finds the truth (§4.8).
     @Test func flakyUserIsAskedAlmostDaily() throws {
         let result = try Simulator.run(.flaky(probability: 0.5))
-        let weeks = fullWeeks(result, habit: 0)
-        #expect(weeks.allSatisfy { $0 >= 5 }, "\(weeks)")
+        let asked = result.asks[0].map { $0 != nil }
+        #expect(Double(asked.count { $0 }) / Double(asked.count) >= 0.8, "\(fullWeeks(result, habit: 0))")
+        let longestSilence = asked.split(separator: true).map(\.count).max() ?? 0
+        #expect(longestSilence <= Settings.default.maxIntervalDays)
     }
 
     @Test func collapseIsDetectedWithinTenDays() throws {

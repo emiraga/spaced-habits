@@ -4,7 +4,7 @@ import Foundation
 public enum DueReason: String, Codable, Sendable, Hashable, CaseIterable {
     /// Rule 4: first active day after a pause.
     case reentry
-    /// Rule 2: mean below the habit's target and not yet asked today.
+    /// Rule 2: evidence mean below the habit's target and not yet asked today.
     case belowTarget
     /// Rule 3: `maxIntervalDays` without covering an answer.
     case maxInterval
@@ -63,7 +63,7 @@ public struct QuestionPlanner: Sendable {
         if state.forcedReentryCheck {
             return .reentry
         }
-        if model.mean < habit.targetAdherence, state.lastAskedDay.map({ $0 < today }) ?? true {
+        if model.isBelowTarget(habit.targetAdherence), state.lastAskedDay.map({ $0 < today }) ?? true {
             return .belowTarget
         }
         if gapDays(habit: habit, state: state, today: today) >= settings.maxIntervalDays {

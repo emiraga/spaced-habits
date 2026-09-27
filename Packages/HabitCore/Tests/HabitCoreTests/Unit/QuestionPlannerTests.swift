@@ -34,7 +34,7 @@ private func habit(
     )
 }
 
-/// State of a habit answered "yes" daily for a long time: mean ≈ 0.93, sd ≈ 0.06, interval ≈ 15 days.
+/// State of a habit answered "yes" daily for a long time: mean ≈ 0.93, sd ≈ 0.06, interval 14 days (the ceiling).
 private func steadyState(
     for habit: Habit,
     coveredDaysAgo: Int = 1,
@@ -60,8 +60,9 @@ struct QuestionPlannerDueTests {
 
     @Test func newHabitIsDueToday() throws {
         let new = habit(createdDaysAgo: 0)
+        // No evidence: rule 2 has nothing to compare, rule 1 fires on the prior's sd ≈ 0.29.
         let reason = try planner().dueReason(habit: new, state: .initial(habitID: new.id), today: today)
-        #expect(reason == .belowTarget)
+        #expect(reason == .uncertain)
         let question = try #require(try planner().question(
             habit: new, state: .initial(habitID: new.id), today: today, createdAt: noon
         ))
@@ -111,6 +112,22 @@ struct QuestionPlannerDueTests {
         #expect(try planner().dueReason(habit: struggling, state: state, today: today) == nil)
     }
 
+    /// O6 regression: a steady habit left unasked drifts toward mean 0.5, but that is fading
+    /// confidence, not struggling. It comes back as `.uncertain`, never `.belowTarget`.
+    @Test func silenceIsNotStruggling() throws {
+        let steady = habit()
+        // A 90% habit at full evidence (mean 0.84 with the prior), last answered 13 days ago.
+        var state = SchedulerState(
+            habitID: steady.id, alpha: 12.25, beta: 2.25, lastCoveredDay: today.adding(days: -13),
+            lastAskedDay: today.adding(days: -13)
+        )
+        var decayed = state.adherence
+        try decayed.decay(days: 13, rate: Settings.default.decayPerDay)
+        state.adherence = decayed
+        #expect(decayed.mean < steady.targetAdherence)
+        #expect(try planner().dueReason(habit: steady, state: state, today: today) == .uncertain)
+    }
+
     @Test func maxIntervalCeiling() throws {
         let steady = habit()
         let maxDays = Settings.default.maxIntervalDays
@@ -122,7 +139,7 @@ struct QuestionPlannerDueTests {
 
     @Test func uncertainWhenEvidenceIsThin() throws {
         let thin = habit()
-        // mean 0.75 is below target, but it was asked today already, so rule 2 is spent and rule 1 fires.
+        // Two days of "yes": evidence mean 1.0, but sd ≈ 0.19 is above threshold.
         let state = SchedulerState(
             habitID: thin.id,
             alpha: 3,
@@ -204,7 +221,7 @@ struct QuestionPlannerRankingTests {
         let reentry = habit(importance: .low)
         let states: [UUID: SchedulerState] = [
             uncertainHigh.id: SchedulerState(
-                habitID: uncertainHigh.id, alpha: 2, beta: 1, lastCoveredDay: today.adding(days: -20),
+                habitID: uncertainHigh.id, alpha: 2, beta: 1, lastCoveredDay: today.adding(days: -10),
                 lastAskedDay: today
             ),
             struggling.id: SchedulerState(

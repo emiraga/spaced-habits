@@ -70,6 +70,8 @@ public struct SchedulerState: Codable, Sendable, Hashable {
     public var alpha: Double
     /// Beta posterior pseudo-count for "didn't".
     public var beta: Double
+    /// `AdherenceModel.answeredMean`: the mean as of the latest evidence (§4.2 rule 2).
+    public var answeredMean: Double?
     /// Last day any answer or health observation covers.
     public var lastCoveredDay: DayKey?
     public var lastAskedDay: DayKey?
@@ -82,6 +84,7 @@ public struct SchedulerState: Codable, Sendable, Hashable {
         habitID: UUID,
         alpha: Double,
         beta: Double,
+        answeredMean: Double? = nil,
         lastCoveredDay: DayKey? = nil,
         lastAskedDay: DayKey? = nil,
         currentIntervalDays: Int = 1,
@@ -90,6 +93,8 @@ public struct SchedulerState: Codable, Sendable, Hashable {
         self.habitID = habitID
         self.alpha = alpha
         self.beta = beta
+        // Nil means "derive it": with evidence it is always set, see `AdherenceModel.init`.
+        self.answeredMean = answeredMean ?? AdherenceModel.defaultAnsweredMean(alpha: alpha, beta: beta)
         self.lastCoveredDay = lastCoveredDay
         self.lastAskedDay = lastAskedDay
         self.currentIntervalDays = currentIntervalDays

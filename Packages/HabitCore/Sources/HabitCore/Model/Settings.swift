@@ -20,7 +20,7 @@ public struct Settings: Codable, Sendable, Hashable {
         spotCheckRate: 0.05,
         uncertaintyThreshold: 0.15,
         decayPerDay: 0.92,
-        maxIntervalDays: 30,
+        maxIntervalDays: 14,
         notifications: .default
     )
 
