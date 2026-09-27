@@ -505,6 +505,10 @@ yesterday.
 
 ### 5.1 Screens
 
+0. **Onboarding** (M11; first launch on a device with no habits, so iCloud or an import skips it; a
+   `UserDefaults` flag, not synced). Three pages moved by buttons only (no swipe, no transition): the idea
+   with three points; "Add your first habit" (name field and suggestion chips, whose emoji is kept unless
+   the name is edited; Skip); notifications (Allow → system prompt, or Not now). Then Today.
 1. **Today** (root). A stack of question cards (≤ session budget), then a compact list of all
    active habits with today's status glyph (✓ observed done, ✗ observed not done, ♥ Health,
    ◐ aggregated, ≈ inferred, ? unknown, ⏸ paused, ⛔ blocked), grouped by cluster (clusters by name,

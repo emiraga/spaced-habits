@@ -6,6 +6,12 @@ import SwiftUI
 /// settings are sheets. Widget taps open `DeepLink`s (§6).
 struct RootView: View {
     @State private var path = NavigationPath()
+    @State private var showingOnboarding: Bool
+
+    init(showsOnboarding: Bool) {
+        _showingOnboarding = State(initialValue: showsOnboarding)
+    }
+
     private let logger = Logger(subsystem: "ga.emira.spacedhabits", category: "app")
 
     var body: some View {
@@ -15,13 +21,19 @@ struct RootView: View {
                 .navigationDestination(for: InsightsDestination.self) { _ in InsightsView() }
         }
         .onOpenURL(perform: open)
-        #if DEBUG
-            // Checkpoint screenshots (§13 M10): `simctl openurl` stops at a confirmation prompt.
-            .onAppear {
-                if let url = Self.launchURL {
-                    open(url)
-                }
+        .fullScreenCover(isPresented: $showingOnboarding) {
+            OnboardingView {
+                UserDefaults.standard.set(true, forKey: OnboardingView.completedKey)
+                showingOnboarding = false
             }
+        }
+        #if DEBUG
+        // Checkpoint screenshots (§13 M10): `simctl openurl` stops at a confirmation prompt.
+        .onAppear {
+            if let url = Self.launchURL {
+                open(url)
+            }
+        }
         #endif
     }
 

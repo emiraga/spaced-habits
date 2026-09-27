@@ -10,9 +10,11 @@ class UITestCase: XCTestCase {
         continueAfterFailure = false
     }
 
-    /// Launches the app, from an empty store when `resetData` is set.
-    func launch(resetData: Bool) {
-        app.launchArguments = ["-disableAnimations"] + (resetData ? ["-resetData"] : [])
+    /// Launches the app, from an empty store when `resetData` is set. Onboarding is skipped unless asked for:
+    /// a `-key value` argument overrides that `UserDefaults` key for this launch.
+    func launch(resetData: Bool, onboarding: Bool = false) {
+        app.launchArguments = ["-disableAnimations", "-onboarding.completed", onboarding ? "NO" : "YES"]
+            + (resetData ? ["-resetData"] : [])
         app.launch()
     }
 
@@ -46,6 +48,14 @@ class UITestCase: XCTestCase {
     /// Like `waitForExistence`, which also polls once a second, but returns at once when already there.
     func appears(_ element: XCUIElement) -> Bool {
         element.exists || element.waitForExistence(timeout: 5)
+    }
+
+    /// `-disableAnimations` stops UIKit's animations, not SwiftUI's transitions: wait for the old page to go.
+    func disappears(_ element: XCUIElement) -> Bool {
+        let predicate = NSPredicate(format: "exists == false")
+        return !element.exists
+            || XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: element)], timeout: 5)
+            == .completed
     }
 
     func attachScreenshot(_ name: String) {

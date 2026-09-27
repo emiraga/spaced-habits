@@ -87,7 +87,7 @@ struct SpacedHabitsApp: App {
         WindowGroup {
             switch launch {
             case let .success(model):
-                RootView()
+                RootView(showsOnboarding: OnboardingView.isNeeded(defaults: .standard, habits: model.truth.habits))
                     .environment(model)
                     .environment(notifier)
                     .environment(sync)
