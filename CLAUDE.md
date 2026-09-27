@@ -29,7 +29,9 @@ make format-check  # what `make ci` runs
 make ci            # gen + format-check + lint + test — must pass before push
 ```
 
-Fast inner loop for engine work: `swift test --package-path Packages/HabitCore`.
+Fast inner loop for engine work: `xcrun swift test --package-path Packages/HabitCore`.
+Always use `xcrun swift`, not bare `swift`: a swiftly toolchain on `PATH` fails to build the
+packages (`unknown argument: '-target-arch-variant'`). The Makefile already uses `xcrun`.
 
 ## Code rules
 
