@@ -569,10 +569,14 @@ These are the acceptance tests for the engine. They must pass before UI work beg
 - CloudKit-backed SwiftData constraints (enforce in `HabitStore`):
   - no `@Attribute(.unique)`; uniqueness is by UUID handled in code
   - every property has a default or is optional; every relationship is optional
-  - no ordered relationships; store `dependencies` as a `Codable` value attribute
-    (`[Dependency]`, encoded by SwiftData as data), not as a relationship to other `Habit` rows.
-    Give it a default of `[]`. Add a mapping test that a `.sequence` edge survives a
-    store → CloudKit-shaped model → `HabitCore` round-trip unchanged.
+  - no relationships at all. `HabitStore` (M2) has one `@Model`, `TruthRecord { kind, id, payload,
+    updatedAt }`: every truth value is stored as its `HabitCore` JSON, so `dependencies` and the enums
+    with associated values (`AnswerValue`, `QuestionShape`, `PauseReason`, `HealthBinding`) are never
+    SwiftData composite attributes, which mishandle such enums. One table also avoids eight identical
+    `@Model` classes (no shared base class on iOS 17). `TruthStore` upserts by `(kind, id)`; if sync
+    ever yields duplicate rows, `load()` keeps the latest `updatedAt`. Settings are one record under a
+    fixed ID. `TruthStoreTests` checks the schema against these rules by reflection and that a
+    `.sequence` edge round-trips unchanged.
 - Conflict policy: truth tables are append-only; edits to `Habit`, `Cluster`, `PauseEvent` and a
   `Question`'s `dismissedAt` are last-writer-wins per record, which is acceptable for single-user data. Projections are never
   synced.
