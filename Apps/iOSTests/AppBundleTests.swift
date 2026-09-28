@@ -1,5 +1,6 @@
 import Foundation
 import HabitUI
+@testable import SpacedHabits
 import Testing
 
 struct AppBundleTests {
@@ -74,5 +75,11 @@ struct AppBundleTests {
             #expect(types == ["NSPrivacyAccessedAPICategoryUserDefaults"], "\(bundle.lastPathComponent)")
         }
         #expect(Bundle.main.object(forInfoDictionaryKey: "ITSAppUsesNonExemptEncryption") as? Bool == false)
+    }
+
+    /// Settings → About links to the same pages App Store Connect does (MARKETING.md).
+    @Test func supportAndPrivacyLinksAreValid() {
+        #expect(SettingsView.supportURL?.absoluteString == "https://emira.ga/spaced-habits/support")
+        #expect(SettingsView.privacyPolicyURL?.absoluteString == "https://emira.ga/spaced-habits/privacy")
     }
 }

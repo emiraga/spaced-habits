@@ -14,6 +14,11 @@ struct SettingsView: View {
     @State private var confirmingErase = false
     private let buildInfo = BuildInfo(infoDictionary: Bundle.main.infoDictionary)
 
+    /// The pages App Store Connect links to too; their text is in MARKETING.md. Optional only because
+    /// `URL(string:)` is; `AppBundleTests` checks both parse.
+    static let supportURL = URL(string: "https://emira.ga/spaced-habits/support")
+    static let privacyPolicyURL = URL(string: "https://emira.ga/spaced-habits/privacy")
+
     var body: some View {
         Form {
             Section {
@@ -46,6 +51,12 @@ struct SettingsView: View {
             DataSection()
             Section("About") {
                 LabeledContent("Version", value: buildInfo.displayString)
+                if let url = Self.supportURL {
+                    Link(destination: url) { Label("Help & Support", systemImage: "questionmark.circle") }
+                }
+                if let url = Self.privacyPolicyURL {
+                    Link(destination: url) { Label("Privacy Policy", systemImage: "hand.raised") }
+                }
             }
             #if DEBUG
                 debugSection

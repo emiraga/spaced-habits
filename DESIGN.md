@@ -539,7 +539,9 @@ yesterday.
    `vacationBehavior` is on by default with a visible toggle.
 6. **Insights.** Overall charts + insight cards (delayed-often, regressions, autonomy score).
 7. **Settings.** Notifications cadence, quiet hours, session budget, day start hour, spot check
-   rate (advanced), export/import, Health permissions, iCloud status, debug (rebuild projection).
+   rate (advanced), export/import, Health permissions, iCloud status, About (version, Help & Support and
+   Privacy Policy links to `emira.ga/spaced-habits/{support,privacy}`, text in MARKETING.md), debug
+   (rebuild projection).
 
 ### 5.2 Question card
 
