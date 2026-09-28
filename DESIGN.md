@@ -562,7 +562,10 @@ yesterday.
 - `.count`: stepper `N of K` with quick chips *None / Some / Most / All* mapping to
   0 / round(0.35K) / round(0.75K) / K.
 - Dependent habits show the parent context line ("You did Gym on 4 of 6 days").
-- Answering animates the card away and immediately shows the next one. Haptic on answer.
+- Answering animates the card away and immediately shows the next one (with Reduce Motion it fades
+  instead of sliding). Haptic on answer, on the phone and the watch.
+- Accessibility: VoiceOver reads a card as one "Check-in: <habit>" element and every chart has a
+  VoiceOver summary; at accessibility text sizes the card header stacks.
 - Cards must be answerable one-handed; primary actions ≥ 44pt tall.
 
 ### 5.3 Performance targets
@@ -572,6 +575,9 @@ yesterday.
 - Answering a card → UI update: synchronous on main actor from in-memory state; persistence
   happens after.
 - No spinners on the Today screen ever; if projection is stale, show last known and update.
+- `LaunchMetrics` logs cold launch time from process start. On a device, launch with
+  `xcrun devicectl device process launch --console --terminate-existing
+  --environment-variables '{"OS_ACTIVITY_DT_MODE":"1"}'` to see the log line.
 
 ---
 
@@ -739,6 +745,9 @@ Health binding and Settings shows no Health permissions row. See O7.
   widgets and notifications. It isn't a new session, so "Later" cards stay hidden.
 - Settings → Sync shows the iCloud account state, the last successful merge and the last sync error;
   a debug button re-reads and re-projects everything.
+- SwiftData only creates the CloudKit schema in the Development environment; TestFlight and App Store
+  builds use Production. After any change to the stored schema, deploy it (CloudKit Console → Deploy
+  Schema Changes) before shipping the build.
 
 ---
 
@@ -838,133 +847,13 @@ Implemented in M9. Data is computed in `HabitCore/Insights` (pure, tested), draw
 
 ## 13. Implementation plan
 
-Each milestone ends with a **checkpoint**: something you can run, tap, or inspect. Do not start
-the next milestone until the checkpoint passes and `make ci` is green. Milestones are ordered
-so that a usable app exists from M2 onward and every later milestone adds a feature to a working
-build.
-
-### M0 — Scaffold — done (2026-09-27)
-
-### M1 — Engine — done (2026-09-27)
-
-`Support/`, `Model/` (§3.3), `Scheduler/` (§4.1–4.6), `Projection/` (§4.7) and the simulation
-harness with the `simulate` executable (§4.8). Checkpoint evidence is in the final M1 commit.
-
-### M2 — Daily driver, single device — done (2026-09-27)
-
-`HabitStore` (one `TruthRecord` model in the App Group container, §10), `HabitUI` `AppModel` and
-cards, Today / habit detail / editor / Settings screens, debug "Advance one day" and seed data.
-`AppModelTests.checkpointEightDays` drives the §4.8 `steady` day 1–8 expectations, including the count
-card after a gap; `TodayFlowUITests` covers relaunch persistence (screenshots `Docs/checkpoints/m2-*.png`).
-The count-card XCUITest was dropped as a duplicate: it cost ~18 s. UI tests launch with
-`-disableAnimations` (debug builds) so sheets don't hold up every tap. Physical
-iPhone 16 Pro: "yes" habits fade, "no" habits are asked daily, a 4+ day gap gives a count card, and
-answers survive kill and relaunch. `LaunchMetrics` cold launch on that device: 80–82 ms from process
-start (3 runs). Launch it with `xcrun devicectl device process launch --console --terminate-existing
---environment-variables '{"OS_ACTIVITY_DT_MODE":"1"}'` to see the log line.
-
-### M3 — Pauses and vacation — done (2026-09-27)
-
-Pause sheet (card "Delay…" and habit detail, backdated or scheduled), Resumes-on label and
-extend / end now in detail, Vacation sheet (checklist from `vacationBehavior`, remember toggle,
-"Also keep parents", quiet toggle, scheduled start) with a Today banner, re-entry check,
-`Pauses.frequentlyDelayedHabitIDs` (its card is on the Insights screen since M9). The three checkpoints (delay 3 days, backdate
-over answered days, vacation with one kept habit remembered) are `HabitUI` `PauseTests.checkpoint*`,
-driven through `AppModel` and "Advance one day". They're not XCUITests because those took ~20 s per
-advanced day and hung the simulator.
-
-### M4 — Dependencies and clusters — done (2026-09-27)
-
-Gating, `.blocked` and `P(B|A)` landed in the M1 engine; M4 added the editor's depends-on picker and
-cluster editor, the card's parent context line ("You did Gym on 4 of the last 6 days." / "On how many of
-those 4?"), the detail dependency list with `P(B|A)` and `P(B)`, and the cluster-grouped Today list.
-The checkpoints are `HabitUI` `DependencyTests.checkpoint*` (through `AppModel` and "Advance one day"),
-`HabitCore` `SequenceEdgeTests`, and `DependencyFlowUITests` for the picker, the gated card and the
-refused loop (screenshots `Docs/checkpoints/m4-*.png`).
-
-Deliver: depends-on picker with cycle rejection (creates `.gate` edges;
-mode is not exposed), cluster editor, gating in the planner, parent context line on cards,
-conditional per-day toggles, `.blocked` propagation, `P(B|A)` in the projection. All dependency
-reads in planner, projection and UI go through `gateParentIDs`; `allParentIDs` is used only by
-`Dependencies.validate`.
-
-Checkpoint:
-- Gym → Protein. Answer Gym "no" for a week: Protein is never asked. Answer Gym 4/6: the Protein
-  card says "of those 4". Pause Gym: Protein history shows `.blocked`.
-- Try to create A → B → A: editor refuses with a clear message.
-- `HabitCore` tests: a fixture with a `.sequence` edge Gym → Stretch behaves exactly like no
-  edge (Stretch is asked while Gym fails, never `.blocked`, no parent context) **and** a
-  `.sequence` edge that closes a cycle is rejected by `validate`. JSON export → import
-  preserves the mode.
-
-### M5 — Notifications — done (2026-09-27)
-
-`HabitCore` `NotificationPlanner` (§8), `HabitUI` notification content/payloads and
-`AppModel.respond(to:deliveredAt:with:)`, the app's `Notifier` (delegate, categories, rescheduling,
-background refresh), Settings → Reminders, and the silence nudge opening a retroactive vacation.
-Automated: `NotificationPlannerTests`, `NotificationCheckpointTests` (answer from a model launched just
-for the action, seen after relaunch; quiet hours skip the next slot), `AppBundleTests` (background
-refresh keys). Physical iPhone 16 Pro: answered from the notification with the app killed and the answer
-appeared on launch. The first device run crashed on every tap: a `nonisolated async` delegate method
-completed the notification center's handler off the main thread, so the conformance is now
-`@MainActor` (§8). An XCUITest driving SpringBoard banners hung and was dropped; debug builds have
-Settings → "Notify in 5 seconds" (and "… and quit", which exits once it is scheduled) for checking by hand.
-
-Deliver: permission flow, cadence UI (times per day / every N days), quiet hours, actionable
-notifications with Yes/No/Later, grouping, `onlyWhenQuestionsDue`, silence nudge, background
-refresh rescheduling.
-
-Checkpoint:
-- Set two times per day; verify notifications arrive only when something is due; answer "Yes"
-  from the notification with the app killed; open the app and see the answer recorded.
-- Enable quiet hours spanning the next slot; confirm it is skipped.
-
-### M6 — Interactive widgets and App Intents — done (2026-09-27)
-
-`SpacedHabitsWidgets` extension (question widget small/medium/Lock Screen, status widget with Lock
-Screen variants and deep links), `AnswerHabitIntent` (widget buttons), `LogHabitIntent` /
-`DelayHabitIntent` / `ReviewHabitsIntent` with App Shortcuts, `AppModel.answerToday` / `reload` and
-`WidgetTimeline` (§6). Automated: `HabitUI` `WidgetTests.checkpointAnswerFromWidgetAdvancesToNextQuestion`
-(widget and app as two models on one store file), `IntentTests` (each intent's `perform()` in the app),
-`AppBundleTests` (appex, URL scheme, App Shortcuts metadata), `TruthStoreTests.loadSeesWritesFromAnotherContainer`.
-Physical iPhone: answered from the Home Screen widget without opening the app, the widget moved to the
-next question and the app showed the answer on launch; "Hey Siri, log gym in Spaced Habits" logged it.
-
-
-Deliver: iOS widget extension (question widget small/medium, status widget, Lock Screen
-variants), App Intents (`AnswerHabitIntent`, `DelayHabitIntent`, `ReviewHabitsIntent`), Siri
-phrases, timeline refresh at day boundaries.
-
-Checkpoint:
-- Answer a question from the Home Screen widget without opening the app; the widget advances
-  to the next question; the app shows the answer on next launch.
-- "Hey Siri, log gym in Spaced Habits" works.
-
-### M7 — CloudKit sync + Watch — done (2026-09-27)
-
-CloudKit-backed store in the app and watch app, `SyncMonitor` re-projection and Settings → Sync (§10),
-`TruthChange` feed with idempotent latest-wins `merge`, `WatchBridge`, the watch app and its Smart Stack
-widget and complications (§7). Automated: `HabitUI` `WatchSyncTests.checkpointWatchAnswerReachesThePhoneExactlyOnce`,
-`HabitStore` `TruthChangeTests` (idempotent merge, `allChanges`, out-of-order arrival),
-`TruthStoreTests.schemaMeetsCloudKitConstraints`. Physical iPhone + Apple Watch: answered on the watch
-with the phone in airplane mode, the watch showed it at once, and after reconnecting it appeared on the
-phone exactly once. Hardware testing found that out-of-order sync failed `load()` with `unknownHabit`; fixed
-by holding back pending references (§10). The second-iPhone check was **waived** (no second device);
-see O6.
-
-Deliver: CloudKit configuration and `HabitStore` constraint audit (§10), remote-change
-re-projection, sync status row; watchOS app (Today cards, list, sparkline), watch Smart Stack
-widget + complications, WatchConnectivity bridge with idempotent event IDs.
-
-Checkpoint:
-- Answer on the watch with the phone in airplane mode; the watch shows it immediately; turn the
-  phone back on; the answer appears on the phone within a minute, exactly once.
-- Install on a second iPhone with the same iCloud account; habits and history appear; answer on
-  one, see it on the other; no duplicates in `answers.csv`.
+M0–M7 and M9–M11 are done; 0.1.0 is submitted for App Store review. A new milestone ends with a
+**checkpoint**: something you can run, tap, or inspect. Don't start the next milestone until it passes
+and `make ci` is green.
 
 ### M8 — HealthKit — deferred (optional, post-v1)
 
-Skipped for now: it needs the HealthKit entitlement and Health permissions. Go straight to M9. See O7.
+Needs the HealthKit entitlement and Health permissions; see O7.
 
 Deliver: Health binding editor, permission flow, observer + foreground fetch, `HealthObservation`
 truth events, `.health` day source.
@@ -972,75 +861,6 @@ truth events, `.health` day source.
 Checkpoint:
 - Bind Gym to workouts ≥ 20 min; log a workout in the Health app; Gym is marked done for today
   and is not asked about; history shows the `.health` glyph.
-
-### M9 — Charts and insights — done (2026-09-28)
-
-`HabitCore/Insights`, `HabitUI/Charts`, the Insights screen (Today toolbar, `spacedhabits://insights`) and a
-charts section in habit detail (§12). Automated: `HabitCore` `InsightsTests` / `OverviewTests`, `HabitUI`
-`ChartTests.checkpointSteadyAskIntervalRises` (steady run exported as a fixture, imported through
-`importJSON` since M10: 1 day for the first 4 days, ≥ 7 over the last 30) and
-`ChartTests.checkpointChartsRenderFastForThreeYearsOfThirtyHabits` (`LargeFixture`, debug build, best of 3
-runs: data plus drawing < 100 ms for habit detail, for the Insights screen's first screenful and for each
-further cluster section; measured 65, 51 and ~10 ms on an M-series Mac), and `TodayFlowUITests` opening
-Insights. Screenshots of the imported steady run: `Docs/checkpoints/m9-*.png`. A freshly booted iOS 27
-simulator saturates the Mac for minutes (load average > 100): single timing runs failed and `xcodebuild`
-stalled with no output until the simulator had settled, hence best of 3.
-
-
-Deliver: all charts in §12 in `HabitUI/Charts`, Insights screen, insight cards (delays,
-regressions, autonomy score), data-source legends, pause bands, "include paused days" toggle.
-
-Checkpoint:
-- With the M1 simulation exported as fixtures and imported (M10 import can land first if easier),
-  the "ask interval over time" chart visibly rises for the steady habit. Commit screenshots under `Docs/checkpoints/`.
-- Charts render in < 100 ms for a 3-year, 30-habit dataset (use a generated fixture).
-
-### M10 — Export / import — done (2026-09-28)
-
-§11 as implemented. Settings → Your data: Export JSON and Export CSV (share sheet, `SpacedHabits-<day>.json` /
-`-csv.zip`), Import JSON… (Files) with a summary. Found missing while building it: the store had no write for
-Health observations (the import writes them), the M9 debug fixture import dropped habit revisions and
-simulated fixtures had none, and every relaunch logged the open cards again as new questions (now reused).
-Automated: `HabitCore` `ExportTests` / `CSVExportTests` (goldens, date precision, schema and decode errors,
-merge, unzip), `HabitStore` import write, `HabitUI` `ExportImportTests.checkpointExportWipeImportReexportIsIdentical`,
-and `TodayFlowUITests` finding the export buttons. Checked in the simulator with `simulate dependent-pair
---json`: import → `-exportData` → erase → import that export → `-exportData`. The JSON matched apart from
-`exportedAt`, the CSV zip and screenshots of Today, both habit details and Insights were byte-identical
-(`Docs/checkpoints/m10-reimported-*.png`), and eight relaunches later the export was still identical. The real
-export's `days.csv` opened in Numbers: 361 rows (header + 2 habits × 180 days), no empty `source` cell.
-
-
-Deliver: CSV zip and JSON export via `ShareLink`, JSON import with merge-by-UUID and
-re-projection, golden-fixture tests, `schemaVersion = 1`.
-
-Checkpoint:
-- Export → wipe the app → import → every screen looks identical, and re-exporting produces a
-  byte-identical JSON (modulo `exportedAt`).
-- Open `days.csv` in Numbers: every day of every habit has a `source` value.
-
-### M11 — Polish and release prep (2–3 days)
-
-Deliver: onboarding (3 screens: idea, add first habit, notifications), accessibility audit
-(VoiceOver labels on cards and chart summaries, Dynamic Type, Reduce Motion), haptics,
-localization scaffolding (`String(localized:)` everywhere, en base), app icon, App Store
-metadata, privacy manifest, TestFlight build.
-
-Checkpoint:
-- Full VoiceOver pass through Today → answer → detail → settings.
-- TestFlight build installs on iPhone + Watch from the same build.
-
-Status (2026-09-28): done; checkpoint verified on physical devices (full VoiceOver pass Today → answer →
-detail → settings; the TestFlight build installed on iPhone + Watch from the TestFlight app). CloudKit
-schema deployed to Production. 0.1.0 submitted for App Store review. VoiceOver summaries on every chart,
-cards are one "Check-in: <habit>" container, Reduce Motion fades answered cards instead of sliding them,
-the card header stacks at accessibility text sizes (AX5 screenshots: `Docs/checkpoints/m11-ax5-*.png`),
-haptic on answer (phone and watch). Privacy manifests and export compliance per §2. Builds 0.1.0 (1) and (2) uploaded
-with `make testflight`. After any SwiftData model change, redeploy the CloudKit schema to Production (CloudKit
-Console → Deploy Schema Changes) before shipping: TestFlight and App Store builds use the Production
-environment, and SwiftData only creates the schema in Development.
-
-**Rough total:** ~3–4 weeks of focused work. M0–M2 is the MVP you can live with; M3–M4 make it
-the app described in §1; M5–M7 make it frictionless (M8 HealthKit is deferred); M9–M11 make it shippable.
 
 ---
 
@@ -1054,10 +874,17 @@ the app described in §1; M5–M7 make it frictionless (M8 HealthKit is deferred
 | `HabitStore` | Swift Testing, in-memory `ModelContainer` | mapping round-trips; CloudKit constraint lint (reflection test: no `.unique`, all relationships optional) |
 | `HabitUI` | Swift Testing + snapshot tests (optional, `swift-snapshot-testing`) | question card shapes, glyphs, chart rendering with fixtures |
 | App | XCTest UI tests, minimal | launch → answer a card → relaunch → state persisted |
-| Manual | checkpoints above | anything involving notifications, widgets, Health, CloudKit, Watch |
+| Manual | milestone checkpoints (§13) | anything involving notifications, widgets, Health, CloudKit, Watch |
 
 All tests run in `make ci`; `make test` skips the UI tests, which run in `make test-ui`. Anything that needs a physical device or an iCloud account is a
 documented manual checkpoint, not a flaky automated test.
+
+- UI tests launch with `-disableAnimations` (debug builds) so sheets don't hold up every tap.
+- Flows that span several days are tested through `AppModel` and the debug "Advance one day", not
+  XCUITest: advancing days in UI tests took ~20 s each and hung the simulator. XCUITests driving
+  SpringBoard notification banners hung too; debug Settings has "Notify in 5 seconds" (and "… and
+  quit") for checking notifications by hand.
+- A freshly booted simulator can saturate the Mac for minutes, so timing tests take the best of 3 runs.
 
 ---
 
@@ -1092,9 +919,9 @@ Decide during the relevant milestone, then move the answer into the section it g
 - O4. Import of Loop/Streaks CSVs. Not in v1; JSON import only.
 - O5. Whether to expose model parameters (decay, threshold) in Settings or keep them hidden
   behind an "advanced" section. Advanced section for v1.
-- O6. The M7 two-iPhone check (§13) is unverified: no second device was available. Run it once one
-  is (a TestFlight tester's phone would do): habits and history appear, an answer on one shows on
-  the other, no duplicates in `answers.csv`.
+- O6. Sync between two iPhones on the same iCloud account is unverified (no second device). Check it
+  once one is available (a TestFlight tester's phone would do): habits and history appear, an answer
+  on one shows on the other, no duplicates in `answers.csv`.
 - O7. HealthKit (§9, M8) is deferred as optional post-v1 work because it needs the Health entitlement
-  and user permission. Decide after M11 whether to build it; if so, run the M8 checkpoint as written.
+  and user permission. Decide whether to build it; if so, run the M8 checkpoint as written.
 
