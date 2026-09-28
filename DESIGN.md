@@ -139,7 +139,10 @@ The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swif
   (warnings-as-errors without `unsafeFlags`), and list `.macOS(.v14)` so `swift test` runs on the Mac.
 - `make test` runs `swift test` for all three packages plus the app-hosted `SpacedHabitsTests`
   target via xcodebuild; package test targets are not in the Xcode scheme. The XCUITests
-  (`SpacedHabitsUITests`, ~35 s) run only in `make test-ui`, which `make ci` includes.
+  (`SpacedHabitsUITests`, ~60 s) run only in `make test-ui`, which `make ci` includes.
+- Hard 60 s cap (`TEST_TIME_LIMIT`): xcodebuild fails any single test that runs longer; each package's
+  whole `swift test` run (built first, so compile time doesn't count) is killed past it by
+  `Scripts/time-limit.sh`. A UI flow that is slow or flaky is deleted or moved to unit tests, not given more time.
 - Bundle ID prefix `ga.emira.spacedhabits`. Info.plist is generated from build settings
   (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`), merged with `Apps/iOS/Info.plist`, which
   `make gen` writes from `project.yml`'s `info.properties` for keys that have no `INFOPLIST_KEY_*`

@@ -23,7 +23,8 @@ make setup         # brew bundle + pre-commit install (once)
 make gen           # regenerate SpacedHabits.xcodeproj from project.yml (after any target/file-structure change)
 make build         # iOS simulator build via xcodebuild + xcbeautify
 make test          # packages via `swift test`, app unit tests via xcodebuild (no UI tests)
-make test-ui       # XCUITest smoke flows (~35 s); run when touching app screens
+make test-ui       # XCUITest smoke flows (~60 s); run when touching app screens
+make clean         # remove every build artifact, DerivedData included; try this first if a build acts oddly
 make lint          # swiftlint --strict
 make format        # swiftformat . (run this, don't hand-format)
 make format-check  # what `make ci` runs

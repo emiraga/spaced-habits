@@ -2,7 +2,11 @@
 
 PACKAGES := HabitCore HabitStore HabitUI
 XCODEBUILD := set -o pipefail && xcodebuild -project SpacedHabits.xcodeproj -scheme SpacedHabits
-XCTEST := $(XCODEBUILD) -destination "$$(Scripts/simulator-destination.sh)" test
+# Hard cap: no single test may run longer than TEST_TIME_LIMIT seconds (xcodebuild rounds up to whole minutes).
+TEST_TIME_LIMIT := 60
+XCTEST := $(XCODEBUILD) -destination "$$(Scripts/simulator-destination.sh)" test \
+	-test-timeouts-enabled YES -default-test-execution-time-allowance $(TEST_TIME_LIMIT) \
+	-maximum-test-execution-time-allowance $(TEST_TIME_LIMIT)
 
 setup:        ## install pinned tools
 	brew bundle
@@ -17,16 +21,17 @@ build: gen
 
 test: test-packages test-app
 
-test-packages: ## package tests via SwiftPM (fast)
+test-packages: ## package tests via SwiftPM (fast); each package's whole run gets TEST_TIME_LIMIT, builds excluded
 	@for pkg in $(PACKAGES); do \
 		echo "==> swift test $$pkg"; \
-		xcrun swift test --package-path Packages/$$pkg || exit 1; \
+		xcrun swift build --build-tests --package-path Packages/$$pkg || exit 1; \
+		Scripts/time-limit.sh $(TEST_TIME_LIMIT) xcrun swift test --skip-build --package-path Packages/$$pkg || exit 1; \
 	done
 
 test-app: gen  ## app unit tests via xcodebuild on an iOS simulator
 	$(XCTEST) -skip-testing:SpacedHabitsUITests | xcbeautify
 
-test-ui: gen   ## XCUITest smoke flows (~35 s); run by `make ci`, not `make test`
+test-ui: gen   ## XCUITest smoke flows (~60 s); run by `make ci`, not `make test`
 	$(XCTEST) -only-testing:SpacedHabitsUITests | xcbeautify
 
 lint:
@@ -61,5 +66,6 @@ testflight: archive  ## upload the archive to App Store Connect (TestFlight)
 	plutil -replace destination -string upload -o build/ExportOptions-upload.plist Scripts/ExportOptions.plist
 	$(EXPORT) -exportPath build/upload -exportOptionsPlist build/ExportOptions-upload.plist
 
-clean:
-	rm -rf SpacedHabits.xcodeproj buildServer.json DerivedData .build Packages/*/.build build
+clean:        ## remove every build artifact, including Xcode's DerivedData for this project
+	rm -rf SpacedHabits.xcodeproj buildServer.json DerivedData .build Packages/*/.build build \
+		$(HOME)/Library/Developer/Xcode/DerivedData/SpacedHabits-*
