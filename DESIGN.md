@@ -78,7 +78,7 @@ interval is itself the progress metric.
 | Editor LSP | **xcode-build-server** | `make gen` writes a git-ignored `buildServer.json` for the `SpacedHabits` scheme (must re-run after every `xcodegen generate`); run `make build` once, then reload the editor |
 | Tool pinning | `Brewfile` (+ optional `mise`) | Everyone builds with the same tool versions |
 | Task runner | `Makefile` | `make gen / build / test / lint / format / ci` |
-| CI | None hosted; `make ci` locally | Run before every push. GitHub's macOS runners lacked Xcode 27 at M0 |
+| CI | None hosted; `make ci` locally | Run before every push. GitHub's macOS runners lacked Xcode 27 |
 | Git hooks | `pre-commit` (or `lefthook`) | format + lint on staged files |
 | Privacy | `PrivacyInfo.xcprivacy` in each of the four bundles | No tracking, no collected data types (habits stay on device and in the user's own iCloud). Required-reason APIs: `UserDefaults` only — `CA92.1` (app's own defaults, iPhone app) and `1C8F.1` (App Group suite, every bundle). `LaunchMetrics`' `sysctl` reads this process's start time, not boot time |
 | Export compliance | `ITSAppUsesNonExemptEncryption = NO` | Only Apple's HTTPS/CloudKit transport encryption, which is exempt |
@@ -133,7 +133,7 @@ swapped or tuned without touching the apps.
 ### 2.2 Tooling
 
 The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swiftlint.yml`,
-`.pre-commit-config.yaml`, `.xcode-version`) landed in M0 and are the source of truth. Notes:
+`.pre-commit-config.yaml`, `.xcode-version`) are the source of truth. Notes:
 
 - Package manifests use `swift-tools-version: 6.2` for `.treatAllWarnings(as: .error)`
   (warnings-as-errors without `unsafeFlags`), and list `.macOS(.v14)` so `swift test` runs on the Mac.
@@ -146,20 +146,20 @@ The tooling files (`project.yml`, `Makefile`, `Brewfile`, `.swiftformat`, `.swif
 - Bundle ID prefix `ga.emira.spacedhabits`. Info.plist is generated from build settings
   (`GENERATE_INFOPLIST_FILE` + `INFOPLIST_KEY_*`), merged with `Apps/iOS/Info.plist`, which
   `make gen` writes from `project.yml`'s `info.properties` for keys that have no `INFOPLIST_KEY_*`
-  (M5: `UIBackgroundModes`, `BGTaskSchedulerPermittedIdentifiers`). Like the entitlements file it is
+  (`UIBackgroundModes`, `BGTaskSchedulerPermittedIdentifiers`). Like the entitlements file it is
   generated but checked in; edit `project.yml`, not the plist.
 
-Since M6 the app and the `SpacedHabitsWidgets` extension (`ga.emira.spacedhabits.widgets`, embedded
+The app and the `SpacedHabitsWidgets` extension (`ga.emira.spacedhabits.widgets`, embedded
 in the app) both carry the App Group `group.ga.emira.spacedhabits` entitlement, written by `make gen`.
 `DEVELOPMENT_TEAM` is `EZ6C73TWB8`; a device build needs the group registered for both bundle IDs
 under that team. The app declares the `spacedhabits` URL scheme for widget taps.
 
-Since M7 the app also carries the iCloud entitlement (CloudKit, container `iCloud.ga.emira.spacedhabits`),
+The app also carries the iCloud entitlement (CloudKit, container `iCloud.ga.emira.spacedhabits`),
 `aps-environment` and the `remote-notification` background mode for CloudKit's silent pushes. The widget
 extension doesn't sync (§10), so it has no iCloud entitlement. A device build needs the container
 registered under the team (Xcode → Signing & Capabilities → iCloud creates it).
 
-`SpacedHabitsWatch` (M7) is a single-target watchOS app (`type: application`, `platform: watchOS`,
+`SpacedHabitsWatch` is a single-target watchOS app (`type: application`, `platform: watchOS`,
 `WKApplication`, `WKCompanionAppBundleIdentifier`; not the legacy `application.watchapp2` + extension
 pair), bundle ID `ga.emira.spacedhabits.watchkitapp`, embedded in the iOS app's `Watch/` folder, so the
 iOS scheme builds it. It has the same App Group and iCloud entitlements as the app.
@@ -167,7 +167,7 @@ iOS scheme builds it. It has the same App Group and iCloud entitlements as the a
 `SpacedHabitsWatchWidgets` (`ga.emira.spacedhabits.watchkitapp.widgets`, App Group only) is embedded in
 the watch app and compiles the same `Apps/Widgets` sources as the iOS extension.
 
-Localization (M11): English is the development language and the only one shipped. Every target has a
+Localization: English is the development language and the only one shipped. Every target has a
 `Localizable.xcstrings` (the app, both widget extensions and the watch app in their `Apps/` folder;
 `HabitUI` and `HabitCore` under `Sources/<name>/Resources`, with `defaultLocalization: "en"`). SwiftUI
 literals are localized by type; a user-facing `String` built in code uses `String(localized:)`, and in a
@@ -190,7 +190,7 @@ SwiftData `@Model` classes and converts in both directions.
 
 ### 3.1 Time
 
-Implemented in `HabitCore/Support/` (M1): `DayKey`, `DayCalendar` (day starts at
+Implemented in `HabitCore/Support/`: `DayKey`, `DayCalendar` (day starts at
 `settings.dayStartHour`, default 04:00), `Clock` and `RandomSource`. Rules that still bind new code:
 
 - All habit data is keyed by `DayKey`, never by `Date`. Store the timezone identifier alongside
@@ -220,7 +220,7 @@ earliest changed day is an optimization for later.
 
 ### 3.3 Types
 
-Implemented in `HabitCore/Model/` (M1) as `Sendable`, `Codable`, `Hashable` value types; the code is
+Implemented in `HabitCore/Model/` as `Sendable`, `Codable`, `Hashable` value types; the code is
 the reference for fields and defaults:
 
 - `Habit.swift`: `Habit` (+ `HabitKind`, `Importance`, `VacationBehavior`, `HealthBinding`),
@@ -292,7 +292,7 @@ alone makes the habit due by §4.2 rules 1–3. It is 1 if rule 1 or 2 already h
 `uncertaintyThreshold` (decay only increases `sd`), capped at `maxIntervalDays`. It is the "ask
 interval" in the UI and charts and the "> 7 days" test of §4.2 rule 5. An exact 50/50 habit settles
 at `sd ≈ 0.13`, below threshold, so an sd-only interval would claim ~7 days while rule 2 asks it
-daily; that mismatch (M1 `flaky` simulation) is why the interval includes rules 2 and 3.
+daily; that mismatch (the `flaky` simulation) is why the interval includes rules 2 and 3.
 
 **Two weeks is the design ceiling.** Decay caps evidence: daily "yes" settles at `alpha ≈ 13.5,
 beta = 1, sd ≈ 0.06`, and `sd` crosses the threshold ~16 days after the last answer, whatever the
@@ -510,7 +510,7 @@ yesterday.
 
 ### 5.1 Screens
 
-0. **Onboarding** (M11; first launch on a device with no habits, so iCloud or an import skips it; a
+0. **Onboarding** (first launch on a device with no habits, so iCloud or an import skips it; a
    `UserDefaults` flag, not synced). Three pages moved by buttons only (no swipe, no transition): the idea
    with three points; "Add your first habit" (name field and suggestion chips, whose emoji is kept unless
    the name is edited; Skip); notifications (Allow → system prompt, or Not now). Then Today.
@@ -724,7 +724,7 @@ Health binding and Settings shows no Health permissions row. See O7.
 - CloudKit-backed SwiftData constraints (enforce in `HabitStore`):
   - no `@Attribute(.unique)`; uniqueness is by UUID handled in code
   - every property has a default or is optional; every relationship is optional
-  - no relationships at all. `HabitStore` (M2) has one `@Model`, `TruthRecord { kind, id, payload,
+  - no relationships at all. `HabitStore` has one `@Model`, `TruthRecord { kind, id, payload,
     updatedAt }`: every truth value is stored as its `HabitCore` JSON, so `dependencies` and the enums
     with associated values (`AnswerValue`, `QuestionShape`, `PauseReason`, `HealthBinding`) are never
     SwiftData composite attributes, which mishandle such enums. One table also avoids eight identical
@@ -768,7 +768,7 @@ Health binding and Settings shows no Health permissions row. See O7.
 - Delivered via `ShareLink` / Files. All encoders live in `HabitCore/Export` and are unit-tested
   against golden fixtures; `schemaVersion` bumps require a migration note in this document.
 
-Implemented in M10 (`schemaVersion = 1`, no migrations yet):
+`schemaVersion = 1`, no migrations yet:
 - `HabitCore/Export`: `DataExport` (a `Sendable` snapshot of truth and projection; the share sheet encodes it off
   the main actor), `ExportDocument` + `ExportCodec` (JSON), `CSVColumns` (the CSV columns, the reference for
   their names and value formats), `ZipArchive` (stored entries, fixed timestamps: same files, same bytes; no
@@ -823,7 +823,7 @@ Overall:
 
 Every chart has a data-source legend. Do not show a chart if fewer than 7 non-paused days exist.
 
-Implemented in M9. Data is computed in `HabitCore/Insights` (pure, tested), drawn by `HabitUI/Charts`:
+Data is computed in `HabitCore/Insights` (pure, tested), drawn by `HabitUI/Charts`:
 - **Adherence counts evidence only** (`AdherenceFilter`): observed, aggregated and Health days. Inferred and
   unknown days never count. For a gated habit the default is `P(B|A)`; `includingParentMisses` gives `P(B)`.
   "Include paused days" (stored in `@AppStorage`, shared by Insights and habit detail) makes paused and blocked
@@ -914,7 +914,7 @@ documented manual checkpoint, not a flaky automated test.
 Decide during the relevant milestone, then move the answer into the section it governs.
 
 - O2. Should the "Later" dismissal count toward staleness, or be ignored by the scheduler? Ignored
-  for M2 (it is logged in `Truth.questions` but not read); revisit if users report nagging.
+  for now (it is logged in `Truth.questions` but not read); revisit if users report nagging.
 - O3. Third vacation behavior "keep but relaxed" (reduced target). Not in v1.
 - O4. Import of Loop/Streaks CSVs. Not in v1; JSON import only.
 - O5. Whether to expose model parameters (decay, threshold) in Settings or keep them hidden
