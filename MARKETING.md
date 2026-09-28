@@ -164,7 +164,7 @@ Make sure you're signed in to the same iCloud account on each device and that iC
 **How do I back up or move my data?**
 Settings → Your data → Export (JSON or CSV). You can import the JSON file again on any device.
 
-**Privacy:** [Privacy Policy](/spaced-habits/privacy)
+**Privacy:** [Privacy Policy](/projects/spaced-habits/privacy)
 ```
 
 ## Short pitch
