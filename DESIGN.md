@@ -647,6 +647,10 @@ of records is chunked rather than sent one message each): by `sendMessage` (50 p
   empty store asks the phone for `TruthStore.allChanges()` on activation and whenever the phone becomes
   reachable, instead of waiting for CloudKit; the phone replies by messages if reachable, else as a file.
 - Runs standalone if the phone is unreachable; CloudKit catches up later.
+- The list's `navigationDestination` sits on the `TabView`, not inside a page: SwiftUI ignores it in a
+  page (a lazy container), and rows didn't open. `make screenshots-watch` (`SpacedHabitsWatchUITests`, in
+  no test run) walks Today, the list, a quick view and "Nothing to ask" on the imported dependent-pair run;
+  the watch app takes the same debug launch arguments as the phone (`AppModel.applyDebugLaunchArguments`).
 
 ---
 

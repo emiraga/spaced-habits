@@ -25,9 +25,6 @@ struct WatchHabitsView: View {
             }
         }
         .navigationTitle("Habits")
-        .navigationDestination(for: UUID.self) { id in
-            WatchHabitView(habitID: id)
-        }
     }
 }
 

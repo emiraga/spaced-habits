@@ -21,9 +21,14 @@ struct SpacedHabitsWatchApp: App {
         let launch = Result {
             let store = try TruthStore(container: StoreContainer.make(.appGroup(syncs: true)))
             bridge = WatchBridge(store: store, errors: errors)
-            return try AppModel(
+            let model = try AppModel(
                 store: store, timeZone: .current, defaults: StoreContainer.sharedDefaults(), channel: .watch
             ) { SystemClock(calendar: $0) }
+            #if DEBUG
+                // Screenshots: the same fixture import and seed data as the iOS app.
+                try model.applyDebugLaunchArguments(ProcessInfo.processInfo.arguments)
+            #endif
+            return model
         }
         _launch = State(initialValue: launch)
         self.bridge = bridge
@@ -70,6 +75,10 @@ struct WatchRootView: View {
                 WatchHabitsView()
             }
             .tabViewStyle(.verticalPage)
+            // Here, not on the list: SwiftUI ignores a destination inside a TabView page, so no row opened.
+            .navigationDestination(for: UUID.self) { id in
+                WatchHabitView(habitID: id)
+            }
         }
     }
 }

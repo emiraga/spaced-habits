@@ -24,6 +24,7 @@ make gen           # regenerate SpacedHabits.xcodeproj from project.yml (after a
 make build         # iOS simulator build via xcodebuild + xcbeautify
 make test          # packages via `swift test`, app unit tests via xcodebuild (no UI tests)
 make test-ui       # XCUITest smoke flows (~60 s); run when touching app screens
+make screenshots-watch  # watch app screenshots from a simulated run into build/screenshots/watch
 make clean         # remove every build artifact, DerivedData included; try this first if a build acts oddly
 make lint          # swiftlint --strict
 make format        # swiftformat . (run this, don't hand-format)

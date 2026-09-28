@@ -1,4 +1,4 @@
-.PHONY: setup gen build test test-packages test-app test-ui lint format format-check strings ci archive ipa testflight clean
+.PHONY: setup gen build test test-packages test-app test-ui screenshots-watch lint format format-check strings ci archive ipa testflight clean
 
 PACKAGES := HabitCore HabitStore HabitUI
 XCODEBUILD := set -o pipefail && xcodebuild -project SpacedHabits.xcodeproj -scheme SpacedHabits
@@ -33,6 +33,17 @@ test-app: gen  ## app unit tests via xcodebuild on an iOS simulator
 
 test-ui: gen   ## XCUITest smoke flows (~60 s); run by `make ci`, not `make test`
 	$(XCTEST) -only-testing:SpacedHabitsUITests | xcbeautify
+
+# Watch screenshots from the dependent-pair simulation, ending today.
+WATCH_SHOTS := $(CURDIR)/build/screenshots/watch
+WATCH_DESTINATION ?= platform=watchOS Simulator,name=Apple Watch Series 12 (46mm)
+SIMULATE := xcrun swift run -q --package-path Packages/HabitCore simulate dependent-pair --json --end
+
+screenshots-watch: gen  ## watch app screenshots (§7 screens, simulated data) into build/screenshots/watch
+	rm -rf $(WATCH_SHOTS) && mkdir -p $(WATCH_SHOTS)
+	$(SIMULATE) $$(date +%F) > $(WATCH_SHOTS)/fixture.json
+	set -o pipefail && TEST_RUNNER_SCREENSHOTS=$(WATCH_SHOTS) xcodebuild -project SpacedHabits.xcodeproj \
+		-scheme SpacedHabitsWatchScreenshots -destination "$(WATCH_DESTINATION)" -collect-test-diagnostics never test | xcbeautify
 
 lint:
 	swiftlint lint --strict

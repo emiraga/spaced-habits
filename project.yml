@@ -192,6 +192,17 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: SpacedHabits
+  # App Store screenshots of the watch app (`make screenshots-watch`); in no test run.
+  SpacedHabitsWatchUITests:
+    type: bundle.ui-testing
+    platform: watchOS
+    sources: [Apps/watchOSUITests]
+    dependencies:
+      - target: SpacedHabitsWatch
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: SpacedHabitsWatch
 schemes:
   SpacedHabits:
     build:
@@ -199,3 +210,9 @@ schemes:
         SpacedHabits: all
     test:
       targets: [SpacedHabitsTests, SpacedHabitsUITests]
+  SpacedHabitsWatchScreenshots:
+    build:
+      targets:
+        SpacedHabitsWatch: all
+    test:
+      targets: [SpacedHabitsWatchUITests]
