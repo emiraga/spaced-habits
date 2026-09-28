@@ -1029,13 +1029,15 @@ Checkpoint:
 - Full VoiceOver pass through Today → answer → detail → settings.
 - TestFlight build installs on iPhone + Watch from the same build.
 
-Status (2026-09-28): built; checkpoint pending (needs physical devices). VoiceOver summaries on every chart,
+Status (2026-09-28): done; checkpoint verified on physical devices (full VoiceOver pass Today → answer →
+detail → settings; the TestFlight build installed on iPhone + Watch from the TestFlight app). CloudKit
+schema deployed to Production. 0.1.0 submitted for App Store review. VoiceOver summaries on every chart,
 cards are one "Check-in: <habit>" container, Reduce Motion fades answered cards instead of sliding them,
 the card header stacks at accessibility text sizes (AX5 screenshots: `Docs/checkpoints/m11-ax5-*.png`),
 haptic on answer (phone and watch). Privacy manifests and export compliance per §2. Builds 0.1.0 (1) and (2) uploaded
-with `make testflight`. Before testers install it, deploy the CloudKit schema to Production (CloudKit Console
-→ Deploy Schema Changes): TestFlight builds use the Production environment, and SwiftData only creates the
-schema in Development.
+with `make testflight`. After any SwiftData model change, redeploy the CloudKit schema to Production (CloudKit
+Console → Deploy Schema Changes) before shipping: TestFlight and App Store builds use the Production
+environment, and SwiftData only creates the schema in Development.
 
 **Rough total:** ~3–4 weeks of focused work. M0–M2 is the MVP you can live with; M3–M4 make it
 the app described in §1; M5–M7 make it frictionless (M8 HealthKit is deferred); M9–M11 make it shippable.
