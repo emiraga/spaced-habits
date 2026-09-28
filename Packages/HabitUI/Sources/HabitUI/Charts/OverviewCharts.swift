@@ -172,7 +172,7 @@ public struct QuestionsPerDayChart: View {
         )
     }
 
-    private static func format(_ value: Double) -> String {
+    private nonisolated static func format(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(1)))
     }
 }
