@@ -1028,7 +1028,7 @@ Checkpoint:
 Status (2026-09-28): built; checkpoint pending (needs physical devices). VoiceOver summaries on every chart,
 cards are one "Check-in: <habit>" container, Reduce Motion fades answered cards instead of sliding them,
 the card header stacks at accessibility text sizes (AX5 screenshots: `Docs/checkpoints/m11-ax5-*.png`),
-haptic on answer (phone and watch). Privacy manifests and export compliance per §2. Build 0.1.0 (1) uploaded
+haptic on answer (phone and watch). Privacy manifests and export compliance per §2. Builds 0.1.0 (1) and (2) uploaded
 with `make testflight`. Before testers install it, deploy the CloudKit schema to Production (CloudKit Console
 → Deploy Schema Changes): TestFlight builds use the Production environment, and SwiftData only creates the
 schema in Development.
