@@ -3,7 +3,7 @@ import Foundation
 /// The JSON export (DESIGN.md §11): `{ schemaVersion, exportedAt, settings, habits, habitRevisions, clusters,
 /// answers, questions, pauses, healthObservations }`, i.e. the full `Truth` plus an envelope, and with
 /// `includeProjection` the derived `dayRecords`. Collections are in a canonical order that doesn't depend on
-/// the store's write order, so export → import → export is byte-identical apart from `exportedAt` (§13 M10).
+/// the store's write order, so export → import → export is byte-identical apart from `exportedAt` (DESIGN.md §11).
 public struct ExportDocument: Sendable, Hashable {
     /// Bumping it needs a migration note in DESIGN.md §11.
     public static let schemaVersion = 1

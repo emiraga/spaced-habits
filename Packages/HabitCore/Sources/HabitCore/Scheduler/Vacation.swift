@@ -91,7 +91,7 @@ public enum Vacation {
             .min { ($0.start, $0.id.uuidString) < ($1.start, $1.id.uuidString) }
     }
 
-    /// Whether a vacation with "Quiet all notifications" is in effect on `day` (read by notifications, M5).
+    /// Whether a vacation with "Quiet all notifications" is in effect on `day` (read by notifications, §8).
     public static func quietsNotifications(on day: DayKey, pauses: [PauseEvent]) -> Bool {
         pauses.contains { $0.reason == .vacation && $0.quietAllNotifications && $0.isActive(on: day) }
     }

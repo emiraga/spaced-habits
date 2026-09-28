@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 struct AppModelTests {
-    /// The §13 M2 checkpoint, driven through the debug "advance day" control: "yes" every time is asked
+    /// The daily driver, driven through the debug "advance day" control: "yes" every time is asked
     /// less by day 7 (days 1–5, then a per-day card on day 8 covering 6–8); "no" every time is asked
     /// daily; a four-day gap produces a `count` card.
     @Test func checkpointEightDays() throws {

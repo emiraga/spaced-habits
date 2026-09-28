@@ -3,7 +3,7 @@ import HabitCore
 @testable import HabitUI
 import Testing
 
-/// The §13 M3 checkpoint, driven through `AppModel` and the debug "advance day" control.
+/// Pauses and vacation (§4.6), driven through `AppModel` and the debug "advance day" control.
 @MainActor
 struct PauseTests {
     /// Delay 3 days: no questions and `.paused` history while paused, then exactly one re-entry question

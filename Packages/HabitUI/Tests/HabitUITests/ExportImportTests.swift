@@ -4,7 +4,7 @@ import HabitSimulation
 @testable import HabitUI
 import Testing
 
-/// Export and import through the app model (DESIGN.md §11, §13 M10).
+/// Export and import through the app model (DESIGN.md §11).
 @MainActor
 struct ExportImportTests {
     /// A history with everything the app writes: a simulated gated pair ending today, then a cluster, an
@@ -35,7 +35,7 @@ struct ExportImportTests {
         return model
     }
 
-    /// §13 M10 checkpoint: export → wipe → import shows the same state, and re-exporting is byte-identical.
+    /// Export → wipe → import shows the same state, and re-exporting is byte-identical.
     @Test func checkpointExportWipeImportReexportIsIdentical() throws {
         let original = try populatedModel()
         let exported = try original.dataExport().json()

@@ -13,7 +13,7 @@ private func addProtein(_ model: AppModel, after gym: Habit) throws -> Habit {
     return protein
 }
 
-/// The §13 M4 checkpoint, driven through `AppModel` and the debug "advance day" control.
+/// Dependencies (§4.5), driven through `AppModel` and the debug "advance day" control.
 @MainActor
 struct DependencyTests {
     /// Gym "no" for a week: Protein is never asked, and its days are "not done (parent not done)".

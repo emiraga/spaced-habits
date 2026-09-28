@@ -28,7 +28,7 @@ public extension AppModel {
 }
 
 #if DEBUG
-    /// Debug launch arguments, shared by the iOS and watch apps (§13 M9/M10 checkpoints, UI tests, screenshots).
+    /// Debug launch arguments, shared by the iOS and watch apps (fixtures, UI tests, screenshots).
     public extension AppModel {
         func applyDebugLaunchArguments(_ arguments: [String]) throws {
             // UI tests start from an empty store and today's real date.

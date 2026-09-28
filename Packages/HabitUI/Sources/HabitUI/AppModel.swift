@@ -22,7 +22,7 @@ public final class AppModel {
     public private(set) var queuedCount = 0
     /// Every habit that is due today, including ones put off with "Later".
     public private(set) var dueHabitIDs: Set<UUID> = []
-    /// Debug "advance day" offset (§13 M2); 0 in normal use.
+    /// Debug "advance day" offset; 0 in normal use.
     public private(set) var dayOffset: Int
     public private(set) var clock: ShiftedClock
     /// Built from `truth.settings`, which is validated before it is stored.
@@ -201,7 +201,7 @@ public final class AppModel {
 
     // MARK: Debug
 
-    /// Moves the clock one day ahead and starts a new session (§13 M2 checkpoint).
+    /// Moves the clock one day ahead and starts a new session (debug).
     public func advanceDay() throws {
         try setDayOffset(dayOffset + 1)
     }
@@ -264,7 +264,7 @@ public final class AppModel {
     }
 
     /// The card already shown for this habit, else one logged before a relaunch or an import that was neither
-    /// dismissed nor answered: showing it again logs nothing new, so a re-export matches (§13 M10). A card
+    /// dismissed nor answered: showing it again logs nothing new, so a re-export matches (§11). A card
     /// shown again after "Later" is a new question.
     private func reusableQuestion(like question: Question) -> Question? {
         if let shown = shownQuestions[question.habitID], Self.asksTheSame(shown, question) {

@@ -7,7 +7,7 @@ import Testing
 
 @MainActor
 struct ChartTests {
-    /// §13 M9 checkpoint: the §4.8 `steady` run, exported as a fixture ending today and imported, charts an
+    /// The §4.8 `steady` run, exported as a fixture ending today and imported, charts an
     /// ask interval that rises from daily to over a week.
     @Test func checkpointSteadyAskIntervalRises() throws {
         let run = try Simulator.run(.steady(), start: start.adding(days: 1 - Scenario.steady().days))
@@ -26,7 +26,7 @@ struct ChartTests {
         #expect(render(HabitCharts(insights: insights, color: .blue)) != nil)
     }
 
-    /// §13 M9 checkpoint: 30 habits × 3 years chart in under 100 ms, data and drawing. Habit detail draws
+    /// 30 habits × 3 years chart in under 100 ms, data and drawing. Habit detail draws
     /// every chart at once. The Insights screen is a lazy list: opening it computes the data for every
     /// section but draws the cards, the overall charts and the first cluster; each further cluster is drawn
     /// as it scrolls in.
@@ -143,7 +143,7 @@ struct ChartTests {
     }
 }
 
-/// §13 M11: every chart reads as one sentence under VoiceOver.
+/// Every chart reads as one sentence under VoiceOver.
 struct ChartSummaryTests {
     private let day = DayKey(dayNumber: 20723)
     private let gym = UUID()

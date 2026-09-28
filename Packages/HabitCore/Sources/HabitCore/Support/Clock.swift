@@ -23,7 +23,7 @@ public struct SystemClock: Clock {
     }
 }
 
-/// `base` moved `days` whole days ahead, for the debug "advance day" control (DESIGN.md §13 M2).
+/// `base` moved `days` whole days ahead, for the debug "advance day" control.
 /// `today()` shifts the base's day key, so it stays exact across DST; `now()` shifts by 24-hour days and is
 /// only used for timestamps.
 public struct ShiftedClock: Clock {

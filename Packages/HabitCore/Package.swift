@@ -15,7 +15,7 @@ let package = Package(
     targets: [
         .target(
             name: "HabitCore",
-            // Localizable.xcstrings: import errors (§13 M11).
+            // Localizable.xcstrings: import errors (DESIGN.md §2.2).
             resources: [.process("Resources")],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),

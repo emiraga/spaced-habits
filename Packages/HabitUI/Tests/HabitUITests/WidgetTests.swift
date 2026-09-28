@@ -41,7 +41,7 @@ private struct TwoProcesses {
 
 @MainActor
 struct WidgetTests {
-    /// §13 M6 checkpoint, minus SpringBoard: answer from the widget without opening the app, the widget
+    /// Widgets (§6), minus SpringBoard: answer from the widget without opening the app, the widget
     /// advances to the next question, and the app shows the answer.
     @Test func checkpointAnswerFromWidgetAdvancesToNextQuestion() throws {
         let processes = try TwoProcesses()

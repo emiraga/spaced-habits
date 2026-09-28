@@ -1,7 +1,7 @@
 import Foundation
 import HabitCore
 
-/// A generated long history for performance checks (DESIGN.md §13 M9: charts for 3 years × 30 habits).
+/// A generated long history for performance checks (charts for 3 years × 30 habits).
 /// Cheaper than `Simulator`, which re-plans every day: each habit is answered every third day with a
 /// count, clusters of six hold a three-habit gate chain, there is a two-week vacation each year and a few
 /// manual delays. Deterministic for a seed.

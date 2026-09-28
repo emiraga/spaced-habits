@@ -28,7 +28,7 @@ struct RootView: View {
             }
         }
         #if DEBUG
-        // Checkpoint screenshots (§13 M10): `simctl openurl` stops at a confirmation prompt.
+        // Screenshots: `simctl openurl` stops at a confirmation prompt.
         .onAppear {
             if let url = Self.launchURL {
                 open(url)

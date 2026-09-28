@@ -108,7 +108,7 @@ struct SettingsView: View {
     }
 
     #if DEBUG
-        /// §13 M2 checkpoint controls: shift the injected clock, seed data, start over.
+        /// Debug controls: shift the injected clock, seed data, start over.
         private var debugSection: some View {
             Section {
                 LabeledContent("Today", value: "\(model.today) (+\(model.dayOffset) days)")

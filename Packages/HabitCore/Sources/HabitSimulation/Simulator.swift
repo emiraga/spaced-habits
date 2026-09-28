@@ -22,7 +22,7 @@ public struct SimulationResult: Sendable {
     /// Projection as of the last day, after its answers: the retrospective view of every day.
     public let projected: Projected
     /// Everything the simulated user did, as the app would have stored it: `simulate --json` exports it as
-    /// a fixture (§13 M9).
+    /// a fixture (§4.8).
     public let log: Truth
 
     public func day(_ index: Int) -> DayKey {

@@ -59,7 +59,7 @@ strings: gen  ## fill every Localizable.xcstrings (en base) with the strings the
 
 ci: gen format-check lint test test-ui
 
-# Release (§13 M11). Bump CURRENT_PROJECT_VERSION in project.yml before each upload: App Store Connect
+# Release. Bump CURRENT_PROJECT_VERSION in project.yml before each upload: App Store Connect
 # refuses a build number it has seen. The export runs with /usr/bin first on PATH: Xcode's IPA step calls
 # `rsync`, and Homebrew's rsync 3.x fails there ("Copy failed").
 ARCHIVE := build/SpacedHabits.xcarchive

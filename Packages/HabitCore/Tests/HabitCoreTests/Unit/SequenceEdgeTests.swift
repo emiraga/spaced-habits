@@ -10,7 +10,7 @@ private func day(_ offset: Int) -> DayKey {
     today.adding(days: offset)
 }
 
-/// §13 M4: a `.sequence` edge Gym → Stretch is inert. Gym fails for a week and is paused today; Stretch is
+/// §4.5: a `.sequence` edge Gym → Stretch is inert. Gym fails for a week and is paused today; Stretch is
 /// planned and projected exactly as if the edge did not exist, and the mode survives JSON.
 struct SequenceEdgeTests {
     private let gym = Habit(name: "Gym", colorHex: "#00AA00", createdAt: noon, createdDay: day(-9))

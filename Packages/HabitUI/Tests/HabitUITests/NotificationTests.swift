@@ -29,7 +29,7 @@ private func question(_ content: NotificationContent?) throws -> Question {
     return question
 }
 
-/// The §13 M5 checkpoint, minus the notification center: two times per day, notified only while
+/// Notifications (§8), minus the notification center: two times per day, notified only while
 /// something is due, "Yes" answered by a process launched just for the action, then seen after relaunch.
 @MainActor
 struct NotificationCheckpointTests {

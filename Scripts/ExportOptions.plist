@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- App Store Connect export (DESIGN.md §13 M11). `make testflight` switches destination to upload. -->
+<!-- App Store Connect export. `make testflight` switches destination to upload. -->
 <plist version="1.0">
 <dict>
 	<key>method</key>

@@ -1,6 +1,6 @@
 import XCTest
 
-/// §13 M4 in the real UI: pick a parent in the editor, see the child card follow the parent's answer with
+/// Dependencies (§4.5) in the real UI: pick a parent in the editor, see the child card follow the parent's answer with
 /// its context line, and have a loop refused with a readable message.
 final class DependencyFlowUITests: UITestCase {
     func testGatedChildFollowsParentAndCyclesAreRefused() {

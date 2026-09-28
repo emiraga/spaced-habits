@@ -7,7 +7,7 @@ import Testing
 /// Phone and watch, each with its own store and model, joined by the change feed (DESIGN.md §7).
 @MainActor
 struct WatchSyncTests {
-    /// §13 M7 checkpoint, minus the radios: answer on the watch while the phone is unreachable; the watch
+    /// Watch sync (§7), minus the radios: answer on the watch while the phone is unreachable; the watch
     /// shows it at once; delivered later, by WatchConnectivity and again by CloudKit, the phone has it once.
     @Test func checkpointWatchAnswerReachesThePhoneExactlyOnce() throws {
         let phoneHarness = try Harness()

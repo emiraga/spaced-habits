@@ -4,7 +4,7 @@ import HabitSimulation
 
 /// `swift run simulate <scenario> [--end yyyy-MM-dd] [--json]`: prints the 180-day table for one §4.8
 /// synthetic user, or with `--json` the `Truth` it produced as an export (§11), which the app imports: Settings →
-/// Import, or `-importFixture <path>` in a debug build (§13 M9).
+/// Import, or `-importFixture <path>` in a debug build.
 /// `--end` moves the run so its last day is that day (default: it starts on `Simulator.defaultStart`).
 let names = Scenario.all.keys.sorted()
 let usage = "usage: simulate <\(names.joined(separator: "|"))> [--end yyyy-MM-dd] [--json]\n"

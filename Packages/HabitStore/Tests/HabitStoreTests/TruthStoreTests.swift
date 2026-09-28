@@ -170,7 +170,7 @@ struct TruthStoreTests {
         #expect(try store.load() == Truth(habits: []))
     }
 
-    /// Kill and relaunch (M2 checkpoint): a new container on the same file sees everything.
+    /// Kill and relaunch: a new container on the same file sees everything.
     @Test func truthPersistsAcrossContainers() throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)

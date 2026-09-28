@@ -58,7 +58,7 @@ public struct DataExport: Sendable {
         ]
     }
 
-    /// One row per habit per day it has existed, every one with a `source` (§13 M10).
+    /// One row per habit per day it has existed, every one with a `source` (§11).
     private func days(names: [UUID: String]) -> CSVTable {
         var table = CSVTable([
             "habit_id", "habit_name", "day", "value", "source", "confidence", "conditional_denominator_excluded",
