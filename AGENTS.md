@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 Spaced Habits is a native iOS + watchOS habit tracker with an adaptive, spaced-repetition-style
 check-in scheduler. **`DESIGN.md` is the source of truth** for scope, architecture, and the

@@ -64,5 +64,5 @@ iCloud.
 
 ---
 
-*Building or contributing? See `DESIGN.md` for the architecture and `CLAUDE.md` for the
+*Building or contributing? See `DESIGN.md` for the architecture and `AGENTS.md` for the
 workflow.*
