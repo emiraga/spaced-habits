@@ -88,8 +88,8 @@ at any time.
   (private CloudKit database), which Apple doesn't count as developer collection. Matches the
   privacy manifests (DESIGN.md §2).
 - **Export compliance:** exempt; `ITSAppUsesNonExemptEncryption = NO` is in every build.
-- **Privacy Policy URL:** `https://emira.ga/spaced-habits/privacy`
-- **Support URL:** `https://emira.ga/spaced-habits/support`
+- **Privacy Policy URL:** `https://emira.ga/projects/spaced-habits/privacy`
+- **Support URL:** `https://emira.ga/projects/spaced-habits/support`
 - Apple Health isn't shipped (DESIGN.md O7). Add it back to the copy only when it is.
 
 ## Website pages
@@ -98,42 +98,49 @@ The published copies live on emira.ga; Settings → About links to both (`Settin
 in sync with the app: when a feature, menu path or data flow changes, update the page here and on
 the site.
 
-### `https://emira.ga/spaced-habits/privacy`
+### `https://emira.ga/projects/spaced-habits/privacy`
 
 ```markdown
 # Spaced Habits — Privacy Policy
 
-*Last updated: 28 September 2026*
+_Last updated: 28 September 2026_
 
 Spaced Habits does not collect any data. I (the developer) can't see your habits, answers, or anything else you enter.
 
 ## Where your data lives
+
 - **On your devices.** Habits, answers, pauses and settings are stored on your iPhone and Apple Watch, shared with the app's widgets.
 - **In your own iCloud, if you use iCloud.** The app syncs through your private iCloud database (Apple CloudKit). Only your Apple Account can read it. The developer can't. Apple's privacy policy covers iCloud.
 
 ## What the app doesn't do
+
 - No accounts, analytics, advertising, or tracking.
 - No third-party SDKs.
 - No data sent to any server run by the developer.
 
 ## Notifications and Siri
+
 Reminders are scheduled on your device. If you use Siri or Shortcuts to log a habit, Apple handles that request under its own privacy policy.
 
 ## Export and deletion
+
 - **Export:** Settings → Your data exports everything as JSON or CSV at any time.
 - **Delete:** delete the app to remove its data from a device. To remove the synced copy, go to iOS Settings → [your name] → iCloud → Manage Account Storage → Spaced Habits.
 
 ## Children
+
 The app collects no data from anyone, including children.
 
 ## Changes
+
 If this policy changes, the new version will be posted here with a new date.
 
 ## Contact
+
 spacedhabits@emira.ga
 ```
 
-### `https://emira.ga/spaced-habits/support`
+### `https://emira.ga/projects/spaced-habits/support`
 
 ```markdown
 # Spaced Habits — Support

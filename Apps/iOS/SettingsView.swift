@@ -16,8 +16,8 @@ struct SettingsView: View {
 
     /// The pages App Store Connect links to too; their text is in MARKETING.md. Optional only because
     /// `URL(string:)` is; `AppBundleTests` checks both parse.
-    static let supportURL = URL(string: "https://emira.ga/spaced-habits/support")
-    static let privacyPolicyURL = URL(string: "https://emira.ga/spaced-habits/privacy")
+    nonisolated static let supportURL = URL(string: "https://emira.ga/projects/spaced-habits/support")
+    nonisolated static let privacyPolicyURL = URL(string: "https://emira.ga/projects/spaced-habits/privacy")
 
     var body: some View {
         Form {
@@ -52,7 +52,9 @@ struct SettingsView: View {
             Section("About") {
                 LabeledContent("Version", value: buildInfo.displayString)
                 if let url = Self.supportURL {
-                    Link(destination: url) { Label("Help & Support", systemImage: "questionmark.circle") }
+                    Link(destination: url) {
+                        Label("Help & Support", systemImage: "questionmark.circle")
+                    }
                 }
                 if let url = Self.privacyPolicyURL {
                     Link(destination: url) { Label("Privacy Policy", systemImage: "hand.raised") }
@@ -88,7 +90,8 @@ struct SettingsView: View {
             LabeledContent("Account", value: sync.account.label)
             LabeledContent(
                 "Last merge",
-                value: sync.lastMerge?.formatted(date: .abbreviated, time: .standard) ?? String(localized: "Not yet")
+                value: sync.lastMerge?.formatted(date: .abbreviated, time: .standard)
+                    ?? String(localized: "Not yet")
             )
             // Without an account every setup fails; the account row already says why.
             if sync.account == .available, let error = sync.lastError {
@@ -128,13 +131,19 @@ struct SettingsView: View {
                 Button("Re-read and re-project all data") { errors.attempt { try model.reload() } }
                 Button("Add sample habits") { errors.attempt { try model.addSampleHabits() } }
                 Button("Erase all data", role: .destructive) { confirmingErase = true }
-                    .confirmationDialog("Erase all habits and answers?", isPresented: $confirmingErase) {
-                        Button("Erase all data", role: .destructive) { errors.attempt { try model.eraseAll() } }
+                    .confirmationDialog(
+                        "Erase all habits and answers?", isPresented: $confirmingErase
+                    ) {
+                        Button("Erase all data", role: .destructive) {
+                            errors.attempt { try model.eraseAll() }
+                        }
                     }
             } header: {
                 Text("Debug")
             } footer: {
-                Text("Advancing the day moves the app's clock forward; it can only be reset by erasing all data.")
+                Text(
+                    "Advancing the day moves the app's clock forward; it can only be reset by erasing all data."
+                )
             }
         }
     #endif
