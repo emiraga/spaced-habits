@@ -7,6 +7,11 @@ struct EmojiField: View {
     @Binding var emoji: String?
     let colorHex: String
 
+    /// The emoji kept from what was typed or pasted: its last character, or nil for a delete or blanks.
+    nonisolated static func picked(_ typed: String) -> String? {
+        typed.trimmingCharacters(in: .whitespacesAndNewlines).last.map(String.init)
+    }
+
     var body: some View {
         let color = Color(hex: colorHex)
         EmojiTextField(emoji: $emoji)
@@ -34,7 +39,7 @@ private struct EmojiTextField: UIViewRepresentable {
         field.font = .systemFont(ofSize: 26)
         field.tintColor = .clear
         field.accessibilityLabel = String(localized: "Emoji")
-        field.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .editingChanged)
+        field.delegate = context.coordinator
         field.setContentHuggingPriority(.required, for: .horizontal)
         return field
     }
@@ -50,21 +55,29 @@ private struct EmojiTextField: UIViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator: NSObject {
+    final class Coordinator: NSObject, UITextFieldDelegate {
         let emoji: Binding<String?>
 
         init(emoji: Binding<String?>) {
             self.emoji = emoji
         }
 
-        /// Keeps the last character typed, so the field holds one emoji; empty clears it.
-        @objc func changed(_ field: UITextField) {
-            let last = (field.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).last.map(String.init)
-            emoji.wrappedValue = last
-            field.text = last
-            if last != nil {
+        /// Replaces the emoji with the one typed, wherever the cursor was; delete clears it.
+        func textField(
+            _ field: UITextField,
+            shouldChangeCharactersIn _: NSRange,
+            replacementString typed: String
+        ) -> Bool {
+            let picked = EmojiField.picked(typed)
+            if picked == nil, !typed.isEmpty {
+                return false
+            }
+            emoji.wrappedValue = picked
+            field.text = picked
+            if picked != nil {
                 field.resignFirstResponder()
             }
+            return false
         }
     }
 }
