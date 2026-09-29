@@ -121,21 +121,18 @@ private struct Reorderable: ViewModifier {
     }
 }
 
-/// Long-press actions for a habit on Today (DESIGN.md §5.1): on its row, where dragging from the press
-/// still reorders, and on its question card, which passes no `onPause` (the card's own Delay… pauses).
+/// Long-press actions for a habit on Today (DESIGN.md §5.1); dragging from the press still reorders.
 struct HabitMenu: View {
     let habit: Habit
     let onEdit: () -> Void
-    var onPause: (() -> Void)?
+    let onPause: () -> Void
     let onDelete: () -> Void
     @Environment(AppModel.self) private var model
     @Environment(ErrorPresenter.self) private var errors
 
     var body: some View {
         Button("Edit", systemImage: "pencil", action: onEdit)
-        if let onPause {
-            Button("Pause…", systemImage: "pause.circle", action: onPause)
-        }
+        Button("Pause…", systemImage: "pause.circle", action: onPause)
         Button("Archive", systemImage: "archivebox") {
             withAnimation { _ = errors.attempt { try model.archive(habit.id) } }
         }

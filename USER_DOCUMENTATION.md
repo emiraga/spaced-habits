@@ -49,8 +49,7 @@ Every card also has:
 - **Later:** hides the card until the next time you open the app or pull to refresh. Nothing is
   recorded and the habit stays due.
 
-Touch and hold a card for the same options in a menu (Later, Delay…) plus Edit, Archive and Delete… for
-its habit.
+Touch and hold a card for a menu with Later, Delay… and Edit (to change, archive or delete the habit).
 
 Tapped the wrong answer? For 5 seconds after answering, an **Undo** bar appears at the bottom of the
 screen. Undo removes the answer (and the pause, if you chose Delay…) and brings the card back.
