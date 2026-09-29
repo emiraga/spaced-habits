@@ -558,7 +558,8 @@ yesterday.
    gated habit both `P(B|A)` "On Gym days" and `P(B)` "All days"), Resumes-on banner if paused (a
    blocked banner if a parent is), charts (§10), history calendar, dependency list (cluster, depends on,
    needed by), edit button.
-3. **Habit editor.** Name, emoji, color, importance, due time (off by default, 20:00 when turned on; "Ask
+3. **Habit editor.** Name, emoji (a badge in the habit's color beside the name; tapping it opens the
+   emoji keyboard, and picking one closes it), color, importance, due time (off by default, 20:00 when turned on; "Ask
    about today from <time>, about yesterday before it"), target adherence and max recall gap (both in a
    collapsed "Advanced" group, each with a plain-language explanation), vacation
    behavior, depends-on picker (with cycle rejection), cluster, Health binding; for an existing habit

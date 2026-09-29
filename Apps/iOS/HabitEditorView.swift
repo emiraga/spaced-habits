@@ -24,8 +24,10 @@ struct HabitEditorView: View {
     var body: some View {
         Form {
             Section {
-                TextField("Name", text: $draft.name)
-                TextField("Emoji (optional)", text: emoji)
+                HStack(spacing: 12) {
+                    EmojiField(emoji: $draft.emoji, colorHex: draft.colorHex)
+                    TextField("Name", text: $draft.name)
+                }
             }
             Section("Color") {
                 PaletteRow(selection: $draft.colorHex)
@@ -209,17 +211,6 @@ struct HabitEditorView: View {
         Binding(
             get: { draft.vacationBehavior == .keep },
             set: { draft.vacationBehavior = $0 ? .keep : .pause }
-        )
-    }
-
-    /// Keeps the last character typed, so the field holds one emoji; empty clears it.
-    private var emoji: Binding<String> {
-        Binding(
-            get: { draft.emoji ?? "" },
-            set: { text in
-                let last = text.trimmingCharacters(in: .whitespacesAndNewlines).last.map(String.init)
-                draft.emoji = last
-            }
         )
     }
 }
