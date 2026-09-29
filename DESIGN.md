@@ -900,8 +900,7 @@ Data is computed in `HabitCore/Insights` (pure, tested), drawn by `HabitUI/Chart
 
 ## 13. Implementation plan
 
-M0–M7 and M9–M11 are done; 0.1.0 is submitted for App Store review. M12 is in progress; M13 follows
-it. A new
+M0–M7 and M9–M12 are done; 0.1.0 is submitted for App Store review. M13 is next. A new
 milestone ends with a **checkpoint**: something you can run, tap, or inspect. Don't start the next
 milestone until it passes and `make ci` is green.
 
