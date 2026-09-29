@@ -141,6 +141,7 @@ struct FormattingTests {
         let evening = try TimeOfDay(hour: 18, minute: 0)
         #expect(DayFormat.checkIn(today, dueTime: evening, today: today) == "Today from \(DayFormat.time(evening))")
         #expect(DayFormat.time(evening).contains("6") || DayFormat.time(evening).contains("18"))
+        #expect(DayFormat.dueFrom(evening) == "from \(DayFormat.time(evening))")
     }
 
     @Test func pauseReasonLabels() {

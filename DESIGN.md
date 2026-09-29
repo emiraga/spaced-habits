@@ -536,7 +536,8 @@ yesterday.
    the name is edited; Skip); notifications (Allow → system prompt, or Not now). Then Today.
 1. **Today** (root). A stack of question cards (≤ session budget), then a compact list of all
    active habits with today's status glyph (✓ observed done, ✗ observed not done, ♥ Health,
-   ◐ aggregated, ≈ inferred, ? unknown, ⏸ paused, ⛔ blocked), grouped by cluster (clusters in the
+   ◐ aggregated, ≈ inferred, ? unknown, ⏸ paused, ⛔ blocked) and, for a habit with a due time, a
+   small clock and the time (`DueTimeBadge`, also on the watch's habit list), grouped by cluster (clusters in the
    user's order, then by name; then "Other"; one "Habits" group without clusters). Long-press and drag
    a habit onto another in its group to move it there, or a cluster header onto another header (a
    private `TodayDrag` type, declared in `project.yml`). The order is `listOrder` on `Habit` and

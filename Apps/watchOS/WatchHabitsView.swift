@@ -14,6 +14,10 @@ struct WatchHabitsView: View {
                         .foregroundStyle(Color(hex: habit.colorHex))
                         .accessibilityLabel(model.todayStatus(of: habit.id).label)
                     Text(habit.displayName)
+                    if let dueTime = habit.dueTime {
+                        Spacer()
+                        DueTimeBadge(dueTime)
+                    }
                 }
             }
         }

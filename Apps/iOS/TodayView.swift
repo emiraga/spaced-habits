@@ -275,6 +275,9 @@ private struct HabitRow: View {
                 .foregroundStyle(Color(hex: habit.colorHex))
             Text(habit.displayName)
             Spacer()
+            if let dueTime = habit.dueTime {
+                DueTimeBadge(dueTime)
+            }
             Text(resumes.map { "Resumes \($0)" } ?? "~\(intervalDays)d")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
@@ -286,7 +289,12 @@ private struct HabitRow: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
-            "\(habit.name), \(status.label), \(resumes.map { "resumes \($0)" } ?? DayFormat.askInterval(intervalDays))"
+            [
+                habit.name,
+                status.label,
+                resumes.map { String(localized: "resumes \($0)") } ?? DayFormat.askInterval(intervalDays),
+                habit.dueTime.map(DayFormat.dueFrom),
+            ].compactMap(\.self).joined(separator: ", ")
         )
     }
 }
