@@ -12,7 +12,7 @@ or two. The goal is an app that quietly gets out of your way.
 - **Smart check-ins.** Open the app and answer at most a few quick questions. "Did you go to the
   gym today?" If it's been a while: "How many of the last five days?" That's it.
 - **Fading questions.** Consistent habits are asked about less and less, and going quiet never
-  counts against you. The growing gap between check-ins *is* your progress.
+  counts against you. The growing gap between check-ins _is_ your progress.
 - **Honest history.** Days you answered one by one, days covered by a "how many of the last few
   days?" answer, and days the app estimated are always shown differently. No fake streaks, no
   pretending.
@@ -41,7 +41,7 @@ These are not yet in the app. Each is optional and independent.
 - **Auto-complete from Apple Health.** Logged a workout? The gym habit is done. No question asked.
   Deferred because it needs Health access permissions.
 
-### Ideas from *Atomic Habits*
+### Ideas from _Atomic Habits_
 
 Under review:
 
@@ -64,5 +64,7 @@ iCloud.
 
 ---
 
-*Building or contributing? See `DESIGN.md` for the architecture and `AGENTS.md` for the
-workflow.*
+_Further feature details_, see `USER_DOCUMENTATION.md`.
+
+_Building or contributing? See `DESIGN.md` for the architecture and `AGENTS.md` for the
+workflow._
