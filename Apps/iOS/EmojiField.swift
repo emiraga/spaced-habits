@@ -69,7 +69,43 @@ private struct EmojiTextField: UIViewRepresentable {
     }
 }
 
-final class EmojiKeyboardTextField: UITextField {
+/// Closes its keyboard on a tap anywhere else (a color, a toggle), which still reaches what was tapped.
+final class EmojiKeyboardTextField: UITextField, UIGestureRecognizerDelegate {
+    private lazy var outsideTap: UITapGestureRecognizer = {
+        let tap = UITapGestureRecognizer(target: self, action: #selector(tappedOutside))
+        tap.cancelsTouchesInView = false
+        tap.delegate = self
+        return tap
+    }()
+
+    override func becomeFirstResponder() -> Bool {
+        let became = super.becomeFirstResponder()
+        if became {
+            window?.addGestureRecognizer(outsideTap)
+        }
+        return became
+    }
+
+    override func resignFirstResponder() -> Bool {
+        outsideTap.view?.removeGestureRecognizer(outsideTap)
+        return super.resignFirstResponder()
+    }
+
+    @objc private func tappedOutside() {
+        _ = resignFirstResponder()
+    }
+
+    func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        touch.view.map { !$0.isDescendant(of: self) } ?? true
+    }
+
+    func gestureRecognizer(
+        _: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith _: UIGestureRecognizer
+    ) -> Bool {
+        true
+    }
+
     /// The emoji keyboard when the user has it enabled (the default), else their current keyboard.
     override var textInputMode: UITextInputMode? {
         UITextInputMode.activeInputModes.first { $0.primaryLanguage == "emoji" } ?? super.textInputMode
