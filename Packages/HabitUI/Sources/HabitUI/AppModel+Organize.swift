@@ -29,6 +29,13 @@ public extension AppModel {
         try refresh()
     }
 
+    /// Deletes the cluster on every device; its habits are in no cluster (`Truth.removing`).
+    func deleteCluster(_ clusterID: UUID) throws {
+        try store.delete([.cluster(clusterID)], at: clock.now())
+        truth = truth.removing(habits: [], clusters: [clusterID])
+        try refresh()
+    }
+
     /// Drag and drop on Today: `habitID` takes `targetID`'s place in their group. A drop on another group
     /// does nothing.
     func move(habit habitID: UUID, to targetID: UUID) throws {

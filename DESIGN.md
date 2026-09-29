@@ -539,8 +539,9 @@ yesterday.
    it and its history on every device, §10), after which its detail screen pops. The picker
    lists every other active habit; a pick that would close a loop (`Dependencies.cycle(ifAdding:)`) is
    refused on the spot with the loop spelled out ("Gym would need Protein, which needs Gym"), and
-   `AppModel.save` maps a `validate` cycle to the same message. Clusters are created and renamed from
-   the editor (name, color); v1 has no cluster deletion, since an empty cluster simply isn't listed.
+   `AppModel.save` maps a `validate` cycle to the same message. Clusters are created, edited (name, color) and
+   deleted from the editor; a deleted cluster's habits are in no cluster (§10). An empty cluster simply
+   isn't listed.
 4. **Pause sheet.** Presented from a question card ("Delay…") or habit detail. Duration presets
    (1, 3, 7, 14 days, custom), start date (default today; can be backdated or scheduled; from habit
    detail only, since a card delay always starts today), reason.
@@ -883,7 +884,7 @@ Deliver, in this order (one or more commits each):
    `Habit.listOrder: Int?` (nil sorts after ordered habits, then by creation). A move renumbers the group
    and saves only the habits whose order changed, without a `HabitRevision`, since order isn't history.
    `activeHabits` (Today, watch, pickers) follows this order.
-4. **Reorder and delete clusters.** Reordering done (§5.1). Drag a cluster's header on Today to reorder groups
+4. **Reorder and delete clusters.** Done (§5.1). Drag a cluster's header on Today to reorder groups
    (`Cluster.listOrder`, same rules; "Other" stays last). The cluster editor gets Delete: the cluster's
    habits move to no cluster, and a habit that later syncs in still naming it is listed under "Other"
    (not held back as a pending reference, §10).

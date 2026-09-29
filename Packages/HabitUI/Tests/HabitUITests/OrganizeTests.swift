@@ -105,4 +105,21 @@ struct OrganizeTests {
         #expect(ListOrder.moving(habits[0].id, to: habits[0].id, in: habits) == nil)
         #expect(ListOrder.moving(UUID(), to: habits[0].id, in: habits) == nil)
     }
+
+    @Test func deletingAClusterMovesItsHabitsToNoCluster() throws {
+        let harness = try Harness()
+        let model = try harness.model()
+        let morning = Cluster(name: "Morning", colorHex: "#FF9900")
+        try model.save(morning)
+        var gym = try addHabit(model, "Gym")
+        gym.clusterID = morning.id
+        try model.save(gym)
+        _ = try addHabit(model, "Read")
+
+        try model.deleteCluster(morning.id)
+        #expect(model.clusters.isEmpty)
+        #expect(model.habitsByCluster.map(\.cluster) == [nil])
+        #expect(model.activeHabits.map(\.name) == ["Gym", "Read"])
+        #expect(try harness.model().habit(gym.id)?.clusterID == nil)
+    }
 }

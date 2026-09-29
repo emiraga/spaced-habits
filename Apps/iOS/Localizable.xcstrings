@@ -213,6 +213,12 @@
     "Delete “%@”?" : {
 
     },
+    "Delete cluster" : {
+
+    },
+    "Delete cluster…" : {
+
+    },
     "Delete habit" : {
 
     },
@@ -235,6 +241,9 @@
 
     },
     "Edit" : {
+
+    },
+    "Edit “%@”…" : {
 
     },
     "Edit cluster" : {
@@ -347,6 +356,9 @@
 
     },
     "Insights appear once you've tracked a habit for a week." : {
+
+    },
+    "Its habits stay, in no cluster." : {
 
     },
     "Its history is deleted on all your devices. To keep it, archive the habit instead." : {
@@ -550,9 +562,6 @@
 
     },
     "Reminders" : {
-
-    },
-    "Rename “%@”…" : {
 
     },
     "Restore" : {

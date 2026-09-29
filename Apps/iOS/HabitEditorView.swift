@@ -90,9 +90,12 @@ struct HabitEditorView: View {
         }
         .sheet(item: $editingCluster) { cluster in
             NavigationStack {
-                ClusterEditorView(cluster: cluster, isNew: model.cluster(cluster.id) == nil) {
-                    draft.clusterID = $0.id
-                }
+                ClusterEditorView(
+                    cluster: cluster,
+                    isNew: model.cluster(cluster.id) == nil,
+                    onSave: { draft.clusterID = $0.id },
+                    onDelete: { draft.clusterID = nil }
+                )
             }
         }
         .confirmingDeletion(of: $deleting) { dismiss() }
@@ -170,7 +173,7 @@ struct HabitEditorView: View {
                 }
             }
             if let cluster = model.cluster(draft.clusterID) {
-                Button("Rename “\(cluster.name)”…") { editingCluster = cluster }
+                Button("Edit “\(cluster.name)”…") { editingCluster = cluster }
             }
             Button("New cluster…") { editingCluster = model.newClusterDraft() }
         } footer: {

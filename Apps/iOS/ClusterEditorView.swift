@@ -2,19 +2,28 @@ import HabitCore
 import HabitUI
 import SwiftUI
 
-/// Creates or renames a cluster ("Morning routine", DESIGN.md §5.1 screen 3). `onSave` gets the saved
-/// cluster, so the habit editor can put the habit in a cluster it just created.
+/// Creates, renames or deletes a cluster ("Morning routine", DESIGN.md §5.1 screen 3). `onSave` gets the
+/// saved cluster, so the habit editor can put the habit in a cluster it just created; `onDelete` lets it
+/// take the habit out of a deleted one.
 struct ClusterEditorView: View {
     let isNew: Bool
     let onSave: (Cluster) -> Void
+    let onDelete: () -> Void
     @State private var draft: Cluster
+    @State private var confirmingDelete = false
     @Environment(AppModel.self) private var model
     @Environment(ErrorPresenter.self) private var errors
     @Environment(\.dismiss) private var dismiss
 
-    init(cluster: Cluster, isNew: Bool, onSave: @escaping (Cluster) -> Void = { _ in }) {
+    init(
+        cluster: Cluster,
+        isNew: Bool,
+        onSave: @escaping (Cluster) -> Void = { _ in },
+        onDelete: @escaping () -> Void = {}
+    ) {
         self.isNew = isNew
         self.onSave = onSave
+        self.onDelete = onDelete
         _draft = State(initialValue: cluster)
     }
 
@@ -27,6 +36,25 @@ struct ClusterEditorView: View {
             }
             Section("Color") {
                 PaletteRow(selection: $draft.colorHex)
+            }
+            if !isNew {
+                Section {
+                    Button("Delete cluster…", role: .destructive) { confirmingDelete = true }
+                } footer: {
+                    Text("Its habits stay, in no cluster.")
+                }
+            }
+        }
+        .confirmationDialog(
+            String(localized: "Delete “\(draft.name)”?"),
+            isPresented: $confirmingDelete,
+            titleVisibility: .visible
+        ) {
+            Button("Delete cluster", role: .destructive) {
+                if errors.attempt({ try model.deleteCluster(draft.id) }) {
+                    onDelete()
+                    dismiss()
+                }
             }
         }
         .navigationTitle(isNew ? "New cluster" : "Edit cluster")
