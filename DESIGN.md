@@ -847,9 +847,50 @@ Data is computed in `HabitCore/Insights` (pure, tested), drawn by `HabitUI/Chart
 
 ## 13. Implementation plan
 
-M0–M7 and M9–M11 are done; 0.1.0 is submitted for App Store review. A new milestone ends with a
-**checkpoint**: something you can run, tap, or inspect. Don't start the next milestone until it passes
-and `make ci` is green.
+M0–M7 and M9–M11 are done; 0.1.0 is submitted for App Store review. M12 is in progress. A new
+milestone ends with a **checkpoint**: something you can run, tap, or inspect. Don't start the next
+milestone until it passes and `make ci` is green.
+
+### M12 — Quality of life
+
+Deliver, in this order (one or more commits each):
+
+1. **Deletion records.** A `TruthKind.deletion` record (id = the deleted record's id; payload: its
+   kind and `deletedAt`) replaces the deleted rows, so the deletion syncs through CloudKit and the watch
+   bridge like any other write, and outlives late writes from an offline device (deletion wins). Every
+   device applies them on `load()` and `merge`: rows a deletion names are removed from the store, and a
+   pure `HabitCore` step strips what still refers to them. The stored schema doesn't change (no CloudKit
+   deploy). JSON import of a record removes its deletion record. Pre-M12 builds ignore the new kind in
+   CloudKit rows; the watch bridge refuses it (`unknownKind`), so phone and watch update together.
+2. **Archive and delete habits.** The editor of an existing habit gets Archive (sets `archivedAt`:
+   hidden from Today, the planner and the watch, history kept) and Delete… (confirmation naming what is
+   lost). Deleting a habit deletes its revisions, questions, answers, Health observations and its own
+   pauses. It is also removed from shared pauses (vacations) and from its children's dependencies.
+   Settings → Archived habits lists archived habits with Restore and Delete….
+3. **Reorder habits.** Long-press and drag a habit on Today to move it within its group. The order is
+   `Habit.listOrder: Int?` (nil sorts after ordered habits, then by creation). A move renumbers the group
+   and saves only the habits whose order changed, without a `HabitRevision`, since order isn't history.
+   `activeHabits` (Today, watch, pickers) follows this order.
+4. **Reorder and delete clusters.** Drag a cluster's header on Today to reorder groups
+   (`Cluster.listOrder`, same rules; "Other" stays last). The cluster editor gets Delete: the cluster's
+   habits move to no cluster, and a habit that later syncs in still naming it is listed under "Other"
+   (not held back as a pending reference, §10).
+5. **Undo last answer.** After a card is answered on Today, an "Answered <habit> · Undo" bar shows for
+   5 s. Undo deletes the answer (and the pause a Delay… answer created) and puts the same card back
+   on top.
+6. **Long-press actions.** Long-pressing a habit on Today opens a menu with Edit, Pause…, Archive and
+   Delete…. Dragging from that press still reorders.
+
+Checkpoint:
+- Unit tests: deletion cascade (answers, own and shared pauses, child edges, cluster references), late
+  writes after a deletion stay deleted, JSON import revives a deleted record, reorder renumbering, undo
+  removing the answer and its pause; §4.8 simulations still pass.
+- UI tests: delete a habit from its editor, and it is gone after relaunch; undo an answered card, and
+  it is back.
+- Manually on the phone and watch: delete a habit on the phone, and it disappears from the watch; drag
+  habits and clusters into a new order, and it survives relaunch and shows on the watch; archive then
+  restore a habit with its history intact; delete a cluster, and its habits show under "Other"; the
+  long-press menu works. Screenshots in `Docs/checkpoints/m12-*.png`.
 
 ### M8 — HealthKit — deferred (optional, post-v1)
 
