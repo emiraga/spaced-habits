@@ -41,14 +41,16 @@ public extension AppModel {
             .mean(of: (projected.records[habitID] ?? [:]).values.filter { $0.day >= since })
     }
 
-    /// When a habit that isn't due today will next be asked (§5.1 empty state). Nil if due or archived.
-    /// A paused habit is asked on the day it resumes (the re-entry check, §4.6).
+    /// The day a habit that isn't due will next be asked about (§5.1 empty state); with a due time, from that
+    /// time on that day. Nil if due or archived. A habit paused on its ask day is asked on the day it resumes
+    /// (the re-entry check, §4.6).
     func nextCheckIn(of habit: Habit) -> DayKey? {
         guard !habit.isArchived, !dueHabitIDs.contains(habit.id) else { return nil }
-        if let resume = resumeDay(of: habit.id) {
+        let askDay = askDay(of: habit)
+        if let resume = Pauses.resumeDay(of: habit.id, today: askDay, pauses: truth.pauses) {
             return resume
         }
-        return planner.nextCheckIn(habit: habit, state: state(of: habit.id), today: today)
+        return planner.nextCheckIn(habit: habit, state: state(of: habit.id), askDay: askDay)
     }
 
     /// The soonest upcoming check-in across habits that aren't due; ties by name.

@@ -88,7 +88,7 @@ struct NotificationPlannerTests {
 
         let projected = try Projection.rebuild(truth, clock: FixedClock(date: noon(today), calendar: calendar))
         let state = try #require(projected.states[gym.id])
-        let next = try QuestionPlanner(settings: truth.settings).nextCheckIn(habit: gym, state: state, today: today)
+        let next = try QuestionPlanner(settings: truth.settings).nextCheckIn(habit: gym, state: state, askDay: today)
         #expect(next > today.adding(days: 1))
         let expected = next <= today.adding(days: NotificationPlanner.horizonDays) ? next : nil
         #expect(planned.first?.day == expected)

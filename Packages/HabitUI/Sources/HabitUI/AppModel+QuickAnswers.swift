@@ -41,10 +41,11 @@ public extension AppModel {
         try record(question, done ? .done : .notDone, delayReason: .manual, channel: channel)
     }
 
-    /// Pauses a habit for `days` days from today ("Delay Gym 3 days" in Shortcuts).
+    /// Pauses a habit for `days` days from its ask day, like a card delay ("Delay Gym 3 days" in Shortcuts).
     func delay(_ habitID: UUID, days: Int) throws {
         guard let habit = habit(habitID), !habit.isArchived else { throw AnswerRefusal.habitGone(habitID) }
-        try pause(habitID, from: today, through: today.adding(days: days - 1), reason: .manual)
+        let start = askDay(of: habit)
+        try pause(habitID, from: start, through: start.adding(days: days - 1), reason: .manual)
     }
 
     /// Throws `AnswerRefusal` unless `question` can still be answered with Yes / No.

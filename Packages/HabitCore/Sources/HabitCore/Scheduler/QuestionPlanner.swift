@@ -41,7 +41,10 @@ public struct SessionPlan: Sendable, Hashable {
 }
 
 /// Decides which habits are due, what to ask and in what order (DESIGN.md §4.2–4.4). Pure: all inputs
-/// are values, today comes from the injected `Clock`.
+/// are values, the time comes from the injected `Clock`.
+///
+/// Each habit is planned on its ask day (§4.2): the per-habit rules take it as `today`, and `session` and
+/// `rankedDue` get it from the clock and the habit's due time.
 ///
 /// Gated habits (§4.5) are gated here from the parents' projected `records`. Pauses and paused parents
 /// (§4.6) are decided outside the planner and passed in as `unavailable` habit IDs.
@@ -77,14 +80,15 @@ public struct QuestionPlanner: Sendable {
         return SpotCheck.isSpotCheck(habitID: habit.id, day: today, rate: settings.spotCheckRate) ? .spotCheck : nil
     }
 
-    /// The first day after today on which decay (the ask interval, §4.1) or the `maxIntervalDays` ceiling
-    /// makes the habit due, for "Next check-in" (§5.1). Ignores spot checks, pauses and gates, which can
+    /// The first ask day after `askDay` on which decay (the ask interval, §4.1) or the `maxIntervalDays`
+    /// ceiling makes the habit due, for "Next check-in" (§5.1); with a due time it is asked from that time on
+    /// that day, so before the due time it can be today. Ignores spot checks, pauses and gates, which can
     /// only move a check-in earlier or hold it back; `state` is as of the end of today.
-    public func nextCheckIn(habit: Habit, state: SchedulerState, today: DayKey) -> DayKey {
+    public func nextCheckIn(habit: Habit, state: SchedulerState, askDay: DayKey) -> DayKey {
         let lastCovered = state.lastCoveredDay ?? habit.createdDay.adding(days: -1)
-        let byDecay = today.adding(days: state.currentIntervalDays)
+        let byDecay = askDay.adding(days: state.currentIntervalDays)
         let byCeiling = lastCovered.adding(days: settings.maxIntervalDays)
-        return max(today.adding(days: 1), min(byDecay, byCeiling))
+        return max(askDay.adding(days: 1), min(byDecay, byCeiling))
     }
 
     // MARK: Question construction (§4.3)
@@ -173,16 +177,17 @@ public struct QuestionPlanner: Sendable {
 
     /// All due, available, ungated-or-open habits in presentation order: priority tier, then score, then
     /// habit ID so ties are deterministic. Habits without a state use `SchedulerState.initial`. `habits`
-    /// must include every gate parent; `records` are the projected days used for gating.
+    /// must include every gate parent; `records` are the projected days used for gating; `unavailable` are
+    /// the habits paused or blocked on their ask days (`Pauses.unavailable(habits:pauses:clock:)`).
     public func rankedDue(
         habits: [Habit],
         states: [UUID: SchedulerState],
         records: DayRecords,
         unavailable: Set<UUID>,
-        today: DayKey
+        clock: some Clock
     ) throws -> [DueHabit] {
         try rankedCandidates(
-            habits: habits, states: states, records: records, unavailable: unavailable, today: today
+            habits: habits, states: states, records: records, unavailable: unavailable, clock: clock
         ).map(\.due)
     }
 
@@ -194,13 +199,12 @@ public struct QuestionPlanner: Sendable {
         unavailable: Set<UUID> = [],
         clock: some Clock
     ) throws -> SessionPlan {
-        let today = clock.today()
         let ranked = try rankedCandidates(
-            habits: habits, states: states, records: records, unavailable: unavailable, today: today
+            habits: habits, states: states, records: records, unavailable: unavailable, clock: clock
         )
         let shown = ranked.prefix(settings.sessionBudget).compactMap { candidate in
             question(
-                habit: candidate.habit, state: candidate.state, today: today, createdAt: clock.now(),
+                habit: candidate.habit, state: candidate.state, today: candidate.askDay, createdAt: clock.now(),
                 gate: candidate.gate
             ).map { ($0, candidate.due) }
         }
@@ -214,6 +218,7 @@ public struct QuestionPlanner: Sendable {
     private struct Candidate {
         let habit: Habit
         let state: SchedulerState
+        let askDay: DayKey
         let gate: Gate?
         let due: DueHabit
     }
@@ -223,12 +228,13 @@ public struct QuestionPlanner: Sendable {
         states: [UUID: SchedulerState],
         records: DayRecords,
         unavailable: Set<UUID>,
-        today: DayKey
+        clock: some Clock
     ) throws -> [Candidate] {
         let byID = try Dependencies.index(habits)
         var candidates: [Candidate] = []
         for habit in habits where !unavailable.contains(habit.id) {
             let state = states[habit.id] ?? .initial(habitID: habit.id)
+            let today = clock.askDay(dueTime: habit.dueTime)
             guard let reason = try dueReason(habit: habit, state: state, today: today) else { continue }
             let gate = try gate(habit: habit, byID: byID, states: states, records: records, today: today)
             if gate == .closed {
@@ -239,7 +245,7 @@ public struct QuestionPlanner: Sendable {
                 reason: reason,
                 score: score(habit: habit, state: state, today: today)
             )
-            candidates.append(Candidate(habit: habit, state: state, gate: gate, due: due))
+            candidates.append(Candidate(habit: habit, state: state, askDay: today, gate: gate, due: due))
         }
         return candidates.sorted { lhs, rhs in
             let (left, right) = (lhs.due, rhs.due)

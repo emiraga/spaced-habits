@@ -8,10 +8,18 @@ public struct Scenario: Sendable {
         public let parent: Int?
         /// Probability the habit is done on a day index (given the parent was done, for a child).
         public let probability: @Sendable (Int) -> Double
+        /// `Habit.dueTime` (§4.2).
+        public let dueTime: TimeOfDay?
 
-        public init(name: String, parent: Int? = nil, probability: @escaping @Sendable (Int) -> Double) {
+        public init(
+            name: String,
+            parent: Int? = nil,
+            dueTime: TimeOfDay? = nil,
+            probability: @escaping @Sendable (Int) -> Double
+        ) {
             self.name = name
             self.parent = parent
+            self.dueTime = dueTime
             self.probability = probability
         }
     }
@@ -32,13 +40,23 @@ public struct Scenario: Sendable {
     public let pauses: [PauseSpec]
     public let days: Int
     public let seed: UInt64
+    /// Local hour (UTC) of the daily session.
+    public let sessionHour: Int
 
-    public init(name: String, habits: [HabitSpec], pauses: [PauseSpec] = [], days: Int = 180, seed: UInt64 = 42) {
+    public init(
+        name: String,
+        habits: [HabitSpec],
+        pauses: [PauseSpec] = [],
+        days: Int = 180,
+        seed: UInt64 = 42,
+        sessionHour: Int = 12
+    ) {
         self.name = name
         self.habits = habits
         self.pauses = pauses
         self.days = days
         self.seed = seed
+        self.sessionHour = sessionHour
     }
 
     /// Ground truth per habit per day index, drawn once from `seed`.
@@ -56,8 +74,13 @@ public struct Scenario: Sendable {
 }
 
 public extension Scenario {
-    static func steady(probability: Double = 0.95) -> Scenario {
-        Scenario(name: "steady", habits: [HabitSpec(name: "Steady") { _ in probability }])
+    /// With a `dueTime` and a `sessionHour` before it, every session asks about days through yesterday.
+    static func steady(probability: Double = 0.95, dueTime: TimeOfDay? = nil, sessionHour: Int = 12) -> Scenario {
+        Scenario(
+            name: "steady",
+            habits: [HabitSpec(name: "Steady", dueTime: dueTime) { _ in probability }],
+            sessionHour: sessionHour
+        )
     }
 
     static func flaky(probability: Double = 0.5) -> Scenario {

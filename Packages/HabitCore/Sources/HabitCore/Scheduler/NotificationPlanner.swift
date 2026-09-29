@@ -27,7 +27,8 @@ public struct PlannedNotification: Sendable, Hashable {
 /// notification with `plan`'s output whenever truth changes, on foreground and on background refresh.
 ///
 /// A slot's content is what the app would plan at that instant if nothing were answered before it: the
-/// projection and planner run with a clock at the slot, so decay, pauses, gates and spot checks all apply.
+/// projection and planner run with a clock at the slot, so decay, pauses, gates, spot checks and due times
+/// all apply.
 public enum NotificationPlanner {
     /// Days ahead to plan. Background refresh and every app open extend it.
     public static let horizonDays = 7
@@ -120,11 +121,10 @@ public enum NotificationPlanner {
         planner: QuestionPlanner,
         clock: FixedClock
     ) throws -> PlannedNotification.Kind? {
-        let day = clock.today()
-        let unavailable = try Pauses.unavailable(on: day, habits: truth.habits, pauses: truth.pauses)
+        let unavailable = try Pauses.unavailable(habits: truth.habits, pauses: truth.pauses, clock: clock)
         let session = try planner.session(
             habits: truth.habits, states: projected.states, records: projected.records,
-            unavailable: Set(unavailable.keys), clock: clock
+            unavailable: unavailable, clock: clock
         )
         guard let top = session.questions.first else { return nil }
         return .question(top, dueCount: session.questions.count + session.queued.count)

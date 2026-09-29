@@ -4,6 +4,9 @@ import Foundation
 public protocol Clock: Sendable {
     func now() -> Date
     func today() -> DayKey
+    /// The day a habit with `dueTime` asks about now (§4.2): `today()` without a due time or from it on,
+    /// the day before until then.
+    func askDay(dueTime: TimeOfDay?) -> DayKey
 }
 
 /// Production clock: the real current instant, mapped to a day through `calendar`.
@@ -21,10 +24,15 @@ public struct SystemClock: Clock {
     public func today() -> DayKey {
         calendar.dayKey(for: now())
     }
+
+    public func askDay(dueTime: TimeOfDay?) -> DayKey {
+        calendar.askDay(for: now(), at: dueTime)
+    }
 }
 
 /// `base` moved `days` whole days ahead, for the debug "advance day" control.
-/// `today()` shifts the base's day key, so it stays exact across DST; `now()` shifts by 24-hour days and is
+/// `today()` and `askDay` shift the base's day keys, so it stays exact across DST; `now()` shifts by 24-hour days and
+/// is
 /// only used for timestamps.
 public struct ShiftedClock: Clock {
     public let base: any Clock
@@ -41,6 +49,10 @@ public struct ShiftedClock: Clock {
 
     public func today() -> DayKey {
         base.today().adding(days: days)
+    }
+
+    public func askDay(dueTime: TimeOfDay?) -> DayKey {
+        base.askDay(dueTime: dueTime).adding(days: days)
     }
 }
 
@@ -60,5 +72,9 @@ public struct FixedClock: Clock {
 
     public func today() -> DayKey {
         calendar.dayKey(for: date)
+    }
+
+    public func askDay(dueTime: TimeOfDay?) -> DayKey {
+        calendar.askDay(for: date, at: dueTime)
     }
 }

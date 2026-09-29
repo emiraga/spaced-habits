@@ -52,7 +52,8 @@ enum ExportSample {
     static func habits(cluster: Cluster) -> [Habit] {
         let gym = Habit(
             id: id(10), name: "Gym", emoji: "🏋️", colorHex: "#3366CC", createdAt: time(-10), createdDay: day(-10),
-            importance: .high, clusterID: cluster.id, healthBinding: .workout(minMinutes: 30), listOrder: 1
+            importance: .high, dueTime: TimeOfDay(uncheckedHour: 18, minute: 5), clusterID: cluster.id,
+            healthBinding: .workout(minMinutes: 30), listOrder: 1
         )
         let shake = Habit(
             id: id(11), name: "Shake", colorHex: "#DC3912", createdAt: time(-9), createdDay: day(-9),

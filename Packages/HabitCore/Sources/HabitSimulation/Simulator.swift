@@ -74,8 +74,10 @@ public enum Simulator {
 
         for dayIndex in 0 ..< scenario.days {
             let today = start.adding(days: dayIndex)
-            let clock = FixedClock(date: noon(of: today), calendar: calendar)
-            let unavailable = try Pauses.unavailable(on: today, habits: habits, pauses: log.pauses)
+            let clock = try FixedClock(
+                date: calendar.date(today, at: TimeOfDay(hour: scenario.sessionHour, minute: 0)), calendar: calendar
+            )
+            let unavailable = try Pauses.unavailable(habits: habits, pauses: log.pauses, clock: clock)
             // Like the app, build each question only when it is presented: re-plan after every answer, so a
             // child's card sees its parent's answer from earlier in the same session.
             var projected = try Projection.rebuild(log, clock: clock)
@@ -84,7 +86,7 @@ public enum Simulator {
                     habits: habits,
                     states: projected.states,
                     records: projected.records,
-                    unavailable: Set(unavailable.keys),
+                    unavailable: unavailable,
                     clock: clock
                 )
                 guard let question = plan.questions.first, let due = plan.presented.first,
@@ -161,7 +163,8 @@ public enum Simulator {
                 name: spec.name,
                 colorHex: "#3366CC",
                 createdAt: noon(of: start),
-                createdDay: start
+                createdDay: start,
+                dueTime: spec.dueTime
             )
         }
         return try habits.enumerated().map { index, habit in

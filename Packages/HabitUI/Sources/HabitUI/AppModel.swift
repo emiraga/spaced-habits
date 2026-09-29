@@ -22,7 +22,7 @@ public final class AppModel {
     public private(set) var queuedCount = 0
     /// The card answered (or delayed) last, until it is undone or `dismissUndo` (§5.2).
     public internal(set) var lastAnswered: AnsweredCard?
-    /// Every habit that is due today, including ones put off with "Later".
+    /// Every habit that is due on its ask day (§4.2), including ones put off with "Later".
     public private(set) var dueHabitIDs: Set<UUID> = []
     /// Debug "advance day" offset; 0 in normal use.
     public private(set) var dayOffset: Int
@@ -80,6 +80,11 @@ public final class AppModel {
         clock.today()
     }
 
+    /// The day the habit asks about now (§4.2): yesterday before its due time, else today.
+    public func askDay(of habit: Habit) -> DayKey {
+        clock.askDay(dueTime: habit.dueTime)
+    }
+
     // MARK: Session
 
     /// Re-plans from scratch: "Later" cards come back and "More…" resets.
@@ -109,12 +114,13 @@ public final class AppModel {
         }
     }
 
-    /// Records an answer. A `.delayed` answer also pauses the habit from today (§4.6).
+    /// Records an answer. A `.delayed` answer also pauses the habit from the question's ask day (§4.6).
     public func answer(_ question: Question, with value: AnswerValue) throws {
         lastAnswered = try record(question, value, delayReason: .manual, channel: channel)
     }
 
-    /// "Delay…" on a card: pauses the habit for `days` days starting today, logged as a `.delayed` answer.
+    /// "Delay…" on a card: pauses the habit for `days` days from the question's ask day, logged as a
+    /// `.delayed` answer.
     public func delay(_ question: Question, days: Int, reason: PauseReason) throws {
         lastAnswered = try record(question, .delayed(days: days), delayReason: reason, channel: channel)
     }
@@ -237,11 +243,10 @@ public final class AppModel {
     /// Re-projects and re-plans; logs newly shown questions to `Truth.questions` (§4.4).
     func refresh() throws {
         projected = try Projection.rebuild(truth, clock: clock)
-        let today = clock.today()
-        let unavailable = try Set(Pauses.unavailable(on: today, habits: truth.habits, pauses: truth.pauses).keys)
+        let unavailable = try Pauses.unavailable(habits: truth.habits, pauses: truth.pauses, clock: clock)
         let due = try planner.rankedDue(
             habits: truth.habits, states: projected.states, records: projected.records, unavailable: unavailable,
-            today: today
+            clock: clock
         )
         var settings = truth.settings
         settings.sessionBudget += extraBudget

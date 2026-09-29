@@ -6,7 +6,7 @@ enum CSVColumns {
     static let habit = [
         "id", "name", "emoji", "color_hex", "created_at", "created_day", "archived_at", "kind", "importance",
         "target_adherence", "max_recall_gap_days", "vacation_behavior", "cluster_id", "health_binding", "notes",
-        "list_order",
+        "list_order", "due_time",
     ]
 
     /// Every `habit` column but `id`.
@@ -16,7 +16,7 @@ enum CSVColumns {
             date(habit.archivedAt), habit.kind.rawValue, String(describing: habit.importance),
             String(habit.targetAdherence), String(habit.maxRecallGapDays), habit.vacationBehavior.rawValue,
             id(habit.clusterID), habit.healthBinding.map(healthBinding) ?? "", habit.notes ?? "",
-            habit.listOrder.map(String.init) ?? "",
+            habit.listOrder.map(String.init) ?? "", habit.dueTime.map(time) ?? "",
         ]
     }
 
@@ -88,6 +88,11 @@ enum CSVColumns {
 
     static func date(_ date: Date?) -> String {
         date.map(ExportDate.string) ?? ""
+    }
+
+    /// `HH:mm`.
+    private static func time(_ time: TimeOfDay) -> String {
+        [time.hour, time.minute].map { $0 < 10 ? "0\($0)" : String($0) }.joined(separator: ":")
     }
 
     private static func id(_ id: UUID?) -> String {

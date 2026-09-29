@@ -10,14 +10,21 @@ struct SimulationTests {
         Array(result.questionsPerWeek(habit: habit).prefix(result.truth[habit].count / 7))
     }
 
-    @Test func steadyUserIsAskedLessAndInferredWell() throws {
-        let result = try Simulator.run(.steady(probability: 0.95))
+    /// From week 4 on, every 4-week window averages under 1.5 questions a week.
+    private func expectRarelyAsked(_ result: SimulationResult, sourceLocation: SourceLocation = #_sourceLocation) {
         let weeks = fullWeeks(result, habit: 0)
-        // From week 4 on, every 4-week window averages under 1.5 questions a week.
         for start in 3 ... weeks.count - 4 {
             let window = weeks[start ..< start + 4]
-            #expect(Double(window.reduce(0, +)) / 4 < 1.5, "weeks \(start + 1)–\(start + 4): \(Array(window))")
+            #expect(
+                Double(window.reduce(0, +)) / 4 < 1.5, "weeks \(start + 1)–\(start + 4): \(Array(window))",
+                sourceLocation: sourceLocation
+            )
         }
+    }
+
+    @Test func steadyUserIsAskedLessAndInferredWell() throws {
+        let result = try Simulator.run(.steady(probability: 0.95))
+        expectRarelyAsked(result)
         // Inferred days: the average inferred value is within 0.15 of the true rate on those days.
         let inferred = result.truth[0].indices.compactMap { index -> (Double, Double)? in
             guard let record = result.record(habit: 0, day: index), record.source == .inferred else { return nil }
@@ -27,6 +34,22 @@ struct SimulationTests {
         let meanInferred = inferred.map(\.0).reduce(0, +) / Double(inferred.count)
         let meanTruth = inferred.map(\.1).reduce(0, +) / Double(inferred.count)
         #expect(abs(meanInferred - meanTruth) < 0.15)
+    }
+
+    /// Morning sessions before a 20:00 due time only ever ask about days through yesterday (§4.2).
+    @Test func steadyUserWithAnEveningDueTimeIsAskedAboutPastDays() throws {
+        let result = try Simulator.run(.steady(
+            probability: 0.95,
+            dueTime: TimeOfDay(hour: 20, minute: 0),
+            sessionHour: 8
+        ))
+        let asks = result.asks[0].enumerated().compactMap { index, ask in ask.map { (index, $0) } }
+        #expect(!asks.isEmpty)
+        for (index, ask) in asks {
+            #expect(ask.question.covers.upperBound == result.day(index - 1), "day \(index)")
+        }
+        #expect(result.asks[0][0] == nil)
+        expectRarelyAsked(result)
     }
 
     /// Not "every week": a long lucky streak (seed 42: 14 yeses, days 133–146) lifts the mean above

@@ -18,8 +18,8 @@ struct Harness {
         defaults = try #require(UserDefaults(suiteName: "AppModelTests-\(UUID().uuidString)"))
     }
 
-    func model() throws -> AppModel {
-        try AppModel(store: store, timeZone: .gmt, defaults: defaults) { FixedClock(date: noon, calendar: $0) }
+    func model(at date: Date = noon) throws -> AppModel {
+        try AppModel(store: store, timeZone: .gmt, defaults: defaults) { FixedClock(date: date, calendar: $0) }
     }
 }
 

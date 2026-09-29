@@ -497,7 +497,8 @@ up to `sessionBudget` questions truthfully and re-plans after each answer, as th
 - `steady` (p 0.95) → from week 4 on, every 4-week window averages < 1.5 questions/week. Over
   inferred days, |mean inferred value − true rate| < 0.15. Per-day error can't meet that bound: a
   miss is 0 against an inferred ~0.85. Seed 42: asked every 9–12 days, all by rule 1 after the first
-  week (none tagged `belowTarget`).
+  week (none tagged `belowTarget`). With a 20:00 due time and daily 08:00 sessions, every question
+  covers days through yesterday (none on day 0, §4.2) and the same bound holds.
 - `flaky` (p 0.5) → asked on ≥ 80% of days, and never unasked for more than `maxIntervalDays`.
   Not "every week": a long lucky streak lifts `answeredMean` above target and legitimately earns a
   break until the next check-in. Seed 42: 170/180 days; a 14-day "yes" run (days 133–146) earned

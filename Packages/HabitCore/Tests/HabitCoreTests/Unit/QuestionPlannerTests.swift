@@ -169,7 +169,7 @@ struct QuestionPlannerDueTests {
         let steady = habit()
         var state = steadyState(for: steady, coveredDaysAgo: 0)
         state.currentIntervalDays = 9
-        #expect(try planner().nextCheckIn(habit: steady, state: state, today: today) == today.adding(days: 9))
+        #expect(try planner().nextCheckIn(habit: steady, state: state, askDay: today) == today.adding(days: 9))
     }
 
     @Test func nextCheckInIsCappedByTheCeiling() throws {
@@ -177,18 +177,18 @@ struct QuestionPlannerDueTests {
         var state = steadyState(for: steady, coveredDaysAgo: 10)
         state.currentIntervalDays = 9
         // Covered 10 days ago, ceiling 14: due in 4 days, before the interval runs out.
-        #expect(try planner().nextCheckIn(habit: steady, state: state, today: today) == today.adding(days: 4))
+        #expect(try planner().nextCheckIn(habit: steady, state: state, askDay: today) == today.adding(days: 4))
     }
 
-    @Test func nextCheckInIsNeverBeforeTomorrow() throws {
+    @Test func nextCheckInIsAfterTheAskDay() throws {
         let fresh = habit(createdDaysAgo: 0)
-        #expect(try planner().nextCheckIn(habit: fresh, state: .initial(habitID: fresh.id), today: today)
+        #expect(try planner().nextCheckIn(habit: fresh, state: .initial(habitID: fresh.id), askDay: today)
             == today.adding(days: 1))
         let overdue = habit()
         #expect(try planner().nextCheckIn(
             habit: overdue,
             state: steadyState(for: overdue, coveredDaysAgo: 20),
-            today: today
+            askDay: today
         ) == today.adding(days: 1))
     }
 }
@@ -264,7 +264,7 @@ struct QuestionPlannerRankingTests {
             states: states,
             records: [:],
             unavailable: [],
-            today: today
+            clock: clock()
         )
         #expect(ranked.map(\.habitID) == [reentry.id, struggling.id, uncertainHigh.id])
         #expect(ranked.map(\.reason) == [.reentry, .belowTarget, .uncertain])
@@ -279,7 +279,7 @@ struct QuestionPlannerRankingTests {
             states: [:],
             records: [:],
             unavailable: [],
-            today: today
+            clock: clock()
         )
         #expect(ranked.map(\.habitID) == [first.id, second.id])
     }

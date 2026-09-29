@@ -1,6 +1,6 @@
 import Foundation
 
-/// The single place that maps instants to habit days (DESIGN.md §3.1). Nothing else may compute day
+/// The single place that maps instants to habit days (DESIGN.md §3.1, and ask days, §4.2). Nothing else may compute day
 /// boundaries.
 ///
 /// A habit day starts at `dayStartHour` local time (default 04:00), so an answer given at 01:30
@@ -34,6 +34,33 @@ public struct DayCalendar: Sendable, Equatable {
             preconditionFailure("Gregorian calendar returned incomplete components for \(date)")
         }
         return hour < dayStartHour ? key.adding(days: -1) : key
+    }
+
+    /// The day a habit with `dueTime` asks about at `date` (§4.2): the habit day of `date` from the due time
+    /// on, the day before until then; always the habit day without a due time. A due time before
+    /// `dayStartHour` falls at the end of its habit day (§3.1).
+    ///
+    /// Compares wall-clock times, so a due time skipped by a DST jump passes at the first time after it; once
+    /// its first instant has passed, a due time repeated by a DST fall-back stays passed.
+    public func askDay(for date: Date, at dueTime: TimeOfDay?) -> DayKey {
+        let today = dayKey(for: date)
+        guard let dueTime else { return today }
+        let parts = gregorian.dateComponents([.hour, .minute], from: date)
+        guard let hour = parts.hour, let minute = parts.minute else {
+            preconditionFailure("Gregorian calendar returned incomplete components for \(date)")
+        }
+        let civilDate = dueTime.hour < dayStartHour ? today.adding(days: 1) : today
+        let passed = minutesIntoDay(hour: hour, minute: minute) >= minutesIntoDay(
+            hour: dueTime.hour,
+            minute: dueTime.minute
+        )
+            || date >= self.date(civilDate, at: dueTime)
+        return passed ? today : today.adding(days: -1)
+    }
+
+    /// Minutes since the start of the habit day at a local wall-clock time.
+    private func minutesIntoDay(hour: Int, minute: Int) -> Int {
+        (hour - dayStartHour + 24) % 24 * 60 + minute
     }
 
     /// The instant at local wall-clock `time` on the civil date `date` (not a habit day: 01:00 on the 28th

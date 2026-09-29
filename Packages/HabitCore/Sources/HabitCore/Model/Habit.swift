@@ -16,6 +16,9 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
     public var kind: HabitKind
     /// Weights question priority (§4.4).
     public var importance: Importance
+    /// The time by which a day's behavior is settled (§4.2): before it the habit asks about yesterday, from
+    /// it on about today. Nil asks about today all day.
+    public var dueTime: TimeOfDay?
     /// 0...1. Below this mean the scheduler asks daily (§4.2 rule 2).
     public var targetAdherence: Double
     /// ≥ 1. Questions never cover more than this many days (§4.3).
@@ -48,6 +51,7 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
         archivedAt: Date? = nil,
         kind: HabitKind = .boolean,
         importance: Importance = .normal,
+        dueTime: TimeOfDay? = nil,
         targetAdherence: Double = Habit.defaultTargetAdherence,
         maxRecallGapDays: Int = Habit.defaultMaxRecallGapDays,
         vacationBehavior: VacationBehavior = .pause,
@@ -66,6 +70,7 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
         self.archivedAt = archivedAt
         self.kind = kind
         self.importance = importance
+        self.dueTime = dueTime
         self.targetAdherence = targetAdherence
         self.maxRecallGapDays = maxRecallGapDays
         self.vacationBehavior = vacationBehavior

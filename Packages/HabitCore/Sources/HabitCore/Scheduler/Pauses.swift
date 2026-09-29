@@ -51,6 +51,24 @@ public enum Pauses {
         return try unavailable(on: day, sorted: sorted, byID: Dependencies.index(sorted), pauses: pauses)
     }
 
+    /// Habits paused or blocked on their ask days (§4.2) at `clock`'s instant: `QuestionPlanner`'s
+    /// `unavailable`.
+    public static func unavailable(habits: [Habit], pauses: [PauseEvent], clock: some Clock) throws -> Set<UUID> {
+        let sorted = try Dependencies.topologicallySorted(habits)
+        let byID = try Dependencies.index(sorted)
+        var byDay: [DayKey: [UUID: Unavailability]] = [:]
+        var result = Set<UUID>()
+        for habit in habits {
+            let day = clock.askDay(dueTime: habit.dueTime)
+            let onDay = try byDay[day] ?? unavailable(on: day, sorted: sorted, byID: byID, pauses: pauses)
+            byDay[day] = onDay
+            if onDay[habit.id] != nil {
+                result.insert(habit.id)
+            }
+        }
+        return result
+    }
+
     /// As above, for callers that already hold the topologically sorted habits and their index.
     static func unavailable(
         on day: DayKey,
