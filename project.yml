@@ -215,6 +215,15 @@ schemes:
         SpacedHabits: all
     test:
       targets: [SpacedHabitsTests, SpacedHabitsUITests]
+  # Run on a paired watch from Xcode; the iOS scheme only installs the phone app. Building SpacedHabits too
+  # makes Xcode install the companion app on the phone before the watch app.
+  SpacedHabitsWatch:
+    build:
+      targets:
+        SpacedHabits: all
+        SpacedHabitsWatch: all
+    run:
+      executable: SpacedHabitsWatch
   SpacedHabitsWatchScreenshots:
     build:
       targets:

@@ -162,7 +162,9 @@ registered under the team (Xcode → Signing & Capabilities → iCloud creates i
 `SpacedHabitsWatch` is a single-target watchOS app (`type: application`, `platform: watchOS`,
 `WKApplication`, `WKCompanionAppBundleIdentifier`; not the legacy `application.watchapp2` + extension
 pair), bundle ID `ga.emira.spacedhabits.watchkitapp`, embedded in the iOS app's `Watch/` folder, so the
-iOS scheme builds it. It has the same App Group and iCloud entitlements as the app.
+iOS scheme builds it. It has the same App Group and iCloud entitlements as the app. Running the iOS scheme
+on a phone installs only the phone app; the `SpacedHabitsWatch` scheme (run on the paired watch) builds
+both apps, so Xcode installs the phone app and then the watch app.
 
 `SpacedHabitsWatchWidgets` (`ga.emira.spacedhabits.watchkitapp.widgets`, App Group only) is embedded in
 the watch app and compiles the same `Apps/Widgets` sources as the iOS extension.
