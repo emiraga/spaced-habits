@@ -195,7 +195,11 @@ Implemented in `HabitCore/Support/`: `DayKey`, `DayCalendar` (day starts at
 
 - All habit data is keyed by `DayKey`, never by `Date`. Store the timezone identifier alongside
   each answer for audit purposes.
-- Only `DayCalendar.dayKey(for:)` maps instants to days; nothing else may compute day boundaries.
+- Only `DayCalendar` maps instants to days (`dayKey(for:)`, and `askDay(for:at:)`, §4.2); nothing
+  else may compute day boundaries.
+- A `TimeOfDay` (notification slot, habit due time) is a wall-clock time within the habit day, so one
+  before `dayStartHour` falls at the end of that day: with the default 04:00 start, 02:00 is late that
+  night, not early that morning.
 - A habit's history starts at `Habit.createdDay`, fixed by `DayCalendar` at creation. Never
   re-derive it from `createdAt`: that would move if the time zone or day-start hour changes.
 - Every scheduler entry point takes an injected `Clock`; code that needs randomness takes a
@@ -304,6 +308,16 @@ check-in feeds at most `maxRecallGapDays` = 7 days; the rest are inferred and fe
 
 `QuestionPlanner.isDue(habit, state, today) -> DueReason?`
 
+**Ask day.** A habit may have a due time (`Habit.dueTime: TimeOfDay?`, nil by default): the time by
+which that day's behavior is settled (gym by 18:00, reading by 22:00). Before it, today can't be
+answered yet, so the habit's *ask day* is yesterday; from it on, today. Without a due time the ask
+day is always today. `DayCalendar.askDay(for:at:)` computes it from the clock's instant, comparing
+wall-clock times (§3.1), so on a DST change a skipped due time flips at the first time after it. The
+planner passes each habit's ask day as `today` to §4.2–§4.4, so every rule below (gap, ceiling,
+struggling, spot-check hash, staleness) and the question's `covers` are relative to it. So one date
+can bring two questions for a habit: yesterday's before the due time, and today's, which appears at
+the due time on screen (§5.1) and in widgets (§6).
+
 A habit is due if **any** of:
 
 1. `sd > settings.uncertaintyThreshold` (evidence too thin/old) — the normal path.
@@ -321,8 +335,8 @@ A habit is due if **any** of:
 
 A habit is **never** due if: it is paused today, archived, blocked by a paused parent, gated by a
 failing parent (§4.5), or `lastCoveredDay == today`. `QuestionPlanner` gates dependents itself from
-the projected `DayRecords` it is given (§4.5); it knows nothing about pauses: callers pass the paused
-and blocked habits as `unavailable`.
+the projected `DayRecords` it is given (§4.5); it knows nothing about pauses: callers pass the habits
+paused or blocked on their ask day as `unavailable`.
 
 ### 4.3 Question construction
 
@@ -410,7 +424,9 @@ computes both for a day; the planner takes its keys as `unavailable`.
 
 Both features are one primitive: `PauseEvent`.
 
-- **Delay from a question card:** answer `.delayed(days: n)` → `PauseEvent(habitIDs: [h], start: today, end: today + n - 1, reason: .manual)`.
+- **Delay from a question card:** answer `.delayed(days: n)` → `PauseEvent(habitIDs: [h], start: d, end: d + n - 1, reason: .manual)`,
+  where `d` is the question's ask day (`covers.upperBound`, §4.2), so a delay before the due time
+  pauses the yesterday it was asked about.
 - **Backdated pause:** UI lets the user set `start` in the past ("I was sick the last 3 days").
   Re-projection converts those days from whatever they were into `.paused`.
 - **Extend / end early:** edit `end`. "End now" sets `end = today - 1`, so today is active and gets
@@ -458,8 +474,8 @@ topological order so parents' records exist when their children are projected.
    `(day, mean, sd, intervalDays)` for the "ask interval over time" chart.
    - `lastCoveredDay`: latest of answer `covers.upperBound` (not `.delayed`), health days, and
      paused/blocked days. Counting a pause as covered is what keeps questions out of it.
-   - `lastAskedDay`: latest `covers.upperBound` of any answer. A question's `covers` always end on the
-     day it was asked, so no `Date` → day mapping is needed.
+   - `lastAskedDay`: latest `covers.upperBound` of any answer. A question's `covers` always end on its
+     ask day (§4.2), so no `Date` → day mapping is needed.
    - `forcedReentryCheck`: set on the first available day after a paused/blocked stretch unless an
      answer's `covers` end on or after that day.
 3. Output is deterministic; the same inputs must produce byte-identical output (tests assert this).
@@ -527,14 +543,17 @@ yesterday.
    from the press reorders instead. After an answer, an Undo bar shows (§5.2). Until today is answered its record is
    only the model's guess, so the list shows ○ due or · not due instead (`DayStatus.today`); history
    rows show ≈ / ? for such days. Aggregated (answered as a count) and inferred (no answer; filled in
-   by the model) never share a glyph (§1.1). Pull-to-refresh replans. Empty state: "Nothing to ask.
+   by the model) never share a glyph (§1.1). Pull-to-refresh replans, and an open Today replans by
+   itself at the next due time (§4.2). Empty state: "Nothing to ask.
    Next check-in: <habit>, <day>." (the day may read "Tomorrow", so no "on"; `QuestionPlanner.nextCheckIn`:
-   today + ask interval, capped by `maxIntervalDays` since the last covered day).
+   ask day + ask interval, capped by `maxIntervalDays` since the last covered day; a habit with a due
+   time adds "from <time>", and before the due time its next check-in can be today).
 2. **Habit detail.** Header with current ask interval ("Asking every ~9 days"), adherence 30d (for a
    gated habit both `P(B|A)` "On Gym days" and `P(B)` "All days"), Resumes-on banner if paused (a
    blocked banner if a parent is), charts (§10), history calendar, dependency list (cluster, depends on,
    needed by), edit button.
-3. **Habit editor.** Name, emoji, color, importance, target adherence and max recall gap (both in a
+3. **Habit editor.** Name, emoji, color, importance, due time (off by default; "Ask about today from
+   <time>, about yesterday before it"), target adherence and max recall gap (both in a
    collapsed "Advanced" group, each with a plain-language explanation), vacation
    behavior, depends-on picker (with cycle rejection), cluster, Health binding; for an existing habit
    Archive (hidden from Today, the planner and the watch, history kept) and Delete… (confirmed; deletes
@@ -567,6 +586,8 @@ yesterday.
 └──────────────────────────────────────┘
 ```
 
+- Prompts name the ask day: "Done today?" / "Done yesterday?", and a count over days ending yesterday
+  reads "How many of the 5 days through yesterday?".
 - `.perDay`: one row per day with a toggle; days pre-set to the model's guess if `mean ≥ 0.8`,
   otherwise off; the user confirms with one tap.
 - `.count`: stepper `N of K` with quick chips *None / Some / Most / All* mapping to
@@ -606,9 +627,10 @@ yesterday.
 - **Status widget** (`StatusWidget`: small, medium, Lock Screen circular "N due" and inline): habits
   with today's glyphs; a row deep-links to habit detail (`DeepLink`: `spacedhabits://habit/<id>`,
   `spacedhabits://today`).
-- App Intents: `AnswerHabitIntent(habitID, done)` for the widget buttons (not discoverable in
+- App Intents: `AnswerHabitIntent(habitID, day, done)` for the widget buttons (`day` is the question's
+  ask day, §4.2; not discoverable in
   Shortcuts; `Apps/Shared`, so it runs in the widget extension), and in the app only
-  `LogHabitIntent(habit, done = true)`, `DelayHabitIntent(habit, days)` (a pause from today) and
+  `LogHabitIntent(habit, done = true)`, `DelayHabitIntent(habit, days)` (a pause from the habit's ask day, like a card delay) and
   `ReviewHabitsIntent()` (opens Today), with `HabitEntity` / `HabitQuery` over active habits. Questions
   are planned lazily and widgets don't log them (below), so a button carries the habit, not a question
   ID. App Shortcuts: "Log \(habit) in Spaced Habits", "Delay \(habit) in …", "Review habits in …".
@@ -627,13 +649,15 @@ yesterday.
   widgets plan the same day as the app.
 - Widgets and intents plan with `AppModel(logsPresentedQuestions: false)`: a timeline is speculative,
   so it doesn't log to `Truth.questions`. A Yes / No from a widget or Siri is
-  `AppModel.answerToday(habitID, done:, channel:)`, which logs a single-day question presented at the
+  `AppModel.answer(habitID, day:, done:, channel:)`, which logs a single-day question presented at the
   tap. Like a notification action (§8) it goes through `checkAnswerable` and throws `AnswerRefusal`
-  if the habit is archived, paused or blocked today, or today is already covered.
+  if the habit is archived, paused or blocked on that day, or the day is already covered. A widget
+  answers its question's ask day; "Log <habit>" always answers today, even before the due time (a
+  morning gym session), and an unanswered yesterday then stays inferred like any day an answer skips.
   Siri and Shortcuts answers use `Channel.shortcut`.
-- Timeline: one entry now + one at the next day boundary (`WidgetTimeline`). Within a day the plan
-  only changes when truth does, and every writer reloads the timelines then, so the notification
-  times add nothing.
+- Timeline: one entry now, one at each active habit's due time before the next day boundary, and one
+  at that boundary (`WidgetTimeline`). Otherwise the plan only changes when truth does, and every
+  writer reloads the timelines then, so the notification times add nothing.
 - watchOS: the same widget sources (`Apps/Widgets`) in `SpacedHabitsWatchWidgets`, reading the watch's
   own App Group store: the question widget as the Smart Stack card (`.accessoryRectangular`, Yes / No via
   `AnswerHabitIntent`: `Button(intent:)` is available in watchOS widgets), and the status widget as
@@ -695,11 +719,13 @@ of records is chunked rather than sent one message each): by `sendMessage` (50 p
   `HabitCore` `NotificationPlanner.plan(truth, calendar, now)` (pure) decides it; the app replaces
   every pending request with its output. A slot's content is what the app would plan at that instant
   if nothing were answered first: `Projection.rebuild` and the session planner run with a clock at the
-  slot (cached per day), so decay, pauses, gates and spot checks all apply and the first notification
-  lands on the Today screen's "Next check-in" day. It plans 7 days ahead (longer for
+  slot (cached per day), so decay, pauses, gates, spot checks and due times all apply (a slot before
+  a habit's due time asks about yesterday) and the first notification
+  lands on the Today screen's "Next check-in" day. Due times schedule no notifications of their own.
+  It plans 7 days ahead (longer for
   `.everyNDays(n)` with n > 7), at most 60 requests (iOS keeps 64). `.everyNDays(n)` fires on every
   n-th day since the last answer (before any, since the first habit's `createdDay`), so it means "if I
-  haven't checked in for n days". A time before `dayStartHour` belongs to the previous habit day.
+  haven't checked in for n days". Slot times follow §3.1.
 - Content: the top-priority question text, so the user can answer without opening anything.
   Group multiple due habits into one notification ("3 habits to review") when > 1.
 - Silence nudge (§4.6) and vacation-quiet toggle both live here. The nudge replaces the first
@@ -780,7 +806,7 @@ Health binding and Settings shows no Health permissions row. See O7.
 ## 11. Export / import
 
 - **CSV** (zip of several files): `days.csv` (habit_id, habit_name, day, value, source,
-  confidence, conditional_denominator_excluded, question_id), `habits.csv` (ending with list_order), `habit_revisions.csv`
+  confidence, conditional_denominator_excluded, question_id), `habits.csv` (ending with list_order, due_time as `HH:mm` or empty), `habit_revisions.csv`
   (revision_id, habit_id, edited_at, then the habit's columns), `answers.csv`, `questions.csv`
   (including dismissed ones, with presented_at and dismissed_at), `pauses.csv` (with reason),
   `clusters.csv` (id, name, color_hex, list_order), `dependencies.csv` (habit_id, parent_id, mode), `health_observations.csv`.
@@ -794,7 +820,8 @@ Health binding and Settings shows no Health permissions row. See O7.
 - Delivered via `ShareLink` / Files. All encoders live in `HabitCore/Export` and are unit-tested
   against golden fixtures; `schemaVersion` bumps require a migration note in this document.
 
-`schemaVersion = 1`, no migrations yet:
+`schemaVersion = 1`, no migrations yet (optional fields such as `Habit.dueTime` are added without a
+bump: a missing key decodes as nil, and older builds ignore the key):
 - `HabitCore/Export`: `DataExport` (a `Sendable` snapshot of truth and projection; the share sheet encodes it off
   the main actor), `ExportDocument` + `ExportCodec` (JSON), `CSVColumns` (the CSV columns, the reference for
   their names and value formats), `ZipArchive` (stored entries, fixed timestamps: same files, same bytes; no
@@ -873,7 +900,8 @@ Data is computed in `HabitCore/Insights` (pure, tested), drawn by `HabitUI/Chart
 
 ## 13. Implementation plan
 
-M0–M7 and M9–M11 are done; 0.1.0 is submitted for App Store review. M12 is in progress. A new
+M0–M7 and M9–M11 are done; 0.1.0 is submitted for App Store review. M12 is in progress; M13 follows
+it. A new
 milestone ends with a **checkpoint**: something you can run, tap, or inspect. Don't start the next
 milestone until it passes and `make ci` is green.
 
@@ -911,6 +939,29 @@ Checkpoint:
   habits and clusters into a new order, and it survives relaunch and shows on the watch; archive then
   restore a habit with its history intact; delete a cluster, and its habits show under "Other"; the
   long-press menus (row and card) work. Screenshots in `Docs/checkpoints/m12-*.png`.
+
+### M13 — Due time
+
+An optional per-habit due time: before it the habit asks about yesterday, from it on about today
+(§4.2). Deliver, in this order:
+
+1. **Engine.** `Habit.dueTime: TimeOfDay?`, `DayCalendar.askDay(for:at:)`, and the session planner,
+   `unavailable`, `nextCheckIn` and delays (card §4.6, Siri §6) working on each habit's ask day.
+2. **App.** The editor field (§5.1), prompts that name the day (§5.2), Today replanning at the next
+   due time, `AnswerHabitIntent` carrying the day and widget timeline entries at due times (§6), and
+   `due_time` in `habits.csv` (§11).
+
+Checkpoint:
+- Unit tests: ask day before, at and after the due time, with a due time before `dayStartHour`, and
+  across a DST change; no due time behaves exactly as before; before the due time a habit with
+  yesterday covered is not due, then due at the due time with `covers` ending today; a card or Siri delay
+  before the due time pauses from yesterday; a habit created today isn't asked about yesterday;
+  `nextCheckIn` can be today; the widget answer covers its question's day and "Log" covers today; export
+  round-trips `dueTime`. The §4.8 simulations still pass, and `steady` with a 20:00 due time and daily
+  08:00 sessions asks only about days through yesterday, still under 1.5 questions/week.
+- Manually on the phone and watch: give a habit a due time a few minutes ahead; the card and widget
+  ask "Done yesterday?"; answer it; at the due time a "Done today?" card appears on the open Today
+  screen (phone and watch) and in the widget without a relaunch. Screenshots in `Docs/checkpoints/m13-*.png`.
 
 ### M8 — HealthKit — deferred (optional, post-v1)
 

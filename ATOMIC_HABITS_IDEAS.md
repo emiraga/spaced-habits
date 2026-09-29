@@ -100,7 +100,8 @@ Protein?"
 **Why.** Implementation intentions have the strongest research support of anything in this
 list; repeating the cue-behavior pairing on every card reinforces it.
 
-**Model.** `Habit.intention: Intention?` with `Intention { cueKind: .afterHabit(UUID) | .atTime(DateComponents) | .atLocation(String) | .freeText(String); location: String? }`.
+**Model.** `Habit.intention: Intention?` with `Intention { cueKind: .afterHabit(UUID) | .atTime | .atLocation(String) | .freeText(String); location: String? }`.
+`.atTime` takes its time from `Habit.dueTime` (DESIGN.md §4.2) rather than storing its own.
 When `cueKind == .afterHabit`, keep it consistent with `dependencies` (editor offers to create
 the edge).
 
@@ -282,9 +283,9 @@ reads "clean day" instead of "done." Dependencies work as normal (e.g. "no snack
 
 ## F13. Environment cue: time and location (light)
 
-**What.** Extend F4's `Intention.cueKind` so `.atTime` schedules a notification at that time
-(only when due) and `.atLocation` optionally uses a geofence to make the notification fire on
-arrival.
+**What.** Extend F4's `Intention.cueKind` so `.atTime` schedules a notification at the habit's
+due time (only when due; M13 deliberately adds none) and `.atLocation` optionally uses a geofence
+to make the notification fire on arrival.
 
 **Why.** Cues that are obvious in the environment beat reminders on a timer. Location is the
 strongest cue for gym/library/kitchen habits.
