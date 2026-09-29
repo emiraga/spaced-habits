@@ -129,6 +129,18 @@
     "Answers, counts and estimates always look different. No fake streaks." : {
 
     },
+    "Archive habit" : {
+
+    },
+    "Archived %@" : {
+
+    },
+    "Archived habits" : {
+
+    },
+    "Archived habits stop being asked about and keep their history. Restore them in Settings." : {
+
+    },
     "Asks less as you improve" : {
 
     },
@@ -193,6 +205,18 @@
 
     },
     "Delay Habit" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete “%@”?" : {
+
+    },
+    "Delete habit" : {
+
+    },
+    "Delete habit…" : {
 
     },
     "Dependencies" : {
@@ -325,6 +349,9 @@
     "Insights appear once you've tracked a habit for a week." : {
 
     },
+    "Its history is deleted on all your devices. To keep it, archive the habit instead." : {
+
+    },
     "Journal" : {
 
     },
@@ -396,6 +423,9 @@
 
     },
     "No answers yet" : {
+
+    },
+    "No archived habits" : {
 
     },
     "No habits yet" : {
@@ -523,6 +553,9 @@
 
     },
     "Rename “%@”…" : {
+
+    },
+    "Restore" : {
 
     },
     "Resumes %@" : {

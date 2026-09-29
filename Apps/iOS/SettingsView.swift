@@ -48,6 +48,15 @@ struct SettingsView: View {
                 }
             }
             syncSection
+            if !model.archivedHabits.isEmpty {
+                Section {
+                    NavigationLink {
+                        ArchivedHabitsView()
+                    } label: {
+                        LabeledContent("Archived habits", value: "\(model.archivedHabits.count)")
+                    }
+                }
+            }
             DataSection()
             Section("About") {
                 LabeledContent("Version", value: buildInfo.displayString)

@@ -10,6 +10,7 @@ struct HabitDetailView: View {
     @AppStorage(ChartSettings.includePausedKey) private var includePaused = false
     @State private var editing = false
     @State private var pausing = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         if let habit = model.habit(habitID) {
@@ -45,8 +46,15 @@ struct HabitDetailView: View {
             .sheet(isPresented: $pausing) {
                 NavigationStack { PauseSheet(habit: habit, origin: .detail, today: model.today) }
             }
+            .onChange(of: habit.isArchived) { _, archived in
+                if archived {
+                    dismiss()
+                }
+            }
         } else {
+            // Deleted: go back to Today.
             ContentUnavailableView("Habit not found", systemImage: "questionmark")
+                .onAppear { dismiss() }
         }
     }
 

@@ -11,6 +11,7 @@ struct HabitEditorView: View {
     @State private var refusal: String?
     /// A new cluster, or the selected one being renamed.
     @State private var editingCluster: Cluster?
+    @State private var deleting: Habit?
     @Environment(AppModel.self) private var model
     @Environment(ErrorPresenter.self) private var errors
     @Environment(\.dismiss) private var dismiss
@@ -69,6 +70,9 @@ struct HabitEditorView: View {
                     }
                 }
             }
+            if !isNew {
+                removeSection
+            }
         }
         .navigationTitle(isNew ? "New habit" : "Edit habit")
         .navigationBarTitleDisplayMode(.inline)
@@ -91,7 +95,22 @@ struct HabitEditorView: View {
                 }
             }
         }
+        .confirmingDeletion(of: $deleting) { dismiss() }
         .errorAlert(errors)
+    }
+
+    /// Archive keeps the history; delete doesn't. Both act on the stored habit, not the unsaved draft.
+    private var removeSection: some View {
+        Section {
+            Button("Archive habit") {
+                if errors.attempt({ try model.archive(draft.id) }) {
+                    dismiss()
+                }
+            }
+            Button("Delete habit…", role: .destructive) { deleting = model.habit(draft.id) }
+        } footer: {
+            Text("Archived habits stop being asked about and keep their history. Restore them in Settings.")
+        }
     }
 
     /// Parents are `.gate` edges; the mode is not exposed (§4.5). A pick that would close a loop is refused.

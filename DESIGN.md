@@ -529,7 +529,9 @@ yesterday.
    needed by), edit button.
 3. **Habit editor.** Name, emoji, color, importance, target adherence and max recall gap (both in a
    collapsed "Advanced" group, each with a plain-language explanation), vacation
-   behavior, depends-on picker (with cycle rejection), cluster, Health binding, archive. The picker
+   behavior, depends-on picker (with cycle rejection), cluster, Health binding; for an existing habit
+   Archive (hidden from Today, the planner and the watch, history kept) and Delete… (confirmed; deletes
+   it and its history on every device, §10), after which its detail screen pops. The picker
    lists every other active habit; a pick that would close a loop (`Dependencies.cycle(ifAdding:)`) is
    refused on the spot with the loop spelled out ("Gym would need Protein, which needs Gym"), and
    `AppModel.save` maps a `validate` cycle to the same message. Clusters are created and renamed from
@@ -542,7 +544,7 @@ yesterday.
    `vacationBehavior` is on by default with a visible toggle.
 6. **Insights.** Overall charts + insight cards (delayed-often, regressions, autonomy score).
 7. **Settings.** Notifications cadence, quiet hours, session budget, day start hour, spot check
-   rate (advanced), export/import, Health permissions, iCloud status, About (version, Help & Support and
+   rate (advanced), Archived habits (when there are any: Restore, swipe to Delete), export/import, Health permissions, iCloud status, About (version, Help & Support and
    Privacy Policy links to `emira.ga/spaced-habits/{support,privacy}`, text in MARKETING.md), debug
    (rebuild projection).
 
@@ -867,7 +869,7 @@ milestone until it passes and `make ci` is green.
 Deliver, in this order (one or more commits each):
 
 1. **Deletion records** (§10). Done: `TruthStore.delete`, `Truth.removing`.
-2. **Archive and delete habits.** The editor of an existing habit gets Archive (sets `archivedAt`:
+2. **Archive and delete habits.** Done. The editor of an existing habit gets Archive (sets `archivedAt`:
    hidden from Today, the planner and the watch, history kept) and Delete… (confirmation naming what is
    lost). Deleting a habit deletes its revisions, questions, answers, Health observations and its own
    pauses. It is also removed from shared pauses (vacations) and from its children's dependencies.
