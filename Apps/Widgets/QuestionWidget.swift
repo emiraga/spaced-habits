@@ -94,8 +94,12 @@ private struct NothingDue: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("Nothing to ask", systemImage: "checkmark.circle")
-                .font(.subheadline.bold())
+            Label {
+                Text("Nothing to ask")
+            } icon: {
+                BrandMark().frame(width: 22, height: 22)
+            }
+            .font(.subheadline.bold())
             if let nextCheckIn {
                 Text("Next: \(nextCheckIn)").font(.caption).foregroundStyle(.secondary)
             }

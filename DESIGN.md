@@ -669,7 +669,7 @@ yesterday.
 - watchOS: the same widget sources (`Apps/Widgets`) in `SpacedHabitsWatchWidgets`, reading the watch's
   own App Group store: the question widget as the Smart Stack card (`.accessoryRectangular`, Yes / No via
   `AnswerHabitIntent`: `Button(intent:)` is available in watchOS widgets), and the status widget as
-  complications (`.accessoryCircular` "N due" or a checkmark, `.accessoryInline`). The watch app reloads
+  complications (`.accessoryCircular` "N due" or the brand mark (`HabitUI.BrandMark`), `.accessoryInline`). The watch app reloads
   them on every `AppModel.onRefresh`.
 
 ---

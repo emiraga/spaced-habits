@@ -37,7 +37,7 @@ struct StatusWidgetView: View {
             Text(snapshot.dueCount == 0 ? "All caught up" : "\(snapshot.dueCount) habits due")
         case .accessoryCircular:
             if snapshot.dueCount == 0 {
-                Image(systemName: "checkmark").font(.title2).accessibilityLabel("All caught up")
+                BrandMark().padding(6).accessibilityElement().accessibilityLabel("All caught up")
             } else {
                 VStack(spacing: 0) {
                     Text("\(snapshot.dueCount)").font(.title2.bold())
