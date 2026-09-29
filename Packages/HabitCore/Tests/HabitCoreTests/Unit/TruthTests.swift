@@ -143,4 +143,51 @@ struct TruthRecordKeepingTests {
         #expect(arrived.withoutPendingReferences() == arrived)
         try arrived.validate()
     }
+
+    /// A deleted habit takes its records along and leaves shared pauses and its children (§13 M12).
+    @Test func removingDeletedHabitsAndClustersCascades() throws {
+        let routine = Cluster(name: "Morning", colorHex: "#FFAA00")
+        let gym = habit("Gym", clusterID: routine.id)
+        let read = habit("Read")
+        var shake = habit("Shake", clusterID: routine.id)
+        shake.dependencies = [Dependency(parentID: gym.id)]
+        func answer(_ habit: Habit) -> Answer {
+            Answer(
+                questionID: UUID(), habitID: habit.id, covers: today ... today, value: .done, answeredAt: noon,
+                timezone: "UTC", channel: .app
+            )
+        }
+        let vacation = PauseEvent(
+            habitIDs: [gym.id, read.id],
+            start: today,
+            end: today,
+            reason: .vacation,
+            createdAt: noon
+        )
+        let truth = Truth(
+            habits: [gym, read, shake],
+            clusters: [routine],
+            habitRevisions: [HabitRevision(habit: gym, editedAt: noon), HabitRevision(habit: read, editedAt: noon)],
+            questions: [question(gym, 0, .singleDay), question(read, 0, .singleDay)],
+            answers: [answer(gym), answer(read)],
+            pauses: [
+                vacation,
+                PauseEvent(habitIDs: [gym.id], start: today, end: today, reason: .manual, createdAt: noon),
+            ],
+            healthObservations: [HealthObservation(habitID: gym.id, day: today, sampleID: "s")]
+        )
+
+        let removed = truth.removing(habits: [gym.id], clusters: [routine.id])
+        #expect(removed.habits.map(\.name) == ["Read", "Shake"])
+        #expect(removed.habits.allSatisfy { $0.dependencies.isEmpty && $0.clusterID == nil })
+        #expect(removed.clusters.isEmpty)
+        #expect(removed.habitRevisions.map(\.habit.id) == [read.id])
+        #expect(removed.questions.map(\.habitID) == [read.id])
+        #expect(removed.answers.map(\.habitID) == [read.id])
+        #expect(removed.pauses.map(\.id) == [vacation.id])
+        #expect(removed.pauses.first?.habitIDs == [read.id])
+        #expect(removed.healthObservations.isEmpty)
+        try removed.validate()
+        #expect(truth.removing(habits: [], clusters: []) == truth)
+    }
 }

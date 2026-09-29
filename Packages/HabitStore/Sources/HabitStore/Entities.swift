@@ -4,6 +4,14 @@ import SwiftData
 /// Which `Truth` collection a `TruthRecord` belongs to.
 enum TruthKind: String, CaseIterable {
     case habit, habitRevision, cluster, question, answer, pause, healthObservation, settings
+    /// A deleted record (`TruthDeletion`); its ID is the deleted record's.
+    case deletion
+}
+
+/// The payload of a `.deletion` record (DESIGN.md §10). The record's `updatedAt` is when it was deleted.
+struct TruthDeletion: Codable {
+    /// `TruthKind` raw value of the deleted record.
+    let kind: String
 }
 
 /// One truth value, stored as its `HabitCore` JSON (DESIGN.md §10).

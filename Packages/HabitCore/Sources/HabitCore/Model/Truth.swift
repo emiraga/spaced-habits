@@ -71,6 +71,33 @@ public struct Truth: Codable, Sendable, Hashable {
         try healthObservations.map(\.habitID).forEach(check)
     }
 
+    /// Truth without deleted habits and clusters (DESIGN.md §3.2): a deleted habit takes its revisions,
+    /// questions, answers and Health observations with it, and leaves every pause (a pause of no other habit
+    /// goes too) and its children's dependencies. Habits in a deleted cluster are in no cluster.
+    public func removing(habits habitIDs: Set<UUID>, clusters clusterIDs: Set<UUID>) -> Truth {
+        guard !habitIDs.isEmpty || !clusterIDs.isEmpty else { return self }
+        var truth = self
+        truth.habits = habits.filter { !habitIDs.contains($0.id) }.map { habit in
+            var habit = habit
+            habit.dependencies.removeAll { habitIDs.contains($0.parentID) }
+            if let clusterID = habit.clusterID, clusterIDs.contains(clusterID) {
+                habit.clusterID = nil
+            }
+            return habit
+        }
+        truth.clusters = clusters.filter { !clusterIDs.contains($0.id) }
+        truth.habitRevisions = habitRevisions.filter { !habitIDs.contains($0.habit.id) }
+        truth.questions = questions.filter { !habitIDs.contains($0.habitID) }
+        truth.answers = answers.filter { !habitIDs.contains($0.habitID) }
+        truth.pauses = pauses.compactMap { pause in
+            var pause = pause
+            pause.habitIDs.removeAll { habitIDs.contains($0) }
+            return pause.habitIDs.isEmpty ? nil : pause
+        }
+        truth.healthObservations = healthObservations.filter { !habitIDs.contains($0.habitID) }
+        return truth
+    }
+
     /// Holds back every value that names a habit or cluster not (yet) present: sync delivers records out of
     /// order (§10), so an answer can land before its habit, or a habit before its cluster or parent. A held
     /// back habit holds back its children and records too. Nothing is dropped from the store; the values

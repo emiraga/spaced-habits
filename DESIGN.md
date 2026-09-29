@@ -205,7 +205,7 @@ Implemented in `HabitCore/Support/`: `DayKey`, `DayCalendar` (day starts at
 
 The store is **event-sourced-lite**:
 
-- **Truth** (append-only, synced): `Habit` definitions, `HabitRevision`s (a snapshot after each
+- **Truth** (append-only except edits and deletions, §10; synced): `Habit` definitions, `HabitRevision`s (a snapshot after each
   edit), `Cluster`s, presented `Question`s (including dismissed ones), `Answer`s, `PauseEvent`s,
   `HealthObservation`s, `Settings`. Revisions, clusters and questions are record-keeping for history
   and export (§11); the scheduler and projection never read them.
@@ -739,6 +739,17 @@ Health binding and Settings shows no Health permissions row. See O7.
 - Conflict policy: truth tables are append-only; edits to `Habit`, `Cluster`, `PauseEvent` and a
   `Question`'s `dismissedAt` are last-writer-wins per record, which is acceptable for single-user data. Projections are never
   synced.
+- Deletion (`TruthStore.delete`: a habit, cluster, answer or pause) writes a `.deletion` record whose ID
+  is the deleted record's (payload: its kind; `updatedAt`: when). It is a write like any other, so it
+  syncs through CloudKit and the watch bridge and is last-writer-wins: every `load()` removes from the
+  store the rows written at or before their deletion, so a late write from an offline device stays
+  deleted, and a later write of the record itself (a JSON import) brings it back. `Truth.removing` then
+  drops what refers to a deleted habit (revisions, questions, answers, Health observations, pauses of no
+  other habit) and strips it from shared pauses and children's dependencies; habits in a deleted cluster
+  are in no cluster (not held back). Those dropped records are removed from the store too; stripped
+  references stay stored and are stripped on every load. Deletion records are kept. The stored schema is
+  unchanged; builds before 0.2 ignore `.deletion` rows but their watch bridge refuses them
+  (`unknownKind`), so the phone and watch apps update together.
 - `HabitStore` `SyncMonitor` observes `NSPersistentCloudKitContainer.eventChangedNotification` (SwiftData
   posts it). After each successful import the app calls `AppModel.reload(newSession: false)`: truth is
   re-read and fully re-projected (projection is always a full rebuild, §4.7), and `onRefresh` reloads
@@ -855,13 +866,7 @@ milestone until it passes and `make ci` is green.
 
 Deliver, in this order (one or more commits each):
 
-1. **Deletion records.** A `TruthKind.deletion` record (id = the deleted record's id; payload: its
-   kind and `deletedAt`) replaces the deleted rows, so the deletion syncs through CloudKit and the watch
-   bridge like any other write, and outlives late writes from an offline device (deletion wins). Every
-   device applies them on `load()` and `merge`: rows a deletion names are removed from the store, and a
-   pure `HabitCore` step strips what still refers to them. The stored schema doesn't change (no CloudKit
-   deploy). JSON import of a record removes its deletion record. Pre-M12 builds ignore the new kind in
-   CloudKit rows; the watch bridge refuses it (`unknownKind`), so phone and watch update together.
+1. **Deletion records** (§10). Done: `TruthStore.delete`, `Truth.removing`.
 2. **Archive and delete habits.** The editor of an existing habit gets Archive (sets `archivedAt`:
    hidden from Today, the planner and the watch, history kept) and Delete… (confirmation naming what is
    lost). Deleting a habit deletes its revisions, questions, answers, Health observations and its own

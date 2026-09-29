@@ -63,14 +63,14 @@ public final class TruthStore {
 
     /// Retained: a context whose container is released traps on the next fetch.
     private let container: ModelContainer
-    private let context: ModelContext
+    let context: ModelContext
     private let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         return encoder
     }()
 
-    private let decoder = JSONDecoder()
+    let decoder = JSONDecoder()
 
     public init(container: ModelContainer) {
         self.container = container
@@ -80,18 +80,28 @@ public final class TruthStore {
     // MARK: Reading
 
     /// All truth, each collection ordered by last write then ID. Missing settings are `Settings.default`.
-    /// Values naming a habit or cluster that hasn't synced yet are held back
+    /// Deleted records, and what refers to a deleted habit or cluster, are left out and removed from the
+    /// store (`purgeDeleted`). Values naming a habit or cluster that hasn't synced yet are held back
     /// (`Truth.withoutPendingReferences`).
     public func load() throws -> Truth {
-        try loadAll().withoutPendingReferences()
+        let rows = try context.fetch(FetchDescriptor<TruthRecord>())
+        let deletions = try Deletions(rows: rows, decoder: decoder)
+        let truth = try decode(latestRows(rows.filter { !deletions.deletes($0) }))
+        let kept = truth.removing(habits: deletions.habitIDs(in: truth), clusters: deletions.clusterIDs(in: truth))
+        try purgeDeleted(rows, deletions: deletions, cascaded: Self.keys(of: truth).subtracting(Self.keys(of: kept)))
+        return kept.withoutPendingReferences()
     }
 
-    private func loadAll() throws -> Truth {
-        let rows = try context.fetch(FetchDescriptor<TruthRecord>())
+    /// The latest row per `(kind, id)`, by kind.
+    private func latestRows(_ rows: [TruthRecord]) -> [String: [UUID: TruthRecord]] {
         var latest: [String: [UUID: TruthRecord]] = [:]
         for row in rows where latest[row.kind]?[row.id].map({ $0.updatedAt < row.updatedAt }) ?? true {
             latest[row.kind, default: [:]][row.id] = row
         }
+        return latest
+    }
+
+    private func decode(_ latest: [String: [UUID: TruthRecord]]) throws -> Truth {
         func values<Value: Decodable>(_ kind: TruthKind, as _: Value.Type = Value.self) throws -> [Value] {
             let ordered = (latest[kind.rawValue] ?? [:]).values.sorted {
                 ($0.updatedAt, $0.id.uuidString) < ($1.updatedAt, $1.id.uuidString)
@@ -235,6 +245,7 @@ public final class TruthStore {
         case .pause: try decoder.decode(PauseEvent.self, from: payload).validate()
         case .healthObservation: _ = try decoder.decode(HealthObservation.self, from: payload)
         case .settings: try decoder.decode(Settings.self, from: payload).validate()
+        case .deletion: try Deletions.validate(payload, decoder: decoder)
         }
     }
 
@@ -244,7 +255,7 @@ public final class TruthStore {
         try context.save()
     }
 
-    private func upsert(_ kind: TruthKind, id: UUID, _ value: some Encodable, at date: Date, save: Bool = true) throws {
+    func upsert(_ kind: TruthKind, id: UUID, _ value: some Encodable, at date: Date, save: Bool = true) throws {
         let payload = try encoder.encode(value)
         let rawKind = kind.rawValue
         let existing = try context.fetch(FetchDescriptor<TruthRecord>(
@@ -264,7 +275,7 @@ public final class TruthStore {
     }
 
     /// Saves the context and reports what was written.
-    private func commit() throws {
+    func commit() throws {
         let saved = unsaved
         unsaved = []
         try context.save()
