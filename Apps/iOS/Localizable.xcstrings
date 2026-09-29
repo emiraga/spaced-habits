@@ -213,6 +213,9 @@
     "Delay Habit" : {
 
     },
+    "Delay…" : {
+
+    },
     "Delete" : {
 
     },
@@ -386,6 +389,9 @@
 
     },
     "Last merge" : {
+
+    },
+    "Later" : {
 
     },
     "Log ${habit} as done: ${done}" : {

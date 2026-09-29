@@ -90,8 +90,10 @@ struct TodayView: View {
         .onAppear { LaunchMetrics.firstScreenAppeared() }
     }
 
+    /// A long-press on the card opens Later, Delay… and the habit's menu (§5.2).
     @ViewBuilder
     private func card(for question: Question) -> some View {
+        let later = { withAnimation { _ = errors.attempt { try model.later(question) } } }
         if let card = model.card(
             for: question,
             onAnswer: { value in
@@ -102,9 +104,19 @@ struct TodayView: View {
                 }
             },
             onDelay: { delaying = question },
-            onLater: { withAnimation { _ = errors.attempt { try model.later(question) } } }
-        ) {
+            onLater: later
+        ), let habit = model.habit(question.habitID) {
             card
+                .contextMenu {
+                    Button("Later", systemImage: "clock", action: later)
+                    Button("Delay…", systemImage: "calendar.badge.clock") { delaying = question }
+                    Divider()
+                    HabitMenu(
+                        habit: habit,
+                        onEdit: { editingHabit = habit },
+                        onDelete: { deletingHabit = habit }
+                    )
+                }
                 .id(question.id)
                 .transition(Self.cardTransition(reduceMotion: reduceMotion))
         }

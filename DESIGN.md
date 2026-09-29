@@ -574,6 +574,8 @@ yesterday.
 - Dependent habits show the parent context line ("You did Gym on 4 of 6 days").
 - Answering animates the card away and immediately shows the next one (with Reduce Motion it fades
   instead of sliding). Haptic on answer, on the phone and the watch.
+- On the phone a long-press on a card opens a menu: Later, Delay…, then the habit's Edit, Archive and
+  Delete… (as on its Today row, §5.1; no Pause…, since Delay… is the card's pause).
 - On the phone an "Answered <habit> · Undo" bar shows for 5 s after a card is answered or delayed (a
   newer answer restarts it). Undo (`AppModel.undoLastAnswer`) deletes the answer and the pause a
   Delay… created (§10); the question stays logged and unanswered, so the same card comes back.
@@ -908,7 +910,7 @@ Checkpoint:
   answer a card and Undo, and the card is back; delete a habit on the phone, and it disappears from the watch; drag
   habits and clusters into a new order, and it survives relaunch and shows on the watch; archive then
   restore a habit with its history intact; delete a cluster, and its habits show under "Other"; the
-  long-press menu works. Screenshots in `Docs/checkpoints/m12-*.png`.
+  long-press menus (row and card) work. Screenshots in `Docs/checkpoints/m12-*.png`.
 
 ### M8 — HealthKit — deferred (optional, post-v1)
 
