@@ -312,7 +312,8 @@ check-in feeds at most `maxRecallGapDays` = 7 days; the rest are inferred and fe
 which that day's behavior is settled (gym by 18:00, reading by 22:00). Before it, today can't be
 answered yet, so the habit's *ask day* is yesterday; from it on, today. Without a due time the ask
 day is always today. `DayCalendar.askDay(for:at:)` computes it from the clock's instant, comparing
-wall-clock times (§3.1), so on a DST change a skipped due time flips at the first time after it. The
+wall-clock times (§3.1), so on a DST change a skipped due time flips at the first time after it (and a
+repeated one stays passed after its first occurrence). The
 planner passes each habit's ask day as `today` to §4.2–§4.4, so every rule below (gap, ceiling,
 struggling, spot-check hash, staleness) and the question's `covers` are relative to it. So one date
 can bring two questions for a habit: yesterday's before the due time, and today's, which appears at
@@ -553,8 +554,8 @@ yesterday.
    gated habit both `P(B|A)` "On Gym days" and `P(B)` "All days"), Resumes-on banner if paused (a
    blocked banner if a parent is), charts (§10), history calendar, dependency list (cluster, depends on,
    needed by), edit button.
-3. **Habit editor.** Name, emoji, color, importance, due time (off by default; "Ask about today from
-   <time>, about yesterday before it"), target adherence and max recall gap (both in a
+3. **Habit editor.** Name, emoji, color, importance, due time (off by default, 20:00 when turned on; "Ask
+   about today from <time>, about yesterday before it"), target adherence and max recall gap (both in a
    collapsed "Advanced" group, each with a plain-language explanation), vacation
    behavior, depends-on picker (with cycle rejection), cluster, Health binding; for an existing habit
    Archive (hidden from Today, the planner and the watch, history kept) and Delete… (confirmed; deletes
@@ -629,7 +630,7 @@ yesterday.
   with today's glyphs; a row deep-links to habit detail (`DeepLink`: `spacedhabits://habit/<id>`,
   `spacedhabits://today`).
 - App Intents: `AnswerHabitIntent(habitID, day, done)` for the widget buttons (`day` is the question's
-  ask day, §4.2; not discoverable in
+  ask day, §4.2; a button from an older timeline without one answers today; not discoverable in
   Shortcuts; `Apps/Shared`, so it runs in the widget extension), and in the app only
   `LogHabitIntent(habit, done = true)`, `DelayHabitIntent(habit, days)` (a pause from the habit's ask day, like a card delay) and
   `ReviewHabitsIntent()` (opens Today), with `HabitEntity` / `HabitQuery` over active habits. Questions

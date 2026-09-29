@@ -90,15 +90,11 @@ struct NotificationSettingsView: View {
             switch settings.cadence {
             case let .timesPerDay(times):
                 ForEach(Array(times.enumerated()), id: \.offset) { index, time in
-                    DatePicker(
-                        "Time \(index + 1)",
-                        selection: timeBinding(time) { new in
-                            var edited = times
-                            edited[index] = new
-                            return .timesPerDay(edited)
-                        },
-                        displayedComponents: .hourAndMinute
-                    )
+                    TimePicker("Time \(index + 1)", time: timeBinding(time) { new in
+                        var edited = times
+                        edited[index] = new
+                        return .timesPerDay(edited)
+                    })
                     .deleteDisabled(times.count == 1)
                 }
                 .onDelete { offsets in
@@ -117,11 +113,7 @@ struct NotificationSettingsView: View {
                     get: { days },
                     set: { value in update { $0.cadence = .everyNDays(value, time: time) } }
                 ), in: 2 ... 14)
-                DatePicker(
-                    "Time",
-                    selection: timeBinding(time) { .everyNDays(days, time: $0) },
-                    displayedComponents: .hourAndMinute
-                )
+                TimePicker("Time", time: timeBinding(time) { .everyNDays(days, time: $0) })
             }
         }
     }
@@ -203,18 +195,12 @@ struct NotificationSettingsView: View {
         }
     }
 
-    /// A `DatePicker` binding for a wall-clock time; `cadence` builds the new cadence from the picked time.
+    /// A `TimePicker` binding for a cadence time; `cadence` builds the new cadence from the picked time.
     private func timeBinding(
         _ time: TimeOfDay,
         cadence: @escaping (TimeOfDay) -> NotificationSettings.Cadence
-    ) -> Binding<Date> {
-        Binding(
-            get: { Calendar.current.date(from: DateComponents(hour: time.hour, minute: time.minute)) ?? .distantPast },
-            set: { date in
-                let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
-                update { $0.cadence = try cadence(TimeOfDay(hour: parts.hour ?? 0, minute: parts.minute ?? 0)) }
-            }
-        )
+    ) -> Binding<TimeOfDay> {
+        Binding(get: { time }, set: { new in update { $0.cadence = cadence(new) } })
     }
 
     private func update(_ change: (inout NotificationSettings) throws -> Void) {

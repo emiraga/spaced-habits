@@ -31,29 +31,39 @@ struct AnswerHabitIntent: AppIntent {
     static let isDiscoverable = false
 
     @Parameter(title: "Habit ID") var habitID: String
+    /// `yyyy-MM-dd`: the question's ask day (§4.2). Nil in buttons from before due times, which answered today.
+    @Parameter(title: "Day") var day: String?
     @Parameter(title: "Done") var done: Bool
 
     init() {}
 
-    init(habitID: UUID, done: Bool) {
+    init(habitID: UUID, day: DayKey, done: Bool) {
         self.habitID = habitID.uuidString
+        self.day = day.description
         self.done = done
     }
 
     @MainActor
     func perform() async throws -> some IntentResult {
         guard let id = UUID(uuidString: habitID) else { throw IntentError.invalidHabitID(habitID) }
-        try IntentModel.open().answerToday(id, done: done, channel: .widget)
+        let model = try IntentModel.open()
+        let answered = try day.map { string in
+            guard let day = DayKey(string) else { throw IntentError.invalidDay(string) }
+            return day
+        } ?? model.today
+        try model.answer(id, day: answered, done: done, channel: .widget)
         return .result()
     }
 }
 
 enum IntentError: LocalizedError {
     case invalidHabitID(String)
+    case invalidDay(String)
 
     var errorDescription: String? {
         switch self {
         case let .invalidHabitID(id): String(localized: "\(id) is not a habit ID.")
+        case let .invalidDay(day): String(localized: "\(day) is not a day.")
         }
     }
 }

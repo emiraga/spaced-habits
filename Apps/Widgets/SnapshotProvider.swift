@@ -11,8 +11,9 @@ struct SnapshotEntry: TimelineEntry {
     var failure: String?
 }
 
-/// Timelines for both widgets from the App Group store (DESIGN.md §6): an entry now and one at the next
-/// day boundary. Writers (app, widget buttons, Siri) reload the timelines when truth changes.
+/// Timelines for both widgets from the App Group store (DESIGN.md §6): an entry now, at each habit's due
+/// time and at the next day boundary (`WidgetTimeline`). Writers (app, widget buttons, Siri) reload the
+/// timelines when truth changes.
 struct SnapshotProvider: TimelineProvider {
     private static let logger = Logger(subsystem: "ga.emira.spacedhabits", category: "widgets")
 

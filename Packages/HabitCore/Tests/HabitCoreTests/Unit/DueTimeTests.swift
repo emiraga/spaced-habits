@@ -71,6 +71,30 @@ struct AskDayTests {
         #expect(berlin.askDay(for: firstDue.addingTimeInterval(45 * 60), at: due) == today)
     }
 
+    @Test func dueInstantFollowsTheHabitDay() throws {
+        let utc = try calendar()
+        let today = try day("2026-09-27")
+        #expect(try utc.date(TimeOfDay(hour: 18, minute: 0), onHabitDay: today) == instant(utc, "2026-09-27", 18))
+        #expect(try utc.date(TimeOfDay(hour: 2, minute: 0), onHabitDay: today) == instant(utc, "2026-09-28", 2))
+    }
+
+    @Test func dueDatesListEachDueTimeOnceInOrder() throws {
+        let utc = try calendar()
+        let times = try [TimeOfDay(hour: 18, minute: 0), TimeOfDay(hour: 2, minute: 0), TimeOfDay(hour: 18, minute: 0)]
+        let dates = try utc.dueDates(
+            times, after: instant(utc, "2026-09-27", 18), before: instant(utc, "2026-09-28", 18, 1)
+        )
+        #expect(try dates == [instant(utc, "2026-09-28", 2), instant(utc, "2026-09-28", 18)])
+        #expect(try utc.dueDates(times, after: instant(utc, "2026-09-28", 3), before: instant(utc, "2026-09-28", 3))
+            .isEmpty)
+    }
+
+    @Test func timeFromMinutesWrapsIntoOneDay() throws {
+        #expect(try TimeOfDay(minutesSinceMidnight: 18 * 60 + 5) == TimeOfDay(hour: 18, minute: 5))
+        #expect(try TimeOfDay(minutesSinceMidnight: 1440 + 30) == TimeOfDay(hour: 0, minute: 30))
+        #expect(try TimeOfDay(minutesSinceMidnight: -1) == TimeOfDay(hour: 23, minute: 59))
+    }
+
     @Test func clocksReportTheAskDay() throws {
         let utc = try calendar()
         let due = try TimeOfDay(hour: 18, minute: 0)

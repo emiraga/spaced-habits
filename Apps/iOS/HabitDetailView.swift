@@ -86,7 +86,7 @@ struct HabitDetailView: View {
         if model.dueHabitIDs.contains(habitID) {
             LabeledContent("Next check-in", value: "Today")
         } else if let next = model.nextCheckIn(of: habit) {
-            LabeledContent("Next check-in", value: DayFormat.short(next, today: model.today))
+            LabeledContent("Next check-in", value: DayFormat.checkIn(next, dueTime: habit.dueTime, today: model.today))
         }
         LabeledContent("Target", value: DayFormat.percent(habit.targetAdherence))
     }

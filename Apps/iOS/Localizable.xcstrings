@@ -24,6 +24,9 @@
         }
       }
     },
+    "%@ is not a day." : {
+
+    },
     "%@ is not a habit ID." : {
 
     },
@@ -147,6 +150,9 @@
     "Archived habits stop being asked about and keep their history. Restore them in Settings." : {
 
     },
+    "Ask about today from %@, about yesterday before it." : {
+
+    },
     "Asks less as you improve" : {
 
     },
@@ -198,6 +204,9 @@
     "Dates" : {
 
     },
+    "Day" : {
+
+    },
     "Day starts at" : {
 
     },
@@ -247,6 +256,9 @@
 
     },
     "Drink water" : {
+
+    },
+    "Due time" : {
 
     },
     "Duration" : {
@@ -305,6 +317,9 @@
 
     },
     "Fills in the name" : {
+
+    },
+    "For a habit you do later in the day: until then, check-ins ask about yesterday." : {
 
     },
     "From" : {
@@ -537,7 +552,7 @@
     "Paused days don't count against the habit, and its progress is frozen until it resumes." : {
 
     },
-    "Pauses a habit from today. Its progress is frozen, not lost." : {
+    "Pauses a habit, like Delay… in the app. Its progress is frozen, not lost." : {
 
     },
     "Pick a past day to cover days you've already missed, for example while sick." : {

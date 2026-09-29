@@ -43,6 +43,7 @@ struct TodayView: View {
             .padding()
         }
         .refreshable { errors.attempt { try model.startSession() } }
+        .replanningAtDueTimes(model, errors: errors)
         .safeAreaInset(edge: .bottom) { undoBar }
         .navigationTitle("Today")
         .toolbar {
@@ -153,8 +154,10 @@ struct TodayView: View {
                 Text("Nothing to ask.")
                     .font(.title3.weight(.semibold))
                 if let next = model.nextCheckIn() {
-                    Text("Next check-in: \(next.habit.name), \(DayFormat.short(next.day, today: model.today)).")
-                        .foregroundStyle(.secondary)
+                    Text(
+                        "Next check-in: \(next.habit.name), \(DayFormat.checkIn(next.day, dueTime: next.habit.dueTime, today: model.today))."
+                    )
+                    .foregroundStyle(.secondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

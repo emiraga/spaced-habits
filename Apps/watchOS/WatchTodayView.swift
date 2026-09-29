@@ -35,6 +35,7 @@ struct WatchTodayView: View {
             }
         }
         .navigationTitle("Today")
+        .replanningAtDueTimes(model, errors: errors)
         .sheet(item: $delaying) { question in
             WatchDelaySheet(question: question)
         }
@@ -60,10 +61,12 @@ struct WatchTodayView: View {
             Text("Nothing to ask")
                 .font(.headline)
             if let next = model.nextCheckIn() {
-                Text("Next: \(next.habit.name), \(DayFormat.short(next.day, today: model.today))")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                Text(
+                    "Next: \(next.habit.name), \(DayFormat.checkIn(next.day, dueTime: next.habit.dueTime, today: model.today))"
+                )
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
             }
         }
         .padding(.top)

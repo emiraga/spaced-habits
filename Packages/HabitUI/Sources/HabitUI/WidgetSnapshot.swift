@@ -12,6 +12,8 @@ public struct WidgetSnapshot: Sendable, Hashable {
         public let colorHex: String
         /// Yes / No buttons; per-day and count questions need the app.
         public let isYesNo: Bool
+        /// The day a Yes / No answers: the question's ask day (§4.2).
+        public let day: DayKey
     }
 
     /// A habit with today's glyph. Its `id` is the habit's.
@@ -42,7 +44,8 @@ public struct WidgetSnapshot: Sendable, Hashable {
                 title: String(localized: "🏋️ Gym", bundle: .module),
                 body: String(localized: "Done today?", bundle: .module),
                 colorHex: HabitPalette.colors[0],
-                isYesNo: true
+                isYesNo: true,
+                day: DayKey(dayNumber: 0)
             )],
             dueCount: 1,
             habits: [
@@ -70,10 +73,10 @@ public extension AppModel {
             today: today,
             cards: questions.compactMap { question in
                 guard let habit = habit(question.habitID) else { return nil }
-                let text = QuestionText(question, habits: truth.habits)
+                let text = QuestionText(question, habits: truth.habits, today: today)
                 return WidgetSnapshot.Card(
                     id: habit.id, title: text.title, body: text.body, colorHex: habit.colorHex,
-                    isYesNo: question.shape == .singleDay
+                    isYesNo: question.shape == .singleDay, day: question.covers.upperBound
                 )
             },
             dueCount: dueHabitIDs.count,
@@ -86,14 +89,18 @@ public extension AppModel {
                 )
             },
             nextCheckIn: nextCheckIn().map {
-                String(localized: "\($0.habit.name), \(DayFormat.short($0.day, today: today))", bundle: .module)
+                String(
+                    localized: "\($0.habit.name), \(DayFormat.checkIn($0.day, dueTime: $0.habit.dueTime, today: today))",
+                    bundle: .module
+                )
             }
         )
     }
 }
 
-/// Widget timelines (DESIGN.md §6): an entry now and one at the next day boundary. Within a day the plan
-/// only changes when truth does, and every writer (app, widget, Siri) reloads the timelines then.
+/// Widget timelines (DESIGN.md §6): an entry now, one at each active habit's due time before the next day
+/// boundary, and one at that boundary. Otherwise the plan only changes when truth does, and every writer (app,
+/// widget, Siri) reloads the timelines then.
 public enum WidgetTimeline {
     @MainActor
     public static func entries(
@@ -113,6 +120,9 @@ public enum WidgetTimeline {
         let boundary = try calendar.date(
             calendar.dayKey(for: now).adding(days: 1), at: TimeOfDay(hour: startHour, minute: 0)
         )
-        return try [(now, current.widgetSnapshot()), (boundary, model(at: boundary).widgetSnapshot())]
+        let later = try (calendar.dueDates(current.dueTimes, after: now, before: boundary) + [boundary]).map {
+            try ($0, model(at: $0).widgetSnapshot())
+        }
+        return [(now, current.widgetSnapshot())] + later
     }
 }

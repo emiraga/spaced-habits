@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ is not a day." : {
+
+    },
     "%@ is not a habit ID." : {
 
     },
@@ -20,6 +23,9 @@
 
     },
     "Check-in" : {
+
+    },
+    "Day" : {
 
     },
     "Done" : {

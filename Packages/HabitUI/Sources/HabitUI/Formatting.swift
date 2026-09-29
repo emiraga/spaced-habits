@@ -37,6 +37,17 @@ public enum DayFormat {
         }
     }
 
+    /// "Tomorrow", or "Today from 18:00" for a habit with a due time (§5.1 "Next check-in").
+    public static func checkIn(_ day: DayKey, dueTime: TimeOfDay?, today: DayKey) -> String {
+        guard let dueTime else { return short(day, today: today) }
+        return String(localized: "\(short(day, today: today)) from \(time(dueTime))", bundle: .module)
+    }
+
+    /// "18:00" or "6:00 PM", as the user's locale writes times.
+    public static func time(_ time: TimeOfDay) -> String {
+        time.pickerDate.formatted(Date.FormatStyle(date: .omitted, time: .shortened, timeZone: .gmt))
+    }
+
     /// "Asking daily" / "Asking every ~9 days" (§5.1 habit detail).
     public static func askInterval(_ days: Int) -> String {
         days <= 1
@@ -78,6 +89,19 @@ public enum DayFormat {
     }
 
     private static let style = Date.FormatStyle(timeZone: .gmt).weekday(.abbreviated).day().month(.abbreviated)
+}
+
+public extension TimeOfDay {
+    /// The time on 1970-01-01 UTC, for a `DatePicker` in the UTC time zone and for formatting: a wall-clock
+    /// time, not an instant.
+    var pickerDate: Date {
+        Date(timeIntervalSince1970: TimeInterval(hour * 3600 + minute * 60))
+    }
+
+    /// The wall-clock time a UTC `DatePicker` selected.
+    init(pickerDate date: Date) {
+        self.init(minutesSinceMidnight: Int((date.timeIntervalSince1970 / 60).rounded(.down)))
+    }
 }
 
 public extension PauseReason {

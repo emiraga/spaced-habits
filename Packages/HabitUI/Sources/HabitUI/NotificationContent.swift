@@ -101,7 +101,7 @@ public struct NotificationContent: Sendable, Hashable {
         identifier = "slot-\(Int(fireAt.timeIntervalSince1970))"
         switch planned.kind {
         case let .question(question, dueCount):
-            let text = QuestionText(question, habits: habits)
+            let text = QuestionText(question, habits: habits, today: planned.day)
             title = text.title
             subtitle = dueCount > 1 ? String(localized: "\(dueCount) habits to review", bundle: .module) : ""
             body = text.body
@@ -133,17 +133,19 @@ public struct QuestionText: Sendable, Hashable {
     /// The parent context line (gated habits), then the prompt.
     public let body: String
 
-    public init(_ question: Question, habits: [Habit]) {
+    /// `today` is the day it is shown on, so the prompt can say "yesterday" (§5.2).
+    public init(_ question: Question, habits: [Habit], today: DayKey) {
         let byID = Dictionary(habits.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         title = byID[question.habitID].map(\.displayName) ?? String(localized: "Spaced Habits", bundle: .module)
         let context = question.parentContext.map { context in
             QuestionCard.contextLine(
                 parentNames: context.parentIDs.compactMap { byID[$0]?.name },
                 context: context,
-                coverDays: question.covers.count
+                covers: question.covers,
+                today: today
             )
         }
-        body = [context, QuestionCard.prompt(for: question)].compactMap(\.self).joined(separator: " ")
+        body = [context, QuestionCard.prompt(for: question, today: today)].compactMap(\.self).joined(separator: " ")
     }
 }
 

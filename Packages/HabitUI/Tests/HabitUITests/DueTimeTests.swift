@@ -10,6 +10,7 @@ struct DueTimeTests {
     let model: AppModel
     let gym: Habit
 
+    /// Gym is created two days ago and answered that evening, so at noon today it asks "Done yesterday?".
     init() throws {
         harness = try Harness()
         model = try harness.model(at: noon.addingTimeInterval(-2 * 86400))
@@ -21,10 +22,16 @@ struct DueTimeTests {
         gym.dueTime = try TimeOfDay(hour: 18, minute: 0)
         try model.save(gym)
         self.gym = gym
+        let evening = try harness.model(at: noon.addingTimeInterval(-2 * 86400 + 7 * 3600))
+        try evening.answer(#require(evening.questions.first), with: .done)
+    }
+
+    private func date(hour: Int, daysLater: Int = 0) -> Date {
+        noon.addingTimeInterval(TimeInterval(daysLater * 24 + hour - 12) * 3600)
     }
 
     private func model(hour: Int) throws -> AppModel {
-        try harness.model(at: noon.addingTimeInterval(TimeInterval(hour - 12) * 3600))
+        try harness.model(at: date(hour: hour))
     }
 
     @Test func cardDelayBeforeTheDueTimePausesFromYesterday() throws {
@@ -56,5 +63,55 @@ struct DueTimeTests {
         #expect(app.nextCheckIn(of: gym) == start)
         let evening = try model(hour: 18)
         #expect(evening.questions.first?.covers.upperBound == start)
+    }
+
+    @Test func widgetAnswersItsCardsDayAndLogAnswersToday() throws {
+        let app = try model(hour: 12)
+        let card = try #require(app.widgetSnapshot().cards.first)
+        #expect(card.isYesNo && card.day == start.adding(days: -1))
+        #expect(card.body == "Done yesterday?")
+        try app.answer(card.id, day: card.day, done: true, channel: .widget)
+        #expect(app.truth.answers.last?.covers == card.day ... card.day)
+        try app.answer(gym.id, day: app.today, done: false, channel: .shortcut)
+        #expect(app.truth.answers.last?.covers == start ... start)
+        #expect(try model(hour: 18).questions.isEmpty)
+    }
+
+    @Test func logBeforeTheDueTimeLeavesYesterdayInferred() throws {
+        let app = try model(hour: 12)
+        try app.answer(gym.id, day: app.today, done: true, channel: .shortcut)
+        #expect(app.questions.isEmpty)
+        #expect(app.projected.records[gym.id]?[start.adding(days: -1)]?.source != .observed)
+    }
+
+    @Test func timelineHasAnEntryAtTheDueTime() throws {
+        let entries = try WidgetTimeline.entries(
+            store: harness.store, timeZone: .gmt, defaults: harness.defaults, now: date(hour: 12)
+        )
+        #expect(entries.map(\.date) == [date(hour: 12), date(hour: 18), date(hour: 4, daysLater: 1)])
+        #expect(entries[0].snapshot.cards.first?.day == start.adding(days: -1))
+        // Yesterday was left unanswered, so the evening card asks about both days.
+        let evening = try #require(entries[1].snapshot.cards.first)
+        #expect(evening.day == start && evening.body == "Which of these days?")
+    }
+
+    @Test func todayReplansAtTheNextDueTime() throws {
+        #expect(try model(hour: 12).nextDueTime == date(hour: 18))
+        #expect(try model(hour: 18).nextDueTime == date(hour: 18, daysLater: 1))
+        var archived = gym
+        archived.archivedAt = noon
+        let app = try model(hour: 12)
+        try app.save(archived)
+        #expect(app.nextDueTime == nil)
+    }
+
+    @Test func notificationBeforeTheDueTimeAsksAboutYesterday() throws {
+        let app = try model(hour: 12)
+        let question = try #require(app.questions.first)
+        let content = NotificationContent(
+            PlannedNotification(fireAt: date(hour: 12), day: start, kind: .question(question, dueCount: 1)),
+            habits: app.truth.habits
+        )
+        #expect(content.body == "Done yesterday?")
     }
 }

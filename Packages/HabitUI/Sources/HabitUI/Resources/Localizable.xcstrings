@@ -50,6 +50,16 @@
     "%@ days" : {
 
     },
+    "%@ from %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ from %2$@"
+          }
+        }
+      }
+    },
     "%@ importance, %@" : {
       "localizations" : {
         "en" : {
@@ -324,6 +334,9 @@
     "Done today?" : {
 
     },
+    "Done yesterday?" : {
+
+    },
     "Due today" : {
 
     },
@@ -355,6 +368,9 @@
 
     },
     "High" : {
+
+    },
+    "How many of the %lld days through yesterday?" : {
 
     },
     "How many of the last %lld days?" : {
@@ -473,7 +489,7 @@
     "Target" : {
 
     },
-    "That habit is paused today." : {
+    "That habit is paused on that day." : {
 
     },
     "That habit no longer exists." : {
@@ -540,12 +556,32 @@
     "Yesterday" : {
 
     },
+    "You did %@ on %lld of the %lld days through yesterday." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You did %1$@ on %2$lld of the %3$lld days through yesterday."
+          }
+        }
+      }
+    },
     "You did %@ on %lld of the last %lld days." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "You did %1$@ on %2$lld of the last %3$lld days."
+          }
+        }
+      }
+    },
+    "You did %@ on all of the %lld days through yesterday." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You did %1$@ on all of the %2$lld days through yesterday."
           }
         }
       }
@@ -561,6 +597,9 @@
       }
     },
     "You did %@ today." : {
+
+    },
+    "You did %@ yesterday." : {
 
     },
     "You keep delaying %@" : {

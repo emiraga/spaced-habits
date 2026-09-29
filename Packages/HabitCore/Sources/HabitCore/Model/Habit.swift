@@ -4,6 +4,8 @@ import Foundation
 public struct Habit: Identifiable, Codable, Sendable, Hashable {
     public static let defaultTargetAdherence = 0.8
     public static let defaultMaxRecallGapDays = 7
+    /// What the editor offers when a due time is turned on (§5.1).
+    public static let defaultDueTime = TimeOfDay(uncheckedHour: 20, minute: 0)
 
     public let id: UUID
     public var name: String

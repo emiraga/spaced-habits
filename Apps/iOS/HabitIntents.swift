@@ -57,15 +57,17 @@ struct LogHabitIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        try IntentModel.open().answerToday(habit.id, done: done, channel: .shortcut)
+        let model = try IntentModel.open()
+        try model.answer(habit.id, day: model.today, done: done, channel: .shortcut)
         return .result(dialog: done ? "Logged \(habit.name) for today." : "Logged \(habit.name) as not done today.")
     }
 }
 
-/// "Delay Gym 3 days": pauses a habit from today, like "Delay…" in the app.
+/// "Delay Gym 3 days": pauses a habit from the day it asks about, like "Delay…" in the app (§6).
 struct DelayHabitIntent: AppIntent {
     static let title: LocalizedStringResource = "Delay Habit"
-    static let description = IntentDescription("Pauses a habit from today. Its progress is frozen, not lost.")
+    static let description =
+        IntentDescription("Pauses a habit, like Delay… in the app. Its progress is frozen, not lost.")
 
     @Parameter(title: "Habit") var habit: HabitEntity
     @Parameter(title: "Days", default: 1, inclusiveRange: (1, 60)) var days: Int
@@ -77,8 +79,7 @@ struct DelayHabitIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let model = try IntentModel.open()
-        try model.delay(habit.id, days: days)
-        let resume = DayFormat.short(model.today.adding(days: days), today: model.today)
+        let resume = try DayFormat.short(model.delay(habit.id, days: days), today: model.today)
         return .result(dialog: "\(habit.name) is paused. It resumes \(resume).")
     }
 }

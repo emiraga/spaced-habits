@@ -44,14 +44,25 @@ struct IntentTests {
     }
 
     @Test func answerHabitAnswersTodayFromTheWidget() async throws {
-        let intent = AnswerHabitIntent(habitID: gym.id, done: false)
+        let intent = AnswerHabitIntent(habitID: gym.id, day: model.today, done: false)
         _ = try await withLiveModel { try await intent.perform() }
         #expect(model.truth.answers.map(\.channel) == [.widget])
         #expect(model.todayStatus(of: gym.id) == .notDone)
         // A second tap on a stale widget is refused, not recorded over the first.
         await #expect(throws: AnswerRefusal.alreadyCovered(through: model.today)) {
-            _ = try await withLiveModel { try await AnswerHabitIntent(habitID: gym.id, done: true).perform() }
+            _ = try await withLiveModel {
+                try await AnswerHabitIntent(habitID: gym.id, day: model.today, done: true).perform()
+            }
         }
+    }
+
+    /// A button from a timeline written before due times carries no day: it answers today, as it used to.
+    @Test func answerHabitWithoutADayAnswersToday() async throws {
+        let intent = AnswerHabitIntent()
+        intent.habitID = gym.id.uuidString
+        intent.done = true
+        _ = try await withLiveModel { try await intent.perform() }
+        #expect(model.truth.answers.last?.covers == model.today ... model.today)
     }
 
     @Test func delayHabitPausesFromToday() async throws {

@@ -76,7 +76,7 @@ private struct CardView: View {
     }
 
     private func answerButton(_ title: LocalizedStringKey, done: Bool) -> some View {
-        Button(intent: AnswerHabitIntent(habitID: card.id, done: done)) {
+        Button(intent: AnswerHabitIntent(habitID: card.id, day: card.day, done: done)) {
             Text(title).frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)

@@ -51,34 +51,59 @@ struct QuestionCardTests {
         #expect(QuestionCard.countChips(total: 4).map(\.label) == ["None", "Some", "Most", "All"])
     }
 
-    private func question(_ shape: QuestionShape, days: Int, parentDoneDays: Int? = nil) -> Question {
-        Question(
-            habitID: UUID(), covers: today.adding(days: 1 - days) ... today, shape: shape, createdAt: .now,
+    /// `days` days ending `endingDaysAgo` days before today.
+    private func question(
+        _ shape: QuestionShape,
+        days: Int,
+        parentDoneDays: Int? = nil,
+        endingDaysAgo: Int = 0
+    ) -> Question {
+        let end = today.adding(days: -endingDaysAgo)
+        return Question(
+            habitID: UUID(), covers: end.adding(days: 1 - days) ... end, shape: shape, createdAt: .now,
             parentContext: parentDoneDays.map { ParentContext(parentIDs: [UUID()], parentDoneDays: $0) }
         )
     }
 
+    private func prompt(_ question: Question) -> String {
+        QuestionCard.prompt(for: question, today: today)
+    }
+
     @Test func promptsAskAboutParentDoneDaysWhenGated() {
-        #expect(QuestionCard.prompt(for: question(.singleDay, days: 1)) == "Done today?")
-        #expect(QuestionCard.prompt(for: question(.count(total: 6), days: 6)) == "How many of the last 6 days?")
-        #expect(QuestionCard
-            .prompt(for: question(.count(total: 4), days: 6, parentDoneDays: 4)) == "On how many of those 4?")
-        #expect(QuestionCard.prompt(for: question(.count(total: 1), days: 6, parentDoneDays: 1)) == "Done on that day?")
+        #expect(prompt(question(.singleDay, days: 1)) == "Done today?")
+        #expect(prompt(question(.count(total: 6), days: 6)) == "How many of the last 6 days?")
+        #expect(prompt(question(.count(total: 4), days: 6, parentDoneDays: 4)) == "On how many of those 4?")
+        #expect(prompt(question(.count(total: 1), days: 6, parentDoneDays: 1)) == "Done on that day?")
         let perDay = QuestionShape.perDay(days: [today])
-        #expect(QuestionCard.prompt(for: question(perDay, days: 2)) == "Which of these days?")
-        #expect(QuestionCard.prompt(for: question(perDay, days: 2, parentDoneDays: 1)) == "Which of those days?")
+        #expect(prompt(question(perDay, days: 2)) == "Which of these days?")
+        #expect(prompt(question(perDay, days: 2, parentDoneDays: 1)) == "Which of those days?")
+    }
+
+    /// Before a due time the question ends yesterday (§4.2, §5.2).
+    @Test func promptsNameYesterday() {
+        #expect(prompt(question(.singleDay, days: 1, endingDaysAgo: 1)) == "Done yesterday?")
+        #expect(prompt(question(.count(total: 5), days: 5, endingDaysAgo: 1))
+            == "How many of the 5 days through yesterday?")
+        #expect(prompt(question(.count(total: 4), days: 6, parentDoneDays: 4, endingDaysAgo: 1))
+            == "On how many of those 4?")
     }
 
     @Test func contextLineNamesParentsAndTheirDoneDays() {
-        func line(_ names: [String], done: Int, of days: Int) -> String {
-            QuestionCard.contextLine(
-                parentNames: names, context: ParentContext(parentIDs: [], parentDoneDays: done), coverDays: days
+        func line(_ names: [String], done: Int, of days: Int, endingDaysAgo: Int = 0) -> String {
+            let end = today.adding(days: -endingDaysAgo)
+            return QuestionCard.contextLine(
+                parentNames: names, context: ParentContext(parentIDs: [], parentDoneDays: done),
+                covers: end.adding(days: 1 - days) ... end, today: today
             )
         }
         #expect(line(["Gym"], done: 4, of: 6) == "You did Gym on 4 of the last 6 days.")
         #expect(line(["Gym"], done: 3, of: 3) == "You did Gym on all of the last 3 days.")
         #expect(line(["Gym"], done: 1, of: 1) == "You did Gym today.")
         #expect(line(["Gym", "Stretch"], done: 2, of: 5) == "You did Gym and Stretch on 2 of the last 5 days.")
+        #expect(line(["Gym"], done: 1, of: 1, endingDaysAgo: 1) == "You did Gym yesterday.")
+        #expect(line(["Gym"], done: 3, of: 3, endingDaysAgo: 1) ==
+            "You did Gym on all of the 3 days through yesterday.")
+        #expect(line(["Gym"], done: 2, of: 4, endingDaysAgo: 1) == "You did Gym on 2 of the 4 days through yesterday.")
     }
 }
 
@@ -102,6 +127,20 @@ struct FormattingTests {
             let day = today.adding(days: offset)
             #expect(DayFormat.day(fromNoonUTC: DayFormat.noonUTC(day)) == day)
         }
+    }
+
+    @Test func timePickerDatesRoundTrip() throws {
+        for (hour, minute) in [(0, 0), (4, 30), (18, 5), (23, 59)] {
+            let time = try TimeOfDay(hour: hour, minute: minute)
+            #expect(TimeOfDay(pickerDate: time.pickerDate) == time)
+        }
+    }
+
+    @Test func checkInNamesTheDueTime() throws {
+        #expect(DayFormat.checkIn(today.adding(days: 1), dueTime: nil, today: today) == "Tomorrow")
+        let evening = try TimeOfDay(hour: 18, minute: 0)
+        #expect(DayFormat.checkIn(today, dueTime: evening, today: today) == "Today from \(DayFormat.time(evening))")
+        #expect(DayFormat.time(evening).contains("6") || DayFormat.time(evening).contains("18"))
     }
 
     @Test func pauseReasonLabels() {

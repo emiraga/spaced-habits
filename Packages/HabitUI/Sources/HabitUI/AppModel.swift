@@ -24,6 +24,9 @@ public final class AppModel {
     public internal(set) var lastAnswered: AnsweredCard?
     /// Every habit that is due on its ask day (§4.2), including ones put off with "Later".
     public private(set) var dueHabitIDs: Set<UUID> = []
+    /// When the next active habit's due time passes on the real clock (§4.2): an open Today screen replans
+    /// then. Nil without due times.
+    public private(set) var nextDueTime: Date?
     /// Debug "advance day" offset; 0 in normal use.
     public private(set) var dayOffset: Int
     public private(set) var clock: ShiftedClock
@@ -274,7 +277,16 @@ public final class AppModel {
         reasons = Dictionary(uniqueKeysWithValues: plan.presented.map { ($0.habitID, $0.reason) })
         queuedCount = plan.queued.count
         dueHabitIDs = Set(due.map(\.habitID))
+        let calendar = try DayCalendar(timeZone: timeZone, dayStartHour: truth.settings.dayStartHour)
+        let now = clock.now()
+        nextDueTime = calendar.dueDates(dueTimes, after: now, before: now.addingTimeInterval(2 * 86400)).first?
+            .addingTimeInterval(-TimeInterval(dayOffset) * 86400)
         onRefresh?()
+    }
+
+    /// The due times of unarchived habits.
+    var dueTimes: [TimeOfDay] {
+        truth.habits.filter { !$0.isArchived }.compactMap(\.dueTime)
     }
 
     /// The card already shown for this habit, else one logged before a relaunch or an import that was neither

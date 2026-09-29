@@ -56,7 +56,7 @@ struct WidgetTests {
         #expect(top.isYesNo)
         #expect(top.body == "Done today?")
 
-        try processes.intentModel().answerToday(top.id, done: true, channel: .widget)
+        try processes.intentModel().answer(top.id, day: start, done: true, channel: .widget)
 
         let after = try processes.timeline()[0].snapshot
         let other = top.id == gym.id ? read.id : gym.id
@@ -91,7 +91,7 @@ struct WidgetTests {
         let (first, second) = try (#require(processes.app.questions.first), #require(processes.app.questions.last))
         try processes.app.later(first)
 
-        try processes.intentModel().answerToday(second.habitID, done: true, channel: .watch)
+        try processes.intentModel().answer(second.habitID, day: start, done: true, channel: .watch)
         try processes.app.reload(newSession: false)
         #expect(processes.app.questions.isEmpty)
         #expect(processes.app.todayStatus(of: second.habitID) == .done)
@@ -132,7 +132,7 @@ struct WidgetTests {
         try processes.app.answer(#require(processes.app.questions.first), with: .notDone)
 
         #expect(throws: AnswerRefusal.alreadyCovered(through: start)) {
-            try processes.intentModel().answerToday(gym.id, done: true, channel: .widget)
+            try processes.intentModel().answer(gym.id, day: start, done: true, channel: .widget)
         }
         #expect(try processes.store().load().answers.map(\.value) == [.notDone])
     }
@@ -142,12 +142,12 @@ struct WidgetTests {
         var gym = try addHabit(model, "Gym")
         try model.delay(gym.id, days: 3)
         #expect(throws: AnswerRefusal.unavailable(gym.id, start)) {
-            try model.answerToday(gym.id, done: true, channel: .shortcut)
+            try model.answer(gym.id, day: start, done: true, channel: .shortcut)
         }
         gym.archivedAt = noon
         try model.save(gym)
         #expect(throws: AnswerRefusal.habitGone(gym.id)) {
-            try model.answerToday(gym.id, done: true, channel: .shortcut)
+            try model.answer(gym.id, day: start, done: true, channel: .shortcut)
         }
         #expect(throws: AnswerRefusal.habitGone(gym.id)) {
             try model.delay(gym.id, days: 3)

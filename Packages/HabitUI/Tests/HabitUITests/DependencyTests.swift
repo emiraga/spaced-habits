@@ -57,10 +57,15 @@ struct DependencyTests {
         #expect(model.parentNames(for: question) == ["Gym"])
         let context = try #require(question.parentContext)
         #expect(
-            QuestionCard.contextLine(parentNames: ["Gym"], context: context, coverDays: question.covers.count)
+            QuestionCard.contextLine(
+                parentNames: ["Gym"],
+                context: context,
+                covers: question.covers,
+                today: model.today
+            )
                 == "You did Gym on 4 of the last 6 days."
         )
-        #expect(QuestionCard.prompt(for: question) == "On how many of those 4?")
+        #expect(QuestionCard.prompt(for: question, today: model.today) == "On how many of those 4?")
     }
 
     /// Per-day toggles list only the days Gym was done, when each is exactly known.
@@ -77,7 +82,7 @@ struct DependencyTests {
         )
         let question = try #require(model.questions.first { $0.habitID == protein.id })
         #expect(question.shape == .perDay(days: [days[0], days[2]]))
-        #expect(QuestionCard.prompt(for: question) == "Which of those days?")
+        #expect(QuestionCard.prompt(for: question, today: model.today) == "Which of those days?")
     }
 
     /// Pausing Gym blocks Protein: not asked, and its history shows blocked, not paused.

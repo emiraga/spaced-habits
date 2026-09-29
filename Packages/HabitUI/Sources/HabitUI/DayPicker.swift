@@ -29,9 +29,31 @@ public struct DayPicker: View {
     }
 
     /// The user's calendar (it may not be Gregorian), in UTC.
-    private static var calendar: Calendar {
+    static var calendar: Calendar {
         var calendar = Calendar.current
         calendar.timeZone = .gmt
         return calendar
+    }
+}
+
+/// A `DatePicker` over a wall-clock `TimeOfDay` (notification times, habit due times). Like `DayPicker` it runs
+/// in UTC, over `TimeOfDay.pickerDate`: a time of day, not an instant.
+public struct TimePicker: View {
+    let title: LocalizedStringKey
+    @Binding var time: TimeOfDay
+
+    public init(_ title: LocalizedStringKey, time: Binding<TimeOfDay>) {
+        self.title = title
+        _time = time
+    }
+
+    public var body: some View {
+        DatePicker(
+            title,
+            selection: Binding(get: { time.pickerDate }, set: { time = TimeOfDay(pickerDate: $0) }),
+            displayedComponents: .hourAndMinute
+        )
+        .environment(\.timeZone, .gmt)
+        .environment(\.calendar, DayPicker.calendar)
     }
 }

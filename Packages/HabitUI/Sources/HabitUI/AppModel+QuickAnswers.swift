@@ -20,7 +20,7 @@ public enum AnswerRefusal: LocalizedError, Equatable {
                 bundle: .module
             )
         case .notSingleDay: String(localized: "This question needs the app to answer.", bundle: .module)
-        case .unavailable: String(localized: "That habit is paused today.", bundle: .module)
+        case .unavailable: String(localized: "That habit is paused on that day.", bundle: .module)
         }
     }
 }
@@ -29,11 +29,11 @@ public enum AnswerRefusal: LocalizedError, Equatable {
 /// arrive long after the question was shown, and answers are latest-wins (§4.7), so each is checked
 /// against current truth first: a stale one would silently override a newer answer.
 public extension AppModel {
-    /// Yes / No about today from a widget button or "Log Gym" in Siri or Shortcuts. The question is logged
-    /// as presented now, since widgets plan without logging.
-    func answerToday(_ habitID: UUID, done: Bool, channel: Channel) throws {
+    /// Yes / No about `day` from a widget button (its question's ask day, §4.2) or "Log Gym" in Siri or
+    /// Shortcuts (always today). The question is logged as presented now, since widgets plan without logging.
+    func answer(_ habitID: UUID, day: DayKey, done: Bool, channel: Channel) throws {
         let question = Question(
-            habitID: habitID, covers: today ... today, shape: .singleDay, createdAt: clock.now(),
+            habitID: habitID, covers: day ... day, shape: .singleDay, createdAt: clock.now(),
             presentedAt: clock.now()
         )
         try checkAnswerable(question)
@@ -42,10 +42,13 @@ public extension AppModel {
     }
 
     /// Pauses a habit for `days` days from its ask day, like a card delay ("Delay Gym 3 days" in Shortcuts).
-    func delay(_ habitID: UUID, days: Int) throws {
+    /// Returns the day it resumes.
+    @discardableResult
+    func delay(_ habitID: UUID, days: Int) throws -> DayKey {
         guard let habit = habit(habitID), !habit.isArchived else { throw AnswerRefusal.habitGone(habitID) }
         let start = askDay(of: habit)
         try pause(habitID, from: start, through: start.adding(days: days - 1), reason: .manual)
+        return start.adding(days: days)
     }
 
     /// Throws `AnswerRefusal` unless `question` can still be answered with Yes / No.

@@ -44,7 +44,7 @@ struct WatchHabitView: View {
                         Text("Resumes \(DayFormat.short(resume, today: model.today))")
                             .font(.footnote)
                     } else if let next = model.nextCheckIn(of: habit) {
-                        Text("Next check-in: \(DayFormat.short(next, today: model.today))")
+                        Text("Next check-in: \(DayFormat.checkIn(next, dueTime: habit.dueTime, today: model.today))")
                             .font(.footnote)
                     }
                 }

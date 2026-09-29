@@ -49,13 +49,26 @@ public struct DayCalendar: Sendable, Equatable {
         guard let hour = parts.hour, let minute = parts.minute else {
             preconditionFailure("Gregorian calendar returned incomplete components for \(date)")
         }
-        let civilDate = dueTime.hour < dayStartHour ? today.adding(days: 1) : today
-        let passed = minutesIntoDay(hour: hour, minute: minute) >= minutesIntoDay(
-            hour: dueTime.hour,
-            minute: dueTime.minute
-        )
-            || date >= self.date(civilDate, at: dueTime)
+        let wallClockPassed = minutesIntoDay(hour: hour, minute: minute)
+            >= minutesIntoDay(hour: dueTime.hour, minute: dueTime.minute)
+        let passed = wallClockPassed || date >= self.date(dueTime, onHabitDay: today)
         return passed ? today : today.adding(days: -1)
+    }
+
+    /// The instant at `time` within habit day `day`: a time before `dayStartHour` is on the next civil date
+    /// (§3.1). A time skipped by a DST jump resolves as in `date(_:at:)`.
+    public func date(_ time: TimeOfDay, onHabitDay day: DayKey) -> Date {
+        date(time.hour < dayStartHour ? day.adding(days: 1) : day, at: time)
+    }
+
+    /// The instants of `times` on every habit day, after `start` and before `end`, sorted and distinct: when
+    /// ask days change (§4.2), for widget timelines and replanning an open Today screen.
+    public func dueDates(_ times: [TimeOfDay], after start: Date, before end: Date) -> [Date] {
+        guard start < end else { return [] }
+        let days = dayKey(for: start) ... dayKey(for: end)
+        return Set(days.flatMap { day in times.map { date($0, onHabitDay: day) } })
+            .filter { $0 > start && $0 < end }
+            .sorted()
     }
 
     /// Minutes since the start of the habit day at a local wall-clock time.

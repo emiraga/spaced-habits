@@ -125,6 +125,12 @@ public struct TimeOfDay: Codable, Sendable, Hashable, Comparable {
         self.init(uncheckedHour: hour, minute: minute)
     }
 
+    /// `minutes` after midnight, wrapped into one day.
+    public init(minutesSinceMidnight minutes: Int) {
+        let wrapped = (minutes % 1440 + 1440) % 1440
+        self.init(uncheckedHour: wrapped / 60, minute: wrapped % 60)
+    }
+
     /// For compile-time constants only.
     init(uncheckedHour hour: Int, minute: Int) {
         self.hour = hour

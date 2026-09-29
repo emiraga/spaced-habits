@@ -59,8 +59,13 @@ public struct QuestionCard: View {
         VStack(alignment: .leading, spacing: 12) {
             header
             if let context = question.parentContext {
-                Text(Self.contextLine(parentNames: parentNames, context: context, coverDays: question.covers.count))
-                    .foregroundStyle(.secondary)
+                Text(Self.contextLine(
+                    parentNames: parentNames,
+                    context: context,
+                    covers: question.covers,
+                    today: today
+                ))
+                .foregroundStyle(.secondary)
             }
             Text(prompt)
                 .font(.title3.weight(.semibold))
@@ -107,7 +112,7 @@ public struct QuestionCard: View {
     }
 
     var prompt: String {
-        Self.prompt(for: question)
+        Self.prompt(for: question, today: today)
     }
 
     @ViewBuilder private var controls: some View {
@@ -185,11 +190,15 @@ public struct QuestionCard: View {
     // MARK: Pure helpers (tested)
 
     /// The question. For a gated habit the days are the parents' done days, so it asks about "those".
-    public nonisolated static func prompt(for question: Question) -> String {
+    /// Names the day asked about (§5.2): a question ends on its ask day, today or yesterday (§4.2).
+    public nonisolated static func prompt(for question: Question, today: DayKey) -> String {
         let gated = question.parentContext != nil
+        let yesterday = question.covers.upperBound < today
         switch question.shape {
         case .singleDay:
-            return String(localized: "Done today?", bundle: .module)
+            return yesterday
+                ? String(localized: "Done yesterday?", bundle: .module)
+                : String(localized: "Done today?", bundle: .module)
         case .perDay:
             return gated
                 ? String(localized: "Which of those days?", bundle: .module)
@@ -197,30 +206,44 @@ public struct QuestionCard: View {
         case .count(1) where gated:
             return String(localized: "Done on that day?", bundle: .module)
         case let .count(total):
-            return gated
-                ? String(localized: "On how many of those \(total)?", bundle: .module)
+            if gated {
+                return String(localized: "On how many of those \(total)?", bundle: .module)
+            }
+            return yesterday
+                ? String(localized: "How many of the \(total) days through yesterday?", bundle: .module)
                 : String(localized: "How many of the last \(total) days?", bundle: .module)
         }
     }
 
-    /// "You did Gym on 4 of the last 6 days." (§4.5)
+    /// "You did Gym on 4 of the last 6 days." (§4.5), or "… through yesterday." when `covers` end before today.
     public nonisolated static func contextLine(
         parentNames: [String],
         context: ParentContext,
-        coverDays: Int
+        covers: ClosedRange<DayKey>,
+        today: DayKey
     ) -> String {
         let parents = parentNames.isEmpty
             ? String(localized: "the habits this depends on", bundle: .module)
             : parentNames.formatted(.list(type: .and))
-        if coverDays == 1 {
-            return String(localized: "You did \(parents) today.", bundle: .module)
-        }
-        return context.parentDoneDays == coverDays
-            ? String(localized: "You did \(parents) on all of the last \(coverDays) days.", bundle: .module)
-            : String(
-                localized: "You did \(parents) on \(context.parentDoneDays) of the last \(coverDays) days.",
+        let days = covers.count
+        let done = context.parentDoneDays
+        switch (covers.upperBound < today, days == 1, done == days) {
+        case (false, true, _): return String(localized: "You did \(parents) today.", bundle: .module)
+        case (true, true, _): return String(localized: "You did \(parents) yesterday.", bundle: .module)
+        case (false, false, true):
+            return String(localized: "You did \(parents) on all of the last \(days) days.", bundle: .module)
+        case (false, false, false):
+            return String(localized: "You did \(parents) on \(done) of the last \(days) days.", bundle: .module)
+        case (true, false, true):
+            return String(
+                localized: "You did \(parents) on all of the \(days) days through yesterday.",
                 bundle: .module
             )
+        case (true, false, false):
+            return String(
+                localized: "You did \(parents) on \(done) of the \(days) days through yesterday.", bundle: .module
+            )
+        }
     }
 
     /// None / Some / Most / All → 0 / round(0.35K) / round(0.75K) / K (§5.2).

@@ -2,7 +2,7 @@ import HabitCore
 import HabitUI
 import SwiftUI
 
-/// Name, emoji, color, importance, vacation behavior, depends-on, cluster, target and recall gap
+/// Name, emoji, color, importance, due time, vacation behavior, depends-on, cluster, target and recall gap
 /// (DESIGN.md §5.1 screen 3).
 struct HabitEditorView: View {
     let isNew: Bool
@@ -40,6 +40,7 @@ struct HabitEditorView: View {
             } footer: {
                 Text("More important habits are asked first when several are due.")
             }
+            dueTimeSection
             Section {
                 Toggle("Keep asking during vacation", isOn: keepOnVacation)
             } footer: {
@@ -100,6 +101,25 @@ struct HabitEditorView: View {
         }
         .confirmingDeletion(of: $deleting) { dismiss() }
         .errorAlert(errors)
+    }
+
+    /// Off by default: the habit asks about today all day (§4.2).
+    private var dueTimeSection: some View {
+        Section {
+            Toggle("Due time", isOn: Binding(
+                get: { draft.dueTime != nil },
+                set: { draft.dueTime = $0 ? draft.dueTime ?? Habit.defaultDueTime : nil }
+            ))
+            if let dueTime = draft.dueTime {
+                TimePicker("Time", time: Binding(get: { dueTime }, set: { draft.dueTime = $0 }))
+            }
+        } footer: {
+            if let dueTime = draft.dueTime {
+                Text("Ask about today from \(DayFormat.time(dueTime)), about yesterday before it.")
+            } else {
+                Text("For a habit you do later in the day: until then, check-ins ask about yesterday.")
+            }
+        }
     }
 
     /// Archive keeps the history; delete doesn't. Both act on the stored habit, not the unsaved draft.
