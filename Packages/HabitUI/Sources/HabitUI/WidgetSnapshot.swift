@@ -14,6 +14,8 @@ public struct WidgetSnapshot: Sendable, Hashable {
         public let isYesNo: Bool
         /// The day a Yes / No answers: the question's ask day (§4.2).
         public let day: DayKey
+        /// "Yesterday" when `day` isn't today (before a due time), for sizes too small for `body`.
+        public let dayLabel: String?
     }
 
     /// A habit with today's glyph. Its `id` is the habit's.
@@ -45,7 +47,8 @@ public struct WidgetSnapshot: Sendable, Hashable {
                 body: String(localized: "Done today?", bundle: .module),
                 colorHex: HabitPalette.colors[0],
                 isYesNo: true,
-                day: DayKey(dayNumber: 0)
+                day: DayKey(dayNumber: 0),
+                dayLabel: nil
             )],
             dueCount: 1,
             habits: [
@@ -76,7 +79,11 @@ public extension AppModel {
                 let text = QuestionText(question, habits: truth.habits, today: today)
                 return WidgetSnapshot.Card(
                     id: habit.id, title: text.title, body: text.body, colorHex: habit.colorHex,
-                    isYesNo: question.shape == .singleDay, day: question.covers.upperBound
+                    isYesNo: question.shape == .singleDay, day: question.covers.upperBound,
+                    dayLabel: question.covers.upperBound == today ? nil : DayFormat.short(
+                        question.covers.upperBound,
+                        today: today
+                    )
                 )
             },
             dueCount: dueHabitIDs.count,

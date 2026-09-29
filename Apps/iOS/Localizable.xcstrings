@@ -418,7 +418,13 @@
     "Logged %@ as not done today." : {
 
     },
+    "Logged %@ as not done yesterday." : {
+
+    },
     "Logged %@ for today." : {
+
+    },
+    "Logged %@ for yesterday." : {
 
     },
     "Look back up to %lld days" : {
@@ -579,7 +585,7 @@
     "Reason" : {
 
     },
-    "Records whether you did a habit today." : {
+    "Records whether you did a habit today, or yesterday if it's before the habit's due time." : {
 
     },
     "Remember choices for next time" : {
@@ -668,6 +674,9 @@
 
     },
     "This vacation is scheduled." : {
+
+    },
+    "This widget is out of date. Open Spaced Habits to refresh." : {
 
     },
     "Time" : {

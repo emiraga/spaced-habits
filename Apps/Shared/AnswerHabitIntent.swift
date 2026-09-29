@@ -31,7 +31,8 @@ struct AnswerHabitIntent: AppIntent {
     static let isDiscoverable = false
 
     @Parameter(title: "Habit ID") var habitID: String
-    /// `yyyy-MM-dd`: the question's ask day (§4.2). Nil in buttons from before due times, which answered today.
+    /// `yyyy-MM-dd`: the question's ask day (§4.2). Nil in buttons from timelines before due times, which
+    /// are refused: the day they meant is unknown.
     @Parameter(title: "Day") var day: String?
     @Parameter(title: "Done") var done: Bool
 
@@ -46,12 +47,9 @@ struct AnswerHabitIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult {
         guard let id = UUID(uuidString: habitID) else { throw IntentError.invalidHabitID(habitID) }
-        let model = try IntentModel.open()
-        let answered = try day.map { string in
-            guard let day = DayKey(string) else { throw IntentError.invalidDay(string) }
-            return day
-        } ?? model.today
-        try model.answer(id, day: answered, done: done, channel: .widget)
+        guard let day else { throw IntentError.missingDay }
+        guard let answered = DayKey(day) else { throw IntentError.invalidDay(day) }
+        try IntentModel.open().answer(id, day: answered, done: done, channel: .widget)
         return .result()
     }
 }
@@ -59,11 +57,13 @@ struct AnswerHabitIntent: AppIntent {
 enum IntentError: LocalizedError {
     case invalidHabitID(String)
     case invalidDay(String)
+    case missingDay
 
     var errorDescription: String? {
         switch self {
         case let .invalidHabitID(id): String(localized: "\(id) is not a habit ID.")
         case let .invalidDay(day): String(localized: "\(day) is not a day.")
+        case .missingDay: String(localized: "This widget is out of date. Open Spaced Habits to refresh.")
         }
     }
 }

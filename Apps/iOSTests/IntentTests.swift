@@ -56,13 +56,15 @@ struct IntentTests {
         }
     }
 
-    /// A button from a timeline written before due times carries no day: it answers today, as it used to.
-    @Test func answerHabitWithoutADayAnswersToday() async throws {
+    /// A button from a timeline written before due times carries no day: refused rather than guessed.
+    @Test func answerHabitWithoutADayIsRefused() async throws {
         let intent = AnswerHabitIntent()
         intent.habitID = gym.id.uuidString
         intent.done = true
-        _ = try await withLiveModel { try await intent.perform() }
-        #expect(model.truth.answers.last?.covers == model.today ... model.today)
+        await #expect(throws: IntentError.self) {
+            _ = try await withLiveModel { try await intent.perform() }
+        }
+        #expect(model.truth.answers.isEmpty)
     }
 
     @Test func delayHabitPausesFromToday() async throws {

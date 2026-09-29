@@ -43,10 +43,13 @@ struct HabitQuery: EntityStringQuery {
     }
 }
 
-/// "Log Gym in Spaced Habits": Yes (or No) for today.
+/// "Log Gym in Spaced Habits": Yes (or No) for the day its card asks about: yesterday before its due time,
+/// else today (§4.2, §6).
 struct LogHabitIntent: AppIntent {
     static let title: LocalizedStringResource = "Log Habit"
-    static let description = IntentDescription("Records whether you did a habit today.")
+    static let description = IntentDescription(
+        "Records whether you did a habit today, or yesterday if it's before the habit's due time."
+    )
 
     @Parameter(title: "Habit") var habit: HabitEntity
     @Parameter(title: "Done", default: true) var done: Bool
@@ -58,8 +61,14 @@ struct LogHabitIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let model = try IntentModel.open()
-        try model.answer(habit.id, day: model.today, done: done, channel: .shortcut)
-        return .result(dialog: done ? "Logged \(habit.name) for today." : "Logged \(habit.name) as not done today.")
+        let day = try model.log(habit.id, done: done, channel: .shortcut)
+        let dialog: IntentDialog = switch (day == model.today, done) {
+        case (true, true): "Logged \(habit.name) for today."
+        case (true, false): "Logged \(habit.name) as not done today."
+        case (false, true): "Logged \(habit.name) for yesterday."
+        case (false, false): "Logged \(habit.name) as not done yesterday."
+        }
+        return .result(dialog: dialog)
     }
 }
 

@@ -57,6 +57,10 @@ private struct CardView: View {
                 .font(compact ? .headline : .subheadline.bold())
                 .foregroundStyle(compact ? Color.primary : Color(hex: card.colorHex))
                 .lineLimit(1)
+            if compact, let dayLabel = card.dayLabel {
+                // Too small for the prompt: say which day Yes / No answers (§4.2).
+                Text(dayLabel).font(.caption).foregroundStyle(.secondary)
+            }
             if !compact {
                 Text(card.body)
                     .font(.caption)

@@ -65,23 +65,28 @@ struct DueTimeTests {
         #expect(evening.questions.first?.covers.upperBound == start)
     }
 
-    @Test func widgetAnswersItsCardsDayAndLogAnswersToday() throws {
+    @Test func widgetCardNamesAndAnswersYesterday() throws {
         let app = try model(hour: 12)
         let card = try #require(app.widgetSnapshot().cards.first)
         #expect(card.isYesNo && card.day == start.adding(days: -1))
-        #expect(card.body == "Done yesterday?")
+        #expect(card.body == "Done yesterday?" && card.dayLabel == "Yesterday")
         try app.answer(card.id, day: card.day, done: true, channel: .widget)
         #expect(app.truth.answers.last?.covers == card.day ... card.day)
-        try app.answer(gym.id, day: app.today, done: false, channel: .shortcut)
-        #expect(app.truth.answers.last?.covers == start ... start)
-        #expect(try model(hour: 18).questions.isEmpty)
+        #expect(app.questions.isEmpty)
+        let evening = try #require(try model(hour: 18).widgetSnapshot().cards.first)
+        #expect(evening.day == start && evening.dayLabel == nil && evening.body == "Done today?")
     }
 
-    @Test func logBeforeTheDueTimeLeavesYesterdayInferred() throws {
+    @Test func logAnswersTheAskDay() throws {
         let app = try model(hour: 12)
-        try app.answer(gym.id, day: app.today, done: true, channel: .shortcut)
-        #expect(app.questions.isEmpty)
-        #expect(app.projected.records[gym.id]?[start.adding(days: -1)]?.source != .observed)
+        #expect(try app.log(gym.id, done: true, channel: .shortcut) == start.adding(days: -1))
+        #expect(app.truth.answers.last?.covers == start.adding(days: -1) ... start.adding(days: -1))
+        // Yesterday is answered now; today waits for the due time.
+        #expect(throws: AnswerRefusal.alreadyCovered(through: start.adding(days: -1))) {
+            try app.log(gym.id, done: true, channel: .shortcut)
+        }
+        let evening = try model(hour: 18)
+        #expect(try evening.log(gym.id, done: false, channel: .shortcut) == start)
     }
 
     @Test func timelineHasAnEntryAtTheDueTime() throws {

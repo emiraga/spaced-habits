@@ -29,8 +29,18 @@ public enum AnswerRefusal: LocalizedError, Equatable {
 /// arrive long after the question was shown, and answers are latest-wins (§4.7), so each is checked
 /// against current truth first: a stale one would silently override a newer answer.
 public extension AppModel {
-    /// Yes / No about `day` from a widget button (its question's ask day, §4.2) or "Log Gym" in Siri or
-    /// Shortcuts (always today). The question is logged as presented now, since widgets plan without logging.
+    /// "Log Gym" in Siri or Shortcuts: Yes / No about the habit's ask day, like its card (§4.2), so before the
+    /// due time it answers yesterday. Returns the day answered.
+    @discardableResult
+    func log(_ habitID: UUID, done: Bool, channel: Channel) throws -> DayKey {
+        guard let habit = habit(habitID), !habit.isArchived else { throw AnswerRefusal.habitGone(habitID) }
+        let day = askDay(of: habit)
+        try answer(habitID, day: day, done: done, channel: channel)
+        return day
+    }
+
+    /// Yes / No about `day` from a widget button (its question's ask day, §4.2). The question is logged as
+    /// presented now, since widgets plan without logging.
     func answer(_ habitID: UUID, day: DayKey, done: Bool, channel: Channel) throws {
         let question = Question(
             habitID: habitID, covers: day ... day, shape: .singleDay, createdAt: clock.now(),

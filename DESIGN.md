@@ -630,9 +630,9 @@ yesterday.
   with today's glyphs; a row deep-links to habit detail (`DeepLink`: `spacedhabits://habit/<id>`,
   `spacedhabits://today`).
 - App Intents: `AnswerHabitIntent(habitID, day, done)` for the widget buttons (`day` is the question's
-  ask day, §4.2; a button from an older timeline without one answers today; not discoverable in
+  ask day, §4.2; a button from an older timeline without one is refused; not discoverable in
   Shortcuts; `Apps/Shared`, so it runs in the widget extension), and in the app only
-  `LogHabitIntent(habit, done = true)`, `DelayHabitIntent(habit, days)` (a pause from the habit's ask day, like a card delay) and
+  `LogHabitIntent(habit, done = true)` (the habit's ask day, below), `DelayHabitIntent(habit, days)` (a pause from the habit's ask day, like a card delay) and
   `ReviewHabitsIntent()` (opens Today), with `HabitEntity` / `HabitQuery` over active habits. Questions
   are planned lazily and widgets don't log them (below), so a button carries the habit, not a question
   ID. App Shortcuts: "Log \(habit) in Spaced Habits", "Delay \(habit) in …", "Review habits in …".
@@ -653,9 +653,11 @@ yesterday.
   so it doesn't log to `Truth.questions`. A Yes / No from a widget or Siri is
   `AppModel.answer(habitID, day:, done:, channel:)`, which logs a single-day question presented at the
   tap. Like a notification action (§8) it goes through `checkAnswerable` and throws `AnswerRefusal`
-  if the habit is archived, paused or blocked on that day, or the day is already covered. A widget
-  answers its question's ask day; "Log <habit>" always answers today, even before the due time (a
-  morning gym session), and an unanswered yesterday then stays inferred like any day an answer skips.
+  if the habit is archived, paused or blocked on that day, or the day is already covered. Before a due
+  time nothing outside the app answers today: a widget answers its question's ask day and says which
+  day in every size (the Lock Screen and Smart Stack card adds a "Yesterday" line), and "Log <habit>"
+  (`AppModel.log`) answers the habit's ask day too, naming it in its reply ("Logged Gym for
+  yesterday."); with yesterday already covered it is refused until the due time.
   Siri and Shortcuts answers use `Channel.shortcut`.
 - Timeline: one entry now, one at each active habit's due time before the next day boundary, and one
   at that boundary (`WidgetTimeline`). Otherwise the plan only changes when truth does, and every
