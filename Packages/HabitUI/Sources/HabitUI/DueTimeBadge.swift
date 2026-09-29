@@ -1,7 +1,8 @@
 import HabitCore
 import SwiftUI
 
-/// A clock and "18:00": a habit's due time in the phone's and the watch's habit lists (DESIGN.md §5.1, §7).
+/// A clock and "18:00" in a capsule: a habit's due time in the phone's and the watch's habit lists (DESIGN.md §5.1,
+/// §7).
 public struct DueTimeBadge: View {
     let time: TimeOfDay
 
@@ -16,6 +17,10 @@ public struct DueTimeBadge: View {
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
             .lineLimit(1)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(.fill.tertiary, in: Capsule())
+            .overlay(Capsule().strokeBorder(.separator, lineWidth: 0.5))
             .accessibilityLabel(DayFormat.dueFrom(time))
     }
 }
