@@ -10,7 +10,7 @@ final class DependencyFlowUITests: UITestCase {
         app.buttons["Add habit"].tap()
         app.textFields["Name"].tap()
         app.textFields["Name"].typeText("Protein\n")
-        app.buttons["🏋️ Gym"].tap()
+        scrollTo(app.buttons["🏋️ Gym"]).tap()
         XCTAssertTrue(app.buttons["🏋️ Gym"].isSelected)
         app.swipeUp()
         attachScreenshot("editor-depends-on")
@@ -27,7 +27,7 @@ final class DependencyFlowUITests: UITestCase {
         // Gym → Protein → Gym is refused in the editor.
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Gym,'")).firstMatch.tap()
         app.buttons["Edit"].tap()
-        app.buttons["Protein"].tap()
+        scrollTo(app.buttons["Protein"]).tap()
         let refusal = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'that would make a loop'"))
         XCTAssertTrue(appears(refusal.firstMatch))
         XCTAssertFalse(app.buttons["Protein"].isSelected)
