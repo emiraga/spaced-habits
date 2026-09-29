@@ -119,4 +119,16 @@ struct DueTimeTests {
         )
         #expect(content.body == "Done yesterday?")
     }
+
+    /// Before the due time the due marker sits on yesterday; from it on, on today (§4.2).
+    @Test func dueGlyphMarksTheAskDay() throws {
+        let noon = try model(hour: 12)
+        #expect(noon.todayStatus(of: gym.id) == .notDue)
+        #expect(noon.recentStatuses(of: gym).map(\.status) == [.done, .due, .notDue])
+        #expect(noon.widgetSnapshot().habits.first?.status == .notDue)
+        let evening = try model(hour: 18)
+        #expect(evening.todayStatus(of: gym.id) == .due)
+        #expect(evening.recentStatuses(of: gym).map(\.status).last == .due)
+        #expect(evening.recentStatuses(of: gym).map(\.status)[1] != .due)
+    }
 }

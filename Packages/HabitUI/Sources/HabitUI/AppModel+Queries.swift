@@ -22,9 +22,21 @@ public extension AppModel {
         (projected.records[habitID] ?? [:]).values.sorted { $0.day > $1.day }
     }
 
-    /// Today's glyph in the habit list (§5.1).
+    /// Today's glyph in the habit list (§5.1). Before a due time it is "not due": the question is about
+    /// yesterday (§4.2).
     func todayStatus(of habitID: UUID) -> DayStatus {
-        DayStatus.today(record: projected.records[habitID]?[today], isDue: dueHabitIDs.contains(habitID))
+        status(of: habitID, on: today)
+    }
+
+    /// A day's glyph. A due habit's ask day shows as due until answered, today as due or not due; earlier
+    /// days show their records.
+    func status(of habitID: UUID, on day: DayKey) -> DayStatus {
+        let record = projected.records[habitID]?[day]
+        let isDue = dueHabitIDs.contains(habitID) && habit(habitID).map(askDay(of:)) == day
+        if day == today || isDue {
+            return DayStatus.pending(record: record, isDue: isDue)
+        }
+        return record.map(DayStatus.init(record:)) ?? .unknown
     }
 
     /// Mean value over the last `days` days that carry evidence (observed, aggregated, Health), and how
@@ -63,15 +75,10 @@ public extension AppModel {
 
 public extension AppModel {
     /// The glyphs of the last `days` days, oldest first, from the habit's first day at the earliest: the
-    /// watch's 7-day strip (§7). Today shows as in the habit list (due / not due unless answered).
+    /// watch's 7-day strip (§7). The day asked about shows as due (yesterday before a due time, §4.2).
     func recentStatuses(of habit: Habit, days: Int = 7) -> [(day: DayKey, status: DayStatus)] {
         let first = max(habit.createdDay, today.adding(days: 1 - days))
         guard first <= today else { return [] }
-        return (first ... today).map { day in
-            if day == today {
-                return (day, todayStatus(of: habit.id))
-            }
-            return (day, projected.records[habit.id]?[day].map(DayStatus.init(record:)) ?? .unknown)
-        }
+        return (first ... today).map { ($0, status(of: habit.id, on: $0)) }
     }
 }

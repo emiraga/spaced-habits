@@ -21,13 +21,13 @@ struct DayStatusTests {
     }
 
     @Test func todayShowsDueOrNotDueUntilAnswered() {
-        #expect(DayStatus.today(record: record(.inferred), isDue: true) == .due)
-        #expect(DayStatus.today(record: record(.inferred), isDue: false) == .notDue)
-        #expect(DayStatus.today(record: record(.unknown), isDue: true) == .due)
-        #expect(DayStatus.today(record: nil, isDue: false) == .notDue)
+        #expect(DayStatus.pending(record: record(.inferred), isDue: true) == .due)
+        #expect(DayStatus.pending(record: record(.inferred), isDue: false) == .notDue)
+        #expect(DayStatus.pending(record: record(.unknown), isDue: true) == .due)
+        #expect(DayStatus.pending(record: nil, isDue: false) == .notDue)
         // "Don't remember" is an answer.
-        #expect(DayStatus.today(record: record(.unknown, questionID: UUID()), isDue: false) == .unknown)
-        #expect(DayStatus.today(record: record(.observed), isDue: false) == .done)
+        #expect(DayStatus.pending(record: record(.unknown, questionID: UUID()), isDue: false) == .unknown)
+        #expect(DayStatus.pending(record: record(.observed), isDue: false) == .done)
     }
 
     @Test func historyTextMarksCountsAndEstimates() {

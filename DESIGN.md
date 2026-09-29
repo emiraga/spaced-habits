@@ -543,7 +543,9 @@ yesterday.
    `AppModel.activeHabits` is this order flattened, so the watch, widgets and Siri follow it. A
    long-press on a habit opens a menu: Edit, Pause… (as from habit detail), Archive, Delete…; dragging
    from the press reorders instead. After an answer, an Undo bar shows (§5.2). Until today is answered its record is
-   only the model's guess, so the list shows ○ due or · not due instead (`DayStatus.today`); history
+   only the model's guess, so the list shows ○ due or · not due instead (`DayStatus.pending`). ○ marks the
+   day being asked about: before a due time that is yesterday, so today shows · and the watch's 7-day
+   strip and the status widget put ○ on yesterday (`AppModel.status(of:on:)`, §4.2); history
    rows show ≈ / ? for such days. Aggregated (answered as a count) and inferred (no answer; filled in
    by the model) never share a glyph (§1.1). Pull-to-refresh replans, and an open Today replans by
    itself at the next due time (§4.2). Empty state: "Nothing to ask.

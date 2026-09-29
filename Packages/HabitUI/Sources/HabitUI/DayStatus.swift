@@ -3,7 +3,8 @@ import HabitCore
 /// A habit-day's glyph (DESIGN.md §5.1). Aggregated and inferred never share a glyph (§1.1).
 public enum DayStatus: String, Sendable, Hashable, CaseIterable {
     case done, notDone, health, aggregated, inferred, unknown, paused, blocked
-    /// Today only: no answer yet, and the habit is due / not due.
+    /// No answer yet on a day the model only guesses at: the habit is asked about it now (its ask day, §4.2) /
+    /// today isn't asked about (yet).
     case due, notDue
 
     /// The status of a past day in the history list.
@@ -20,9 +21,9 @@ public enum DayStatus: String, Sendable, Hashable, CaseIterable {
         }
     }
 
-    /// Today's status in the habit list: an answer, pause or Health sample shows as such; otherwise the
-    /// record is only the model's guess, and the glyph says whether the habit is due.
-    public static func today(record: DayRecord?, isDue: Bool) -> DayStatus {
+    /// The status of today or of the day a due habit asks about: an answer, pause or Health sample shows as
+    /// such; otherwise the record is only the model's guess, and the glyph says whether that day is asked about.
+    public static func pending(record: DayRecord?, isDue: Bool) -> DayStatus {
         let unanswered: DayStatus = isDue ? .due : .notDue
         guard let record else { return unanswered }
         switch record.source {
@@ -75,7 +76,7 @@ public enum DayStatus: String, Sendable, Hashable, CaseIterable {
         case .unknown: String(localized: "Unknown", bundle: .module)
         case .paused: String(localized: "Paused", bundle: .module)
         case .blocked: String(localized: "Blocked", bundle: .module)
-        case .due: String(localized: "Due today", bundle: .module)
+        case .due: String(localized: "Due", bundle: .module)
         case .notDue: String(localized: "Not due", bundle: .module)
         }
     }
