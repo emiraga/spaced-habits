@@ -1,6 +1,6 @@
-id,name,emoji,color_hex,created_at,created_day,archived_at,kind,importance,target_adherence,max_recall_gap_days,vacation_behavior,cluster_id,health_binding,notes
-00000000-0000-0000-0000-00000000000A,Gym,🏋️,#3366CC,2026-09-17T12:00:00.123Z,2026-09-17,,boolean,high,0.8,7,pause,00000000-0000-0000-0000-000000000001,workout>=30min,
-00000000-0000-0000-0000-00000000000D,Old,,#990099,2026-09-17T12:00:00.123Z,2026-09-17,2026-09-25T12:00:00.123Z,boolean,normal,0.8,7,pause,,,
-00000000-0000-0000-0000-00000000000B,Shake,,#DC3912,2026-09-18T12:00:00.123Z,2026-09-18,,boolean,normal,0.8,7,pause,00000000-0000-0000-0000-000000000001,,
+id,name,emoji,color_hex,created_at,created_day,archived_at,kind,importance,target_adherence,max_recall_gap_days,vacation_behavior,cluster_id,health_binding,notes,list_order
+00000000-0000-0000-0000-00000000000A,Gym,🏋️,#3366CC,2026-09-17T12:00:00.123Z,2026-09-17,,boolean,high,0.8,7,pause,00000000-0000-0000-0000-000000000001,workout>=30min,,1
+00000000-0000-0000-0000-00000000000D,Old,,#990099,2026-09-17T12:00:00.123Z,2026-09-17,2026-09-25T12:00:00.123Z,boolean,normal,0.8,7,pause,,,,
+00000000-0000-0000-0000-00000000000B,Shake,,#DC3912,2026-09-18T12:00:00.123Z,2026-09-18,,boolean,normal,0.8,7,pause,00000000-0000-0000-0000-000000000001,,,
 00000000-0000-0000-0000-00000000000C,"Stretch, ""daily""",,#FF9900,2026-09-19T12:00:00.123Z,2026-09-19,,boolean,normal,0.6,5,keep,,,"After shake,
-before bed"
+before bed",

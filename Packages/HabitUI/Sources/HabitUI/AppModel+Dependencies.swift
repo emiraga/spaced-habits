@@ -73,9 +73,11 @@ public extension AppModel {
 
     // MARK: Clusters
 
-    /// Clusters by name.
+    /// Clusters as the user ordered them (`listOrder`), then by name.
     var clusters: [Cluster] {
-        truth.clusters.sorted { ($0.name, $0.id.uuidString) < ($1.name, $1.id.uuidString) }
+        truth.clusters.sorted {
+            ($0.listOrder ?? .max, $0.name, $0.id.uuidString) < ($1.listOrder ?? .max, $1.name, $1.id.uuidString)
+        }
     }
 
     func cluster(_ id: UUID?) -> Cluster? {
@@ -98,10 +100,12 @@ public extension AppModel {
         Cluster(name: "", colorHex: HabitPalette.colors[truth.clusters.count % HabitPalette.colors.count])
     }
 
-    /// Active habits grouped for the Today list: clusters by name (empty ones left out), then habits in no
-    /// cluster under a nil cluster.
+    /// Active habits grouped for the Today list: clusters in `clusters` order (empty ones left out), then
+    /// habits in no cluster under a nil cluster. Within a group by `listOrder`, then creation.
     var habitsByCluster: [(cluster: Cluster?, habits: [Habit])] {
-        let habits = activeHabits
+        let habits = truth.habits.filter { !$0.isArchived }.sorted {
+            ($0.listOrder ?? .max, $0.createdAt, $0.name) < ($1.listOrder ?? .max, $1.createdAt, $1.name)
+        }
         let grouped: [(cluster: Cluster?, habits: [Habit])] = clusters.map { cluster in
             (cluster, habits.filter { $0.clusterID == cluster.id })
         }

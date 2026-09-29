@@ -143,23 +143,18 @@ struct TodayView: View {
         }
     }
 
-    /// One group per cluster, then habits in none ("Habits", or "Other" when there are clusters).
+    /// One group per cluster, then habits in none ("Habits", or "Other" when there are clusters). Habits
+    /// are dragged within their group and cluster headers among the clusters (§5.1).
     private var habitList: some View {
         let groups = model.habitsByCluster
         return ForEach(groups, id: \.cluster?.id) { group in
-            habitGroup(
-                title: group.cluster?
-                    .name ?? (groups.count > 1 ? String(localized: "Other") : String(localized: "Habits")),
-                habits: group.habits
-            )
+            habitGroup(group.cluster, habits: group.habits, isOnlyGroup: groups.count == 1)
         }
     }
 
-    private func habitGroup(title: String, habits: [Habit]) -> some View {
+    private func habitGroup(_ cluster: Cluster?, habits: [Habit], isOnlyGroup: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title)
-                .font(.headline)
-                .padding(.vertical, 8)
+            groupHeader(cluster, isOnlyGroup: isOnlyGroup)
             ForEach(habits) { habit in
                 NavigationLink(value: habit.id) {
                     HabitRow(
@@ -170,9 +165,34 @@ struct TodayView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .reorderable(TodayDrag(kind: .habit, id: habit.id)) { moved in
+                    errors.attempt { try model.move(habit: moved, to: habit.id) }
+                }
                 Divider()
             }
         }
+    }
+}
+
+extension TodayView {
+    @ViewBuilder
+    private func groupHeader(_ cluster: Cluster?, isOnlyGroup: Bool) -> some View {
+        if let cluster {
+            header(cluster.name)
+                .reorderable(TodayDrag(kind: .cluster, id: cluster.id)) { moved in
+                    errors.attempt { try model.move(cluster: moved, to: cluster.id) }
+                }
+        } else {
+            header(isOnlyGroup ? String(localized: "Habits") : String(localized: "Other"))
+        }
+    }
+
+    private func header(_ title: String) -> some View {
+        Text(title)
+            .font(.headline)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+            .accessibilityAddTraits(.isHeader)
     }
 }
 

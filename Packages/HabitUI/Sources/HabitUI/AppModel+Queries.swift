@@ -3,9 +3,10 @@ import HabitCore
 
 /// Read-only views of the model for the screens.
 public extension AppModel {
-    /// Unarchived habits in creation order.
+    /// Unarchived habits in Today order: by group (`habitsByCluster`), then as the user ordered them
+    /// (`listOrder`), then by creation.
     var activeHabits: [Habit] {
-        truth.habits.filter { !$0.isArchived }.sorted { ($0.createdAt, $0.name) < ($1.createdAt, $1.name) }
+        habitsByCluster.flatMap(\.habits)
     }
 
     func habit(_ id: UUID) -> Habit? {

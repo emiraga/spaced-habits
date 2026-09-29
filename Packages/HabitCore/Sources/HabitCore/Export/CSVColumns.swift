@@ -6,6 +6,7 @@ enum CSVColumns {
     static let habit = [
         "id", "name", "emoji", "color_hex", "created_at", "created_day", "archived_at", "kind", "importance",
         "target_adherence", "max_recall_gap_days", "vacation_behavior", "cluster_id", "health_binding", "notes",
+        "list_order",
     ]
 
     /// Every `habit` column but `id`.
@@ -15,6 +16,7 @@ enum CSVColumns {
             date(habit.archivedAt), habit.kind.rawValue, String(describing: habit.importance),
             String(habit.targetAdherence), String(habit.maxRecallGapDays), habit.vacationBehavior.rawValue,
             id(habit.clusterID), habit.healthBinding.map(healthBinding) ?? "", habit.notes ?? "",
+            habit.listOrder.map(String.init) ?? "",
         ]
     }
 

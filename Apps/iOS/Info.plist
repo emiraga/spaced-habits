@@ -38,5 +38,18 @@
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Spaced Habits list row</string>
+			<key>UTTypeIdentifier</key>
+			<string>ga.emira.spacedhabits.today-row</string>
+		</dict>
+	</array>
 </dict>
 </plist>

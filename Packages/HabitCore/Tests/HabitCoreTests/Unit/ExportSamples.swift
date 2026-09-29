@@ -24,7 +24,7 @@ enum ExportSample {
     /// Every value kind the export writes: all answer, question and pause shapes, both dependency modes, an
     /// archived habit, a Health observation, and text that needs CSV quoting.
     static func truth() throws -> Truth {
-        let cluster = Cluster(id: id(1), name: "Morning", colorHex: "#109618")
+        let cluster = Cluster(id: id(1), name: "Morning", colorHex: "#109618", listOrder: 0)
         let habits = habits(cluster: cluster)
         let revisions = habits.enumerated().map { index, habit in
             HabitRevision(id: id(20 + UInt8(index)), habit: habit, editedAt: habit.createdAt)
@@ -52,7 +52,7 @@ enum ExportSample {
     static func habits(cluster: Cluster) -> [Habit] {
         let gym = Habit(
             id: id(10), name: "Gym", emoji: "🏋️", colorHex: "#3366CC", createdAt: time(-10), createdDay: day(-10),
-            importance: .high, clusterID: cluster.id, healthBinding: .workout(minMinutes: 30)
+            importance: .high, clusterID: cluster.id, healthBinding: .workout(minMinutes: 30), listOrder: 1
         )
         let shake = Habit(
             id: id(11), name: "Shake", colorHex: "#DC3912", createdAt: time(-9), createdDay: day(-9),

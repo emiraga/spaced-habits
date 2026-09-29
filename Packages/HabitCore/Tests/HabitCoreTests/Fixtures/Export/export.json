@@ -111,6 +111,7 @@
     {
       "colorHex" : "#109618",
       "id" : "00000000-0000-0000-0000-000000000001",
+      "listOrder" : 0,
       "name" : "Morning"
     }
   ],
@@ -135,6 +136,7 @@
         "id" : "00000000-0000-0000-0000-00000000000A",
         "importance" : 3,
         "kind" : "boolean",
+        "listOrder" : 1,
         "maxRecallGapDays" : 7,
         "name" : "Gym",
         "targetAdherence" : 0.8,
@@ -227,6 +229,7 @@
       "id" : "00000000-0000-0000-0000-00000000000A",
       "importance" : 3,
       "kind" : "boolean",
+      "listOrder" : 1,
       "maxRecallGapDays" : 7,
       "name" : "Gym",
       "targetAdherence" : 0.8,

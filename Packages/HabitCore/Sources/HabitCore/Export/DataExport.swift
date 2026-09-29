@@ -49,8 +49,10 @@ public struct DataExport: Sendable {
             table(CSVColumns.answer, truth.answers, CSVColumns.values).file("answers.csv"),
             table(CSVColumns.question, truth.questions, CSVColumns.values).file("questions.csv"),
             table(CSVColumns.pause, truth.pauses, CSVColumns.values).file("pauses.csv"),
-            table(["id", "name", "color_hex"], truth.clusters) { [id($0.id), $0.name, $0.colorHex] }
-                .file("clusters.csv"),
+            table(["id", "name", "color_hex", "list_order"], truth.clusters) {
+                [id($0.id), $0.name, $0.colorHex, $0.listOrder.map(String.init) ?? ""]
+            }
+            .file("clusters.csv"),
             dependencies.file("dependencies.csv"),
             table(["id", "habit_id", "day", "sample_id"], truth.healthObservations) {
                 [id($0.id), id($0.habitID), $0.day.description, $0.sampleID]

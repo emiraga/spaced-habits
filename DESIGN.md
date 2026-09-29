@@ -516,8 +516,13 @@ yesterday.
    the name is edited; Skip); notifications (Allow → system prompt, or Not now). Then Today.
 1. **Today** (root). A stack of question cards (≤ session budget), then a compact list of all
    active habits with today's status glyph (✓ observed done, ✗ observed not done, ♥ Health,
-   ◐ aggregated, ≈ inferred, ? unknown, ⏸ paused, ⛔ blocked), grouped by cluster (clusters by name,
-   then "Other"; one "Habits" group without clusters). Until today is answered its record is
+   ◐ aggregated, ≈ inferred, ? unknown, ⏸ paused, ⛔ blocked), grouped by cluster (clusters in the
+   user's order, then by name; then "Other"; one "Habits" group without clusters). Long-press and drag
+   a habit onto another in its group to move it there, or a cluster header onto another header (a
+   private `TodayDrag` type, declared in `project.yml`). The order is `listOrder` on `Habit` and
+   `Cluster` (nil sorts after ordered ones, then by creation or name). A move renumbers the list and
+   saves only what changed, habits without a `HabitRevision` (order isn't history).
+   `AppModel.activeHabits` is this order flattened, so the watch, widgets and Siri follow it. Until today is answered its record is
    only the model's guess, so the list shows ○ due or · not due instead (`DayStatus.today`); history
    rows show ≈ / ? for such days. Aggregated (answered as a count) and inferred (no answer; filled in
    by the model) never share a glyph (§1.1). Pull-to-refresh replans. Empty state: "Nothing to ask.
@@ -767,10 +772,10 @@ Health binding and Settings shows no Health permissions row. See O7.
 ## 11. Export / import
 
 - **CSV** (zip of several files): `days.csv` (habit_id, habit_name, day, value, source,
-  confidence, conditional_denominator_excluded, question_id), `habits.csv`, `habit_revisions.csv`
+  confidence, conditional_denominator_excluded, question_id), `habits.csv` (ending with list_order), `habit_revisions.csv`
   (revision_id, habit_id, edited_at, then the habit's columns), `answers.csv`, `questions.csv`
   (including dismissed ones, with presented_at and dismissed_at), `pauses.csv` (with reason),
-  `clusters.csv`, `dependencies.csv` (habit_id, parent_id, mode), `health_observations.csv`.
+  `clusters.csv` (id, name, color_hex, list_order), `dependencies.csv` (habit_id, parent_id, mode), `health_observations.csv`.
 - **JSON**: one document `{ schemaVersion, exportedAt, settings, habits, habitRevisions, clusters,
   answers, questions, pauses, healthObservations }`, i.e. the full `Truth` (§4.7). Each habit carries
   `"dependencies": [{ "parentID": "...", "mode": "gate" }]`. This is the complete truth set;
@@ -874,11 +879,11 @@ Deliver, in this order (one or more commits each):
    lost). Deleting a habit deletes its revisions, questions, answers, Health observations and its own
    pauses. It is also removed from shared pauses (vacations) and from its children's dependencies.
    Settings → Archived habits lists archived habits with Restore and Delete….
-3. **Reorder habits.** Long-press and drag a habit on Today to move it within its group. The order is
+3. **Reorder habits.** Done (§5.1). Long-press and drag a habit on Today to move it within its group. The order is
    `Habit.listOrder: Int?` (nil sorts after ordered habits, then by creation). A move renumbers the group
    and saves only the habits whose order changed, without a `HabitRevision`, since order isn't history.
    `activeHabits` (Today, watch, pickers) follows this order.
-4. **Reorder and delete clusters.** Drag a cluster's header on Today to reorder groups
+4. **Reorder and delete clusters.** Reordering done (§5.1). Drag a cluster's header on Today to reorder groups
    (`Cluster.listOrder`, same rules; "Other" stays last). The cluster editor gets Delete: the cluster's
    habits move to no cluster, and a habit that later syncs in still naming it is listed under "Other"
    (not held back as a pending reference, §10).

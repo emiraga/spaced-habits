@@ -27,6 +27,8 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
     public var clusterID: UUID?
     public var healthBinding: HealthBinding?
     public var notes: String?
+    /// Position within its Today group (§5.1); nil sorts after ordered habits, by creation.
+    public var listOrder: Int?
 
     public enum ValidationError: Error, Equatable {
         case emptyName
@@ -52,7 +54,8 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
         dependencies: [Dependency] = [],
         clusterID: UUID? = nil,
         healthBinding: HealthBinding? = nil,
-        notes: String? = nil
+        notes: String? = nil,
+        listOrder: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -70,6 +73,7 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
         self.clusterID = clusterID
         self.healthBinding = healthBinding
         self.notes = notes
+        self.listOrder = listOrder
     }
 
     /// Parents that gate this habit (§4.5). Planner, projection and UI read parents only through this.
@@ -160,15 +164,18 @@ public struct Cluster: Identifiable, Codable, Sendable, Hashable {
     public let id: UUID
     public var name: String
     public var colorHex: String
+    /// Position among the Today groups (§5.1); nil sorts after ordered clusters, by name.
+    public var listOrder: Int?
 
     public enum ValidationError: Error, Equatable {
         case emptyName
     }
 
-    public init(id: UUID = UUID(), name: String, colorHex: String) {
+    public init(id: UUID = UUID(), name: String, colorHex: String, listOrder: Int? = nil) {
         self.id = id
         self.name = name
         self.colorHex = colorHex
+        self.listOrder = listOrder
     }
 
     public func validate() throws {

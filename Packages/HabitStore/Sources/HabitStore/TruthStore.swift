@@ -132,6 +132,20 @@ public final class TruthStore {
         return revision
     }
 
+    /// Saves habits moved in the Today list (§5.1), in one save and without revisions: order isn't history.
+    public func save(reordered habits: [Habit], at date: Date) throws {
+        try habits.forEach { try $0.validate() }
+        try upsertAll(.habit, habits, at: date)
+        try commit()
+    }
+
+    /// Saves clusters moved in the Today list (§5.1), in one save.
+    public func save(reordered clusters: [Cluster], at date: Date) throws {
+        try clusters.forEach { try $0.validate() }
+        try upsertAll(.cluster, clusters, at: date)
+        try commit()
+    }
+
     /// Creates or renames a cluster (last writer wins, §10).
     public func save(_ cluster: Cluster, at date: Date) throws {
         try cluster.validate()
@@ -163,18 +177,13 @@ public final class TruthStore {
     /// kept. `date` is the write time, so an imported record also wins on other devices. `changes` must be
     /// validated first (`TruthImport`); its settings are written when `includingSettings`.
     public func save(imported changes: Truth, includingSettings: Bool, at date: Date) throws {
-        func write(_ kind: TruthKind, _ values: [some Encodable & Identifiable<UUID>]) throws {
-            for value in values {
-                try upsert(kind, id: value.id, value, at: date, save: false)
-            }
-        }
-        try write(.habit, changes.habits)
-        try write(.cluster, changes.clusters)
-        try write(.habitRevision, changes.habitRevisions)
-        try write(.question, changes.questions)
-        try write(.answer, changes.answers)
-        try write(.pause, changes.pauses)
-        try write(.healthObservation, changes.healthObservations)
+        try upsertAll(.habit, changes.habits, at: date)
+        try upsertAll(.cluster, changes.clusters, at: date)
+        try upsertAll(.habitRevision, changes.habitRevisions, at: date)
+        try upsertAll(.question, changes.questions, at: date)
+        try upsertAll(.answer, changes.answers, at: date)
+        try upsertAll(.pause, changes.pauses, at: date)
+        try upsertAll(.healthObservation, changes.healthObservations, at: date)
         if includingSettings {
             try upsert(.settings, id: Self.settingsID, changes.settings, at: date, save: false)
         }
@@ -271,6 +280,13 @@ public final class TruthStore {
         unsaved.append(TruthChange(kind: rawKind, id: id, payload: payload, updatedAt: date))
         if save {
             try commit()
+        }
+    }
+
+    /// Writes without saving.
+    private func upsertAll(_ kind: TruthKind, _ values: [some Encodable & Identifiable<UUID>], at date: Date) throws {
+        for value in values {
+            try upsert(kind, id: value.id, value, at: date, save: false)
         }
     }
 

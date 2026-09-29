@@ -43,6 +43,11 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: ga.emira.spacedhabits
             CFBundleURLSchemes: [spacedhabits]
+        # Drag and drop on Today (TodayDrag).
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: ga.emira.spacedhabits.today-row
+            UTTypeDescription: Spaced Habits list row
+            UTTypeConformsTo: [public.data]
         # XcodeGen's defaults would pin these to 1.0 / 1, shadowing the build settings.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)

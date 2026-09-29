@@ -1,6 +1,7 @@
 import HabitCore
 import HabitUI
 import SwiftUI
+import UniformTypeIdentifiers
 
 extension View {
     /// Asks before deleting `habit` and its history on every device (DESIGN.md §10); `onDeleted` runs after
@@ -74,5 +75,48 @@ struct ArchivedHabitsView: View {
 
     private func restore(_ habit: Habit) {
         withAnimation { _ = errors.attempt { try model.restore(habit.id) } }
+    }
+}
+
+/// A habit row or cluster header being dragged on Today (DESIGN.md §5.1). A private type, declared in
+/// `project.yml`, so a row doesn't drop into other apps as text.
+struct TodayDrag: Codable, Transferable {
+    enum Kind: String, Codable {
+        case habit, cluster
+    }
+
+    let kind: Kind
+    let id: UUID
+
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .todayRow)
+    }
+}
+
+extension UTType {
+    static let todayRow = UTType(exportedAs: "ga.emira.spacedhabits.today-row")
+}
+
+extension View {
+    /// Long-press and drag to move onto another item of the same kind; `onDrop` gets the dragged item's ID.
+    func reorderable(_ drag: TodayDrag, onDrop: @escaping (UUID) -> Void) -> some View {
+        modifier(Reorderable(drag: drag, onDrop: onDrop))
+    }
+}
+
+private struct Reorderable: ViewModifier {
+    let drag: TodayDrag
+    let onDrop: (UUID) -> Void
+    @State private var targeted = false
+
+    func body(content: Content) -> some View {
+        content
+            .background(targeted ? Color.accentColor.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 8))
+            .draggable(drag)
+            .dropDestination(for: TodayDrag.self) { items, _ in
+                guard let item = items.first, item.kind == drag.kind, item.id != drag.id else { return false }
+                withAnimation { onDrop(item.id) }
+                return true
+            } isTargeted: { targeted = $0 }
     }
 }
