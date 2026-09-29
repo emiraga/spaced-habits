@@ -31,6 +31,8 @@ or two. The goal is an app that quietly gets out of your way.
 - **Charts that mean something.** Per habit: check-in interval over time and adherence trends.
   Per cluster (habits you group together): how each member is doing and how often connected
   habits happen together. Overall: a "questions per day" line that should keep going down.
+- **Your list, your way.** Drag habits and groups into the order you like, archive what you're done
+  with, delete what you never want to see again, and undo a mistaken tap.
 - **Your data, always.** Every habit and edit, every question asked, and every answer and pause is
   logged and exportable to CSV and JSON at any time.
 

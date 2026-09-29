@@ -13,6 +13,10 @@ habits with a status symbol for today.
 - **Nothing to ask** means no habit needs a check-in right now. The screen tells you which habit is
   next and when.
 - **More…** appears when more habits are due than fit in one session. It shows the next batch.
+- **Reorder:** touch and hold a habit, then drag it onto another habit in the same group to move it
+  there. Drag a cluster's name onto another cluster's name to reorder the groups. The order also
+  applies on Apple Watch.
+- **Quick actions:** touch and hold a habit (without dragging) for Edit, Pause…, Archive and Delete….
 
 ### Status symbols
 
@@ -45,6 +49,9 @@ Every card also has:
 - **Later:** hides the card until the next time you open the app or pull to refresh. Nothing is
   recorded and the habit stays due.
 
+Tapped the wrong answer? For 5 seconds after answering, an **Undo** bar appears at the bottom of the
+screen. Undo removes the answer (and the pause, if you chose Delay…) and brings the card back.
+
 Days older than the question's range aren't asked about. The app estimates them from your usual
 pattern instead, because it's hard to remember that far back accurately.
 
@@ -59,8 +66,12 @@ pattern instead, because it's hard to remember that far back accurately.
   - **Max recall gap:** how many days back a single question may ask about (default 7).
 - **When on vacation:** pause or keep this habit when vacation mode is on.
 - **Depends on:** see *Connected habits* below.
-- **Cluster:** a named group, used to organize the habit list and for group charts.
-- **Archive:** hides the habit and stops asking about it. Its history is kept.
+- **Cluster:** a named group, used to organize the habit list and for group charts. Editing a cluster
+  lets you rename, recolor or delete it; deleting a cluster keeps its habits, just ungrouped.
+- **Archive habit:** hides the habit and stops asking about it. Its history is kept, and you can
+  restore it from Settings → Archived habits.
+- **Delete habit…:** permanently deletes the habit and its whole history on all your devices. Export
+  your data first if you might want it back.
 
 ### Habit detail
 
@@ -141,6 +152,8 @@ as done.
 
 - **Questions per session:** how many cards are shown at once (1–10, default 3).
 - **Day starts at:** answers before this hour count for the previous day. Useful if you're up past midnight.
+- **Archived habits:** restore an archived habit, or swipe left to delete it. Shown only when you
+  have archived habits.
 - **Sync:** habits and answers sync to your other devices through iCloud. Without iCloud everything
   still works on the device.
 - **Your data**
