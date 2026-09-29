@@ -891,10 +891,10 @@ Deliver, in this order (one or more commits each):
 Checkpoint:
 - Unit tests: deletion cascade (answers, own and shared pauses, child edges, cluster references), late
   writes after a deletion stay deleted, JSON import revives a deleted record, reorder renumbering, undo
-  removing the answer and its pause; §4.8 simulations still pass.
-- UI tests: delete a habit from its editor, and it is gone after relaunch; undo an answered card, and
-  it is back.
-- Manually on the phone and watch: delete a habit on the phone, and it disappears from the watch; drag
+  removing the answer and its pause, all through `AppModel` where the screens call it; §4.8 simulations
+  still pass. No new UI tests (AGENTS.md).
+- Manually on the phone and watch: delete a habit from its editor, and it stays gone after relaunch;
+  answer a card and Undo, and the card is back; delete a habit on the phone, and it disappears from the watch; drag
   habits and clusters into a new order, and it survives relaunch and shows on the watch; archive then
   restore a habit with its history intact; delete a cluster, and its habits show under "Other"; the
   long-press menu works. Screenshots in `Docs/checkpoints/m12-*.png`.
@@ -921,7 +921,7 @@ Checkpoint:
 | `HabitCore` determinism | Swift Testing | projection twice → equal; export → import → export equal |
 | `HabitStore` | Swift Testing, in-memory `ModelContainer` | mapping round-trips; CloudKit constraint lint (reflection test: no `.unique`, all relationships optional) |
 | `HabitUI` | Swift Testing + snapshot tests (optional, `swift-snapshot-testing`) | question card shapes, glyphs, chart rendering with fixtures |
-| App | XCTest UI tests, minimal | launch → answer a card → relaunch → state persisted |
+| App | XCTest UI tests, minimal and frozen (no new ones) | launch → answer a card → relaunch → state persisted |
 | Manual | milestone checkpoints (§13) | anything involving notifications, widgets, Health, CloudKit, Watch |
 
 All tests run in `make ci`; `make test` skips the UI tests, which run in `make test-ui`. Anything that needs a physical device or an iCloud account is a
@@ -940,8 +940,9 @@ documented manual checkpoint, not a flaky automated test.
 
 1. Read this document before each milestone; when a decision changes, update the section it
    governs (not a separate log).
-2. Run `make format && make lint && make test` before declaring any task done (add `make test-ui` when
-   the change touches app screens); `make ci` must be green before pushing.
+2. Run `make format && make lint && make test` before declaring any task done; `make ci` must be green
+   before pushing. Don't add new UI tests: they are too slow. Cover behavior with package tests and
+   leave screen checks to the user.
 3. `HabitCore` stays dependency-free and UI-free. If you need a platform API in the engine, you
    are in the wrong module — pass the value in instead.
 4. Commit directly to `main` in small, atomic commits; no branches or pull requests. Include the

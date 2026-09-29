@@ -23,7 +23,7 @@ make setup         # brew bundle + pre-commit install (once)
 make gen           # regenerate SpacedHabits.xcodeproj from project.yml (after any target/file-structure change)
 make build         # iOS simulator build via xcodebuild + xcbeautify
 make test          # packages via `swift test`, app unit tests via xcodebuild (no UI tests)
-make test-ui       # XCUITest smoke flows (~60 s); run when touching app screens
+make test-ui       # existing XCUITest smoke flows (~60 s); run by `make ci`
 make screenshots-watch  # watch app screenshots from a simulated run into build/screenshots/watch
 make clean         # remove every build artifact, DerivedData included; try this first if a build acts oddly
 make lint          # swiftlint --strict
@@ -54,6 +54,8 @@ packages (`unknown argument: '-target-arch-variant'`). The Makefile already uses
   `bundle: .module` inside packages.
 - New tests use Swift Testing (`import Testing`, `@Test`, `#expect`). Every `HabitCore` change
   ships with tests; the §4.8 simulations must keep passing.
+- Don't add new UI tests (XCUITest): they are too slow. Test what you can with fast package tests
+  (e.g. drive screens' behavior through `AppModel` in `HabitUI`); the user checks the screens manually.
 - SwiftData models that sync via CloudKit: no `@Attribute(.unique)`, every property has a
   default or is optional, relationships are optional.
 - `*.xcodeproj` is generated and git-ignored. Edit `project.yml`, then `make gen`.
