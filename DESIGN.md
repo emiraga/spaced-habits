@@ -522,7 +522,9 @@ yesterday.
    private `TodayDrag` type, declared in `project.yml`). The order is `listOrder` on `Habit` and
    `Cluster` (nil sorts after ordered ones, then by creation or name). A move renumbers the list and
    saves only what changed, habits without a `HabitRevision` (order isn't history).
-   `AppModel.activeHabits` is this order flattened, so the watch, widgets and Siri follow it. Until today is answered its record is
+   `AppModel.activeHabits` is this order flattened, so the watch, widgets and Siri follow it. A
+   long-press on a habit opens a menu: Edit, Pause… (as from habit detail), Archive, Delete…; dragging
+   from the press reorders instead. After an answer, an Undo bar shows (§5.2). Until today is answered its record is
    only the model's guess, so the list shows ○ due or · not due instead (`DayStatus.today`); history
    rows show ≈ / ? for such days. Aggregated (answered as a count) and inferred (no answer; filled in
    by the model) never share a glyph (§1.1). Pull-to-refresh replans. Empty state: "Nothing to ask.
@@ -894,7 +896,7 @@ Deliver, in this order (one or more commits each):
 5. **Undo last answer.** Done (§5.2). After a card is answered on Today, an "Answered <habit> · Undo" bar shows for
    5 s. Undo deletes the answer (and the pause a Delay… answer created) and puts the same card back
    on top.
-6. **Long-press actions.** Long-pressing a habit on Today opens a menu with Edit, Pause…, Archive and
+6. **Long-press actions.** Done (§5.1). Long-pressing a habit on Today opens a menu with Edit, Pause…, Archive and
    Delete…. Dragging from that press still reorders.
 
 Checkpoint:

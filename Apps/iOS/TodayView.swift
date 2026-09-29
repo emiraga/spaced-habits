@@ -8,6 +8,10 @@ struct TodayView: View {
     @Environment(ErrorPresenter.self) private var errors
     @Environment(Notifier.self) private var notifier
     @State private var editingDraft: Habit?
+    /// Long-press menu targets (§5.1).
+    @State private var editingHabit: Habit?
+    @State private var pausingHabit: Habit?
+    @State private var deletingHabit: Habit?
     @State private var showingSettings = false
     @State private var showingVacation = false
     @State private var delaying: Question?
@@ -58,6 +62,13 @@ struct TodayView: View {
         .sheet(item: $editingDraft) { draft in
             NavigationStack { HabitEditorView(habit: draft, isNew: true) }
         }
+        .sheet(item: $editingHabit) { habit in
+            NavigationStack { HabitEditorView(habit: habit, isNew: false) }
+        }
+        .sheet(item: $pausingHabit) { habit in
+            NavigationStack { PauseSheet(habit: habit, origin: .detail, today: model.today) }
+        }
+        .confirmingDeletion(of: $deletingHabit)
         .sheet(isPresented: $showingSettings) {
             NavigationStack { SettingsView() }
         }
@@ -166,6 +177,14 @@ struct TodayView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    HabitMenu(
+                        habit: habit,
+                        onEdit: { editingHabit = habit },
+                        onPause: { pausingHabit = habit },
+                        onDelete: { deletingHabit = habit }
+                    )
+                }
                 .reorderable(TodayDrag(kind: .habit, id: habit.id)) { moved in
                     errors.attempt { try model.move(habit: moved, to: habit.id) }
                 }
