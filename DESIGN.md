@@ -904,41 +904,6 @@ M0–M7 and M9–M12 are done; 0.1.0 is submitted for App Store review. M13 is n
 milestone ends with a **checkpoint**: something you can run, tap, or inspect. Don't start the next
 milestone until it passes and `make ci` is green.
 
-### M12 — Quality of life
-
-Deliver, in this order (one or more commits each):
-
-1. **Deletion records** (§10). Done: `TruthStore.delete`, `Truth.removing`.
-2. **Archive and delete habits.** Done. The editor of an existing habit gets Archive (sets `archivedAt`:
-   hidden from Today, the planner and the watch, history kept) and Delete… (confirmation naming what is
-   lost). Deleting a habit deletes its revisions, questions, answers, Health observations and its own
-   pauses. It is also removed from shared pauses (vacations) and from its children's dependencies.
-   Settings → Archived habits lists archived habits with Restore and Delete….
-3. **Reorder habits.** Done (§5.1). Long-press and drag a habit on Today to move it within its group. The order is
-   `Habit.listOrder: Int?` (nil sorts after ordered habits, then by creation). A move renumbers the group
-   and saves only the habits whose order changed, without a `HabitRevision`, since order isn't history.
-   `activeHabits` (Today, watch, pickers) follows this order.
-4. **Reorder and delete clusters.** Done (§5.1). Drag a cluster's header on Today to reorder groups
-   (`Cluster.listOrder`, same rules; "Other" stays last). The cluster editor gets Delete: the cluster's
-   habits move to no cluster, and a habit that later syncs in still naming it is listed under "Other"
-   (not held back as a pending reference, §10).
-5. **Undo last answer.** Done (§5.2). After a card is answered on Today, an "Answered <habit> · Undo" bar shows for
-   5 s. Undo deletes the answer (and the pause a Delay… answer created) and puts the same card back
-   on top.
-6. **Long-press actions.** Done (§5.1). Long-pressing a habit on Today opens a menu with Edit, Pause…, Archive and
-   Delete…. Dragging from that press still reorders.
-
-Checkpoint:
-- Unit tests: deletion cascade (answers, own and shared pauses, child edges, cluster references), late
-  writes after a deletion stay deleted, JSON import revives a deleted record, reorder renumbering, undo
-  removing the answer and its pause, all through `AppModel` where the screens call it; §4.8 simulations
-  still pass. No new UI tests (AGENTS.md).
-- Manually on the phone and watch: delete a habit from its editor, and it stays gone after relaunch;
-  answer a card and Undo, and the card is back; delete a habit on the phone, and it disappears from the watch; drag
-  habits and clusters into a new order, and it survives relaunch and shows on the watch; archive then
-  restore a habit with its history intact; delete a cluster, and its habits show under "Other"; the
-  long-press menus (row and card) work. Screenshots in `Docs/checkpoints/m12-*.png`.
-
 ### M13 — Due time
 
 An optional per-habit due time: before it the habit asks about yesterday, from it on about today

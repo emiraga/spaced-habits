@@ -4,7 +4,7 @@ import HabitStore
 @testable import HabitUI
 import Testing
 
-/// Archiving, deleting and ordering habits and clusters (DESIGN.md §13 M12).
+/// Archiving, deleting and ordering habits and clusters (DESIGN.md §5.1, §10).
 @MainActor
 struct OrganizeTests {
     @Test func archivingHidesAHabitAndRestoringBringsItBackWithItsHistory() throws {

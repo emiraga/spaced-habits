@@ -144,7 +144,7 @@ struct TruthRecordKeepingTests {
         try arrived.validate()
     }
 
-    /// A deleted habit takes its records along and leaves shared pauses and its children (§13 M12).
+    /// A deleted habit takes its records along and leaves shared pauses and its children (§10).
     @Test func removingDeletedHabitsAndClustersCascades() throws {
         let routine = Cluster(name: "Morning", colorHex: "#FFAA00")
         let gym = habit("Gym", clusterID: routine.id)
