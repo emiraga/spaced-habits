@@ -122,4 +122,36 @@ struct OrganizeTests {
         #expect(model.activeHabits.map(\.name) == ["Gym", "Read"])
         #expect(try harness.model().habit(gym.id)?.clusterID == nil)
     }
+
+    @Test func undoingAnAnswerBringsTheSameCardBack() throws {
+        let harness = try Harness()
+        let model = try harness.model()
+        let gym = try addHabit(model, "Gym")
+        let question = try #require(model.questions.first)
+        try model.answer(question, with: .done)
+        #expect(model.questions.isEmpty)
+        #expect(model.lastAnswered?.habitID == gym.id)
+
+        try model.undoLastAnswer()
+        #expect(model.questions == [question])
+        #expect(model.truth.answers.isEmpty)
+        #expect(model.lastAnswered == nil)
+        #expect(model.todayStatus(of: gym.id) == .due)
+        let relaunched = try harness.model()
+        #expect(relaunched.truth.answers.isEmpty)
+        #expect(relaunched.questions.map(\.id) == [question.id])
+    }
+
+    @Test func undoingADelayEndsItsPause() throws {
+        let model = try Harness().model()
+        let gym = try addHabit(model, "Gym")
+        let question = try #require(model.questions.first)
+        try model.delay(question, days: 3, reason: .manual)
+        #expect(model.resumeDay(of: gym.id) != nil)
+
+        try model.undoLastAnswer()
+        #expect(model.truth.pauses.isEmpty)
+        #expect(model.resumeDay(of: gym.id) == nil)
+        #expect(model.questions.map(\.id) == [question.id])
+    }
 }

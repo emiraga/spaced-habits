@@ -2,8 +2,24 @@ import Foundation
 import HabitCore
 import HabitStore
 
-/// Archiving, deleting and ordering habits and clusters (DESIGN.md §5.1, §10).
+/// Archiving, deleting and ordering habits and clusters, and undoing an answer (DESIGN.md §5.1, §5.2, §10).
 public extension AppModel {
+    /// Deletes the last answer and the pause its "Delay…" created, on every device. The question is still
+    /// logged and unanswered, so the same card comes back (`reusableQuestion`).
+    func undoLastAnswer() throws {
+        guard let last = lastAnswered else { return }
+        try store.delete([.answer(last.answerID)] + (last.pauseID.map { [.pause($0)] } ?? []), at: clock.now())
+        truth.answers.removeAll { $0.id == last.answerID }
+        truth.pauses.removeAll { $0.id == last.pauseID }
+        lastAnswered = nil
+        try refresh()
+    }
+
+    /// The undo offer expired.
+    func dismissUndo() {
+        lastAnswered = nil
+    }
+
     /// Archived habits, most recently archived first (Settings → Archived habits).
     var archivedHabits: [Habit] {
         truth.habits.filter(\.isArchived).sorted { ($0.archivedAt ?? .distantPast) > ($1.archivedAt ?? .distantPast) }
@@ -93,3 +109,11 @@ protocol ListOrdered: Identifiable<UUID> {
 
 extension Habit: ListOrdered {}
 extension Cluster: ListOrdered {}
+
+/// What answering a card wrote, so it can be undone.
+public struct AnsweredCard: Equatable, Sendable {
+    public let habitID: UUID
+    let answerID: UUID
+    /// The pause a "Delay…" answer created.
+    let pauseID: UUID?
+}

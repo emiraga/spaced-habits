@@ -20,6 +20,8 @@ public final class AppModel {
     public private(set) var reasons: [UUID: DueReason] = [:]
     /// Due habits beyond the session budget ("More…").
     public private(set) var queuedCount = 0
+    /// The card answered (or delayed) last, until it is undone or `dismissUndo` (§5.2).
+    public internal(set) var lastAnswered: AnsweredCard?
     /// Every habit that is due today, including ones put off with "Later".
     public private(set) var dueHabitIDs: Set<UUID> = []
     /// Debug "advance day" offset; 0 in normal use.
@@ -109,15 +111,21 @@ public final class AppModel {
 
     /// Records an answer. A `.delayed` answer also pauses the habit from today (§4.6).
     public func answer(_ question: Question, with value: AnswerValue) throws {
-        try record(question, value, delayReason: .manual, channel: channel)
+        lastAnswered = try record(question, value, delayReason: .manual, channel: channel)
     }
 
     /// "Delay…" on a card: pauses the habit for `days` days starting today, logged as a `.delayed` answer.
     public func delay(_ question: Question, days: Int, reason: PauseReason) throws {
-        try record(question, .delayed(days: days), delayReason: reason, channel: channel)
+        lastAnswered = try record(question, .delayed(days: days), delayReason: reason, channel: channel)
     }
 
-    func record(_ question: Question, _ value: AnswerValue, delayReason: PauseReason, channel: Channel) throws {
+    @discardableResult
+    func record(
+        _ question: Question,
+        _ value: AnswerValue,
+        delayReason: PauseReason,
+        channel: Channel
+    ) throws -> AnsweredCard {
         let answer = Answer(
             questionID: question.id, habitID: question.habitID, covers: question.covers, value: value,
             answeredAt: clock.now(), timezone: timeZone.identifier, channel: channel
@@ -131,6 +139,7 @@ public final class AppModel {
         }
         shownQuestions[question.habitID] = nil
         try refresh()
+        return AnsweredCard(habitID: question.habitID, answerID: answer.id, pauseID: pause?.id)
     }
 
     /// "Later": logs the dismissal and hides the habit until the next session (§4.4).

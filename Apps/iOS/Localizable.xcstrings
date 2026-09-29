@@ -123,6 +123,9 @@
     "Answer Habit" : {
 
     },
+    "Answered %@" : {
+
+    },
     "Answers given before this hour count for the previous day." : {
 
     },
@@ -656,6 +659,9 @@
 
     },
     "Unchecked habits are paused: no questions, and those days don't count against them." : {
+
+    },
+    "Undo" : {
 
     },
     "Until" : {

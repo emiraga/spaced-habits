@@ -572,6 +572,9 @@ yesterday.
 - Dependent habits show the parent context line ("You did Gym on 4 of 6 days").
 - Answering animates the card away and immediately shows the next one (with Reduce Motion it fades
   instead of sliding). Haptic on answer, on the phone and the watch.
+- On the phone an "Answered <habit> · Undo" bar shows for 5 s after a card is answered or delayed (a
+  newer answer restarts it). Undo (`AppModel.undoLastAnswer`) deletes the answer and the pause a
+  Delay… created (§10); the question stays logged and unanswered, so the same card comes back.
 - Accessibility: VoiceOver reads a card as one "Check-in: <habit>" element and every chart has a
   VoiceOver summary; at accessibility text sizes the card header stacks.
 - Cards must be answerable one-handed; primary actions ≥ 44pt tall.
@@ -888,7 +891,7 @@ Deliver, in this order (one or more commits each):
    (`Cluster.listOrder`, same rules; "Other" stays last). The cluster editor gets Delete: the cluster's
    habits move to no cluster, and a habit that later syncs in still naming it is listed under "Other"
    (not held back as a pending reference, §10).
-5. **Undo last answer.** After a card is answered on Today, an "Answered <habit> · Undo" bar shows for
+5. **Undo last answer.** Done (§5.2). After a card is answered on Today, an "Answered <habit> · Undo" bar shows for
    5 s. Undo deletes the answer (and the pause a Delay… answer created) and puts the same card back
    on top.
 6. **Long-press actions.** Long-pressing a habit on Today opens a menu with Edit, Pause…, Archive and

@@ -39,6 +39,7 @@ struct TodayView: View {
             .padding()
         }
         .refreshable { errors.attempt { try model.startSession() } }
+        .safeAreaInset(edge: .bottom) { undoBar }
         .navigationTitle("Today")
         .toolbar {
             ToolbarItemGroup(placement: .topBarLeading) {
@@ -175,6 +176,31 @@ struct TodayView: View {
 }
 
 extension TodayView {
+    /// "Answered Gym · Undo" for 5 s after a card is answered (§5.2); a newer answer restarts the time.
+    @ViewBuilder private var undoBar: some View {
+        if let answered = model.lastAnswered, let habit = model.habit(answered.habitID) {
+            HStack {
+                Text("Answered \(habit.displayName)")
+                    .lineLimit(1)
+                Spacer()
+                Button("Undo") {
+                    withAnimation { _ = errors.attempt { try model.undoLastAnswer() } }
+                }
+                .fontWeight(.semibold)
+                .frame(minHeight: 44)
+            }
+            .padding(.horizontal)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .padding()
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .task(id: answered) {
+                // Nil when cancelled: the bar went away or a newer answer restarted the time.
+                guard await (try? Task.sleep(for: .seconds(5))) != nil else { return }
+                withAnimation { model.dismissUndo() }
+            }
+        }
+    }
+
     @ViewBuilder
     private func groupHeader(_ cluster: Cluster?, isOnlyGroup: Bool) -> some View {
         if let cluster {
