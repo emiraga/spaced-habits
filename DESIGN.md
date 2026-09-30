@@ -389,9 +389,13 @@ present top settings.sessionBudget (default 3); rest remain queued with a "More�
 
 Questions are created lazily at presentation time (so a habit answered from the watch does not
 leave a stale question on the phone). A `Question` that is dismissed ("Later") is discarded and
-re-planned next session; it is not carried as scheduler state. Every presented question is still
+re-planned; it is not carried as scheduler state. Every presented question is still
 appended to `Truth.questions` with `presentedAt` (and `dismissedAt` on "Later") so history and export
-show what was asked; the planner never reads that log.
+show what was asked; the planner never reads that log. The one exception is outside the planner:
+"Later" snoozes the habit for 15 minutes (`HabitCore` `Snooze`, from `dismissedAt`). Until then the
+habit is passed to the planner as unavailable, in the app and in notification slots, across sessions,
+relaunches and devices. When the snooze ends, an open Today screen replans and the card comes back, and
+a notification asks it again (§8).
 
 ### 4.5 Dependencies
 
@@ -753,6 +757,10 @@ of records is chunked rather than sent one message each): by `sendMessage` (50 p
   `.everyNDays(n)` with n > 7), at most 60 requests (iOS keeps 64). `.everyNDays(n)` fires on every
   n-th day since the last answer (before any, since the first habit's `createdDay`), so it means "if I
   haven't checked in for n days". Slot times follow §3.1.
+- "Later" (a card, the watch or the notification action) snoozes the habit for 15 minutes (§4.4): slots
+  in that time leave it out, and `NotificationPlanner` adds a notification when the snooze ends, asking
+  that habit's question (grouped count as usual). None if the habit is no longer shown then (answered,
+  paused), in quiet hours or on a quiet vacation day.
 - Content: the top-priority question text, so the user can answer without opening anything.
   Group multiple due habits into one notification ("3 habits to review") when > 1.
 - Silence nudge (§4.6) and vacation-quiet toggle both live here. The nudge replaces the first
@@ -821,7 +829,7 @@ Health binding and Settings shows no Health permissions row. See O7.
 - `HabitStore` `SyncMonitor` observes `NSPersistentCloudKitContainer.eventChangedNotification` (SwiftData
   posts it). After each successful import the app calls `AppModel.reload(newSession: false)`: truth is
   re-read and fully re-projected (projection is always a full rebuild, §4.7), and `onRefresh` reloads
-  widgets and notifications. It isn't a new session, so "Later" cards stay hidden.
+  widgets and notifications. It isn't a new session, so "More…" stays expanded.
 - Settings → Sync shows the iCloud account state, the last successful merge and the last sync error;
   a debug button re-reads and re-projects everything.
 - SwiftData only creates the CloudKit schema in the Development environment; TestFlight and App Store
@@ -1037,8 +1045,8 @@ documented manual checkpoint, not a flaky automated test.
 
 Decide during the relevant milestone, then move the answer into the section it governs.
 
-- O2. Should the "Later" dismissal count toward staleness, or be ignored by the scheduler? Ignored
-  for now (it is logged in `Truth.questions` but not read); revisit if users report nagging.
+- O2. Should the "Later" dismissal count toward staleness? Not for now: it only snoozes the habit for
+  15 minutes (§4.4) and the planner's scores ignore it; revisit if users report nagging.
 - O3. Third vacation behavior "keep but relaxed" (reduced target). Not in v1.
 - O4. Import of Loop/Streaks CSVs. Not in v1; JSON import only.
 - O5. Whether to expose model parameters (decay, threshold) in Settings or keep them hidden

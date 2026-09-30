@@ -35,7 +35,7 @@ struct SpacedHabitsWatchApp: App {
         guard case let .success(model) = launch else { return }
         bridge?.model = model
         model.onRefresh = { WidgetCenter.shared.reloadAllTimelines() }
-        // Another device's changes via CloudKit (§10). Not a new session: "Later" cards stay hidden.
+        // Another device's changes via CloudKit (§10). Not a new session: "More…" stays expanded.
         sync.onMerge = {
             errors.attempt { try model.reload(newSession: false) }
         }

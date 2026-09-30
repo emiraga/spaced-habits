@@ -101,13 +101,13 @@ struct DueTimeTests {
     }
 
     @Test func todayReplansAtTheNextDueTime() throws {
-        #expect(try model(hour: 12).nextDueTime == date(hour: 18))
-        #expect(try model(hour: 18).nextDueTime == date(hour: 18, daysLater: 1))
+        #expect(try model(hour: 12).nextReplan == date(hour: 18))
+        #expect(try model(hour: 18).nextReplan == date(hour: 18, daysLater: 1))
         var archived = gym
         archived.archivedAt = noon
         let app = try model(hour: 12)
         try app.save(archived)
-        #expect(app.nextDueTime == nil)
+        #expect(app.nextReplan == nil)
     }
 
     @Test func notificationBeforeTheDueTimeAsksAboutYesterday() throws {

@@ -97,19 +97,27 @@ struct NotificationResponseTests {
         #expect(model.truth.answers.map(\.value) == [.notDone])
     }
 
-    @Test func laterLogsADismissalOnly() throws {
-        let model = try Harness().model()
-        _ = try addHabit(model, "Gym")
+    /// Later on a notification delivered at 20:00 and tapped at 20:00: no answer, the card hides, and the
+    /// question is asked again at 20:15.
+    @Test func laterLogsADismissalAndSnoozes() throws {
+        let harness = try Harness()
+        let model = try harness.model()
+        let gym = try addHabit(model, "Gym")
         try useTwoTimesPerDay(model)
         let planned = try question(model.notificationSnapshot().contents().first)
-        try model.logDelivered([(planned, eightPM)])
-        try model.respond(to: planned, deliveredAt: eightPM, with: .later)
+        let background = try harness.model(at: eightPM)
+        try background.logDelivered([(planned, eightPM)])
+        try background.respond(to: planned, deliveredAt: eightPM, with: .later)
 
-        #expect(model.truth.answers.isEmpty)
-        let logged = model.truth.questions.filter { $0.id == planned.id }
+        #expect(background.truth.answers.isEmpty)
+        #expect(background.questions.isEmpty)
+        let logged = background.truth.questions.filter { $0.id == planned.id }
         #expect(logged.count == 1)
         #expect(logged.first?.presentedAt == eightPM)
-        #expect(logged.first?.dismissedAt == noon)
+        #expect(logged.first?.dismissedAt == eightPM)
+        let again = try #require(background.notificationSnapshot().contents().first)
+        #expect(again.fireAt == eightPM.addingTimeInterval(Snooze.duration))
+        #expect(try question(again).habitID == gym.id)
     }
 
     @Test func deliveredQuestionsAreLoggedOnce() throws {

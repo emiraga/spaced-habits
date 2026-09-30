@@ -35,7 +35,7 @@ struct WatchTodayView: View {
             }
         }
         .navigationTitle("Today")
-        .replanningAtDueTimes(model, errors: errors)
+        .replanningOnTime(model, errors: errors)
         .sheet(item: $delaying) { question in
             WatchDelaySheet(question: question)
         }

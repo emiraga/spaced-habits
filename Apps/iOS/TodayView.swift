@@ -43,7 +43,7 @@ struct TodayView: View {
             .padding()
         }
         .refreshable { errors.attempt { try model.startSession() } }
-        .replanningAtDueTimes(model, errors: errors)
+        .replanningOnTime(model, errors: errors)
         .safeAreaInset(edge: .bottom) { undoBar }
         .navigationTitle("Today")
         .toolbar {

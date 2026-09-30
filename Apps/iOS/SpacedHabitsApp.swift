@@ -55,7 +55,7 @@ struct SpacedHabitsApp: App {
             WidgetCenter.shared.reloadAllTimelines()
         }
         self.notifier = notifier
-        // Another device's changes (§10). Not a new session: "Later" cards stay hidden.
+        // Another device's changes (§10). Not a new session: "More…" stays expanded.
         sync.onMerge = { [errors] in
             errors.attempt { try model.reload(newSession: false) }
         }

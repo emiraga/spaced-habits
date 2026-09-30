@@ -30,7 +30,8 @@ public extension AppModel {
     }
 
     /// Yes / No / Later on a single-day question notification delivered at `deliveredAt`. The question is
-    /// logged as presented then. Throws `AnswerRefusal` if the answer no longer fits.
+    /// logged as presented then; Later snoozes it for `Snooze.duration`. Throws `AnswerRefusal` if the answer no longer
+    /// fits.
     func respond(to question: Question, deliveredAt: Date, with action: NotificationAction) throws {
         try checkAnswerable(question)
         var presented = question
@@ -40,8 +41,10 @@ public extension AppModel {
             try log(presented)
             try record(presented, action == .done ? .done : .notDone, delayReason: .manual, channel: .notification)
         case .later:
+            // Snoozes the habit (§4.4): its card hides, and the plan asks again when the snooze ends.
             presented.dismissedAt = clock.now()
             try log(presented)
+            try refresh()
         }
     }
 

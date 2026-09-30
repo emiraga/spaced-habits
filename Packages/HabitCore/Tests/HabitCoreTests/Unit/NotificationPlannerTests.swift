@@ -34,6 +34,7 @@ private func yes(_ habit: Habit, on day: DayKey) -> Answer {
 
 private func truth(
     _ habits: [Habit],
+    questions: [Question] = [],
     answers: [Answer] = [],
     pauses: [PauseEvent] = [],
     cadence: NotificationSettings.Cadence? = nil,
@@ -49,11 +50,19 @@ private func truth(
         nudgeAfterSilentDays: nudgeAfterSilentDays,
         onlyWhenQuestionsDue: onlyWhenQuestionsDue
     )
-    return Truth(habits: habits, answers: answers, pauses: pauses, settings: settings)
+    return Truth(habits: habits, questions: questions, answers: answers, pauses: pauses, settings: settings)
 }
 
 private func plan(_ truth: Truth, now: Date = noon(today)) throws -> [PlannedNotification] {
     try NotificationPlanner.plan(truth: truth, calendar: calendar, now: now)
+}
+
+/// "Later" on a card for `habit` at `date`.
+private func later(_ habit: Habit, at date: Date) -> Question {
+    Question(
+        habitID: habit.id, covers: today ... today, shape: .singleDay, createdAt: date, presentedAt: date,
+        dismissedAt: date
+    )
 }
 
 private func question(_ notification: PlannedNotification) -> (Question, Int)? {
@@ -214,5 +223,33 @@ struct NotificationPlannerTests {
         archived.archivedAt = noon(today)
         #expect(try plan(truth([])).isEmpty)
         #expect(try plan(truth([archived])).isEmpty)
+    }
+
+    /// "Later" at 19:50: the habit sits out the 20:00 slot and is asked again at 20:05, 15 minutes on.
+    @Test func laterSnoozesAHabitForFifteenMinutes() throws {
+        let (gym, read) = (habit("Gym"), habit("Read"))
+        let dismissed = noon(today).addingTimeInterval(7 * 3600 + 50 * 60)
+        let planned = try plan(truth([gym, read], questions: [later(gym, at: dismissed)]), now: dismissed)
+        let eightPM = noon(today).addingTimeInterval(8 * 3600)
+        #expect(planned.prefix(2).map(\.fireAt) == [eightPM, dismissed.addingTimeInterval(Snooze.duration)])
+        let (slot, slotCount) = try #require(question(planned[0]))
+        #expect(slot.habitID == read.id && slotCount == 1)
+        let (again, againCount) = try #require(question(planned[1]))
+        #expect(again.habitID == gym.id && againCount == 2)
+        #expect(planned[1].day == today)
+    }
+
+    @Test func noSnoozeReminderOnceAnsweredOrInQuietHours() throws {
+        let gym = habit()
+        let dismissed = noon(today)
+        let snoozeEnd = dismissed.addingTimeInterval(Snooze.duration)
+        let answered = try plan(truth([gym], questions: [later(gym, at: dismissed)], answers: [yes(gym, on: today)]))
+        #expect(!answered.contains { $0.fireAt == snoozeEnd })
+        let quiet = try plan(truth(
+            [gym], questions: [later(gym, at: dismissed)], quietHours: QuietHours(startHour: 11, endHour: 13)
+        ))
+        #expect(!quiet.contains { $0.fireAt == snoozeEnd })
+        let over = try plan(truth([gym], questions: [later(gym, at: dismissed)]), now: snoozeEnd)
+        #expect(!over.contains { $0.fireAt <= snoozeEnd })
     }
 }

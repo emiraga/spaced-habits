@@ -6,8 +6,8 @@ import Observation
 /// The app's state and actions (DESIGN.md §4.4, §5): loads truth, projects it, plans the session and
 /// records answers. Every change is persisted before the in-memory state moves on, then re-projected.
 ///
-/// A session starts on launch, on foreground and on pull-to-refresh (`startSession`). "Later" hides a
-/// habit until the next session; a shown card keeps its question (and ID) until it is answered or its
+/// A session starts on launch, on foreground and on pull-to-refresh (`startSession`). "Later" snoozes a
+/// habit for 15 minutes (`Snooze`); a shown card keeps its question (and ID) until it is answered or its
 /// covers change.
 @MainActor
 @Observable
@@ -24,9 +24,9 @@ public final class AppModel {
     public internal(set) var lastAnswered: AnsweredCard?
     /// Every habit that is due on its ask day (§4.2), including ones put off with "Later".
     public private(set) var dueHabitIDs: Set<UUID> = []
-    /// When the next active habit's due time passes on the real clock (§4.2): an open Today screen replans
-    /// then. Nil without due times.
-    public private(set) var nextDueTime: Date?
+    /// When the next active habit's due time passes (§4.2) or the next "Later" snooze ends (§4.4), on the
+    /// real clock: an open Today screen replans then. Nil without either.
+    public private(set) var nextReplan: Date?
     /// Debug "advance day" offset; 0 in normal use.
     public private(set) var dayOffset: Int
     public private(set) var clock: ShiftedClock
@@ -39,7 +39,6 @@ public final class AppModel {
     @ObservationIgnored let timeZone: TimeZone
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let baseClock: @Sendable (DayCalendar) -> any Clock
-    @ObservationIgnored private var laterHabitIDs: Set<UUID> = []
     @ObservationIgnored private var extraBudget = 0
     @ObservationIgnored private var shownQuestions: [UUID: Question] = [:]
     /// False for widget timelines and intents: planning there is speculative, nobody sees the cards.
@@ -90,16 +89,15 @@ public final class AppModel {
 
     // MARK: Session
 
-    /// Re-plans from scratch: "Later" cards come back and "More…" resets.
+    /// Re-plans from scratch: "More…" resets. Snoozed ("Later") cards stay hidden until their snooze ends.
     public func startSession() throws {
-        laterHabitIDs = []
         extraBudget = 0
         try refresh()
     }
 
     /// Re-reads truth, the day offset and the clock (other processes write the store: widgets, Siri, §6;
-    /// CloudKit and the watch merge into it, §10), then re-plans. `newSession` also brings back "Later"
-    /// cards and resets "More…": true on returning to the app, false when a sync lands mid-session.
+    /// CloudKit and the watch merge into it, §10), then re-plans. `newSession` also resets "More…": true on
+    /// returning to the app, false when a sync lands mid-session.
     public func reload(newSession: Bool = true) throws {
         let truth = try store.load()
         let dayOffset = defaults.integer(forKey: Self.dayOffsetKey)
@@ -151,7 +149,7 @@ public final class AppModel {
         return AnsweredCard(habitID: question.habitID, answerID: answer.id, pauseID: pause?.id)
     }
 
-    /// "Later": logs the dismissal and hides the habit until the next session (§4.4).
+    /// "Later": logs the dismissal, which snoozes the habit for `Snooze.duration` (§4.4).
     public func later(_ question: Question) throws {
         var dismissed = question
         dismissed.dismissedAt = clock.now()
@@ -159,7 +157,6 @@ public final class AppModel {
         if let index = truth.questions.firstIndex(where: { $0.id == question.id }) {
             truth.questions[index] = dismissed
         }
-        laterHabitIDs.insert(question.habitID)
         shownQuestions[question.habitID] = nil
         try refresh()
     }
@@ -253,9 +250,11 @@ public final class AppModel {
         )
         var settings = truth.settings
         settings.sessionBudget += extraBudget
+        let now = clock.now()
+        let snoozes = Snooze.ends(truth.questions, after: now)
         let plan = try QuestionPlanner(settings: settings).session(
             habits: truth.habits, states: projected.states, records: projected.records,
-            unavailable: unavailable.union(laterHabitIDs), clock: clock
+            unavailable: unavailable.union(snoozes.keys), clock: clock
         )
         var shown: [Question] = []
         for question in plan.questions {
@@ -278,8 +277,8 @@ public final class AppModel {
         queuedCount = plan.queued.count
         dueHabitIDs = Set(due.map(\.habitID))
         let calendar = try DayCalendar(timeZone: timeZone, dayStartHour: truth.settings.dayStartHour)
-        let now = clock.now()
-        nextDueTime = calendar.dueDates(dueTimes, after: now, before: now.addingTimeInterval(2 * 86400)).first?
+        let nextDueTime = calendar.dueDates(dueTimes, after: now, before: now.addingTimeInterval(2 * 86400)).first
+        nextReplan = ([nextDueTime].compactMap(\.self) + snoozes.values).min()?
             .addingTimeInterval(-TimeInterval(dayOffset) * 86400)
         onRefresh?()
     }
@@ -291,7 +290,7 @@ public final class AppModel {
 
     /// The card already shown for this habit, else one logged before a relaunch or an import that was neither
     /// dismissed nor answered: showing it again logs nothing new, so a re-export matches (§11). A card
-    /// shown again after "Later" is a new question.
+    /// shown again after a "Later" snooze is a new question.
     private func reusableQuestion(like question: Question) -> Question? {
         if let shown = shownQuestions[question.habitID], Self.asksTheSame(shown, question) {
             return shown

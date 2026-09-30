@@ -71,6 +71,11 @@ public struct DayCalendar: Sendable, Equatable {
             .sorted()
     }
 
+    /// The local wall-clock hour of `date` (quiet hours, §8).
+    public func hour(of date: Date) -> Int {
+        gregorian.component(.hour, from: date)
+    }
+
     /// Minutes since the start of the habit day at a local wall-clock time.
     private func minutesIntoDay(hour: Int, minute: Int) -> Int {
         (hour - dayStartHour + 24) % 24 * 60 + minute

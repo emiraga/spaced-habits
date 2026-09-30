@@ -9,7 +9,7 @@ The better you do, the less the app bothers you.
 The main screen. It shows a few question cards at the top (3 by default), then a list of all your
 habits with a status symbol for today.
 
-- **Pull down to refresh** to re-plan the questions. Anything you put off with "Later" comes back.
+- **Pull down to refresh** to re-plan the questions.
 - **Nothing to ask** means no habit needs a check-in right now. The screen tells you which habit is
   next and when.
 - **More…** appears when more habits are due than fit in one session. It shows the next batch.
@@ -46,7 +46,7 @@ Every card also has:
 - **Don't remember:** records that you don't know. It isn't counted as done or not done.
 - **Delay…:** pauses the habit for 1, 3, 7, 14 or a custom number of days, starting today. You won't be
   asked about it during the pause, and the pause doesn't count against you.
-- **Later:** hides the card until the next time you open the app or pull to refresh. Nothing is
+- **Later:** snoozes the habit for 15 minutes. The card comes back then, with a reminder. Nothing is
   recorded and the habit stays due.
 
 Touch and hold a card for a menu with Later, Delay… and Edit (to change, archive or delete the habit).
@@ -118,7 +118,7 @@ Settings → Notifications:
   turn on vacation mode for that period.
 
 A reminder for a single habit can be answered right from the notification with **Yes**, **No** or
-**Later**. Several due habits are combined into one notification ("3 habits to review"), and tapping
+**Later** (which asks again in 15 minutes). Several due habits are combined into one notification ("3 habits to review"), and tapping
 it opens the app. Paused habits never get notifications.
 
 ## Insights

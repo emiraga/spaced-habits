@@ -48,7 +48,7 @@ struct ExportImportTests {
         #expect(restored.projected == original.projected)
         #expect(restored.activeHabits == original.activeHabits)
         #expect(restored.clusters == original.clusters)
-        // The same cards (a fresh session also brings back the "Later" one, as a relaunch would).
+        // The same cards: the imported "Later" dismissal snoozes the same habit.
         try original.startSession()
         #expect(restored.questions.map(\.covers) == original.questions.map(\.covers))
         #expect(restored.questions.map(\.habitID) == original.questions.map(\.habitID))

@@ -54,8 +54,10 @@ struct AppModelTests {
         #expect(meditateCards[5]?.covers == start.adding(days: 1) ... start.adding(days: 4))
     }
 
-    @Test func laterHidesAHabitUntilTheNextSessionAndIsLogged() throws {
-        let model = try Harness().model()
+    /// "Later" snoozes the habit for 15 minutes, across sessions and relaunches, then the card comes back.
+    @Test func laterSnoozesAHabitForFifteenMinutesAndIsLogged() throws {
+        let harness = try Harness()
+        let model = try harness.model()
         let gym = try addHabit(model, "Gym")
         let question = try #require(model.questions.first)
         try model.later(question)
@@ -63,9 +65,15 @@ struct AppModelTests {
         #expect(model.dueHabitIDs == [gym.id])
         #expect(model.todayStatus(of: gym.id) == .due)
         #expect(model.truth.questions.first { $0.id == question.id }?.dismissedAt == noon)
+        #expect(model.nextReplan == noon.addingTimeInterval(Snooze.duration))
         try model.startSession()
-        #expect(model.questions.map(\.habitID) == [gym.id])
-        #expect(model.questions.first?.id != question.id)
+        #expect(model.questions.isEmpty)
+        #expect(try harness.model(at: noon.addingTimeInterval(Snooze.duration - 1)).questions.isEmpty)
+
+        let relaunched = try harness.model(at: noon.addingTimeInterval(Snooze.duration))
+        #expect(relaunched.questions.map(\.habitID) == [gym.id])
+        #expect(relaunched.questions.first?.id != question.id)
+        #expect(relaunched.nextReplan == nil)
     }
 
     @Test func shownQuestionKeepsItsIDAndIsLoggedOnce() throws {

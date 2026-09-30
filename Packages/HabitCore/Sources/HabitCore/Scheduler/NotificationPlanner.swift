@@ -28,7 +28,7 @@ public struct PlannedNotification: Sendable, Hashable {
 ///
 /// A slot's content is what the app would plan at that instant if nothing were answered before it: the
 /// projection and planner run with a clock at the slot, so decay, pauses, gates, spot checks and due times
-/// all apply.
+/// all apply. A "Later" snooze (§4.4) leaves its habits out of slots until it ends, then asks them again then.
 public enum NotificationPlanner {
     /// Days ahead to plan. Background refresh and every app open extend it.
     public static let horizonDays = 7
@@ -44,9 +44,8 @@ public enum NotificationPlanner {
             horizon = max(horizon, today.adding(days: days))
         }
         let nudgeDay = settings.nudgeAfterSilentDays.map { lastActive.adding(days: $0) }
-        let planner = try QuestionPlanner(settings: truth.settings)
+        var slotPlanner = try SlotPlanner(truth: truth, calendar: calendar, now: now)
 
-        var projections: [DayKey: Projected] = [:]
         var questions: [PlannedNotification] = []
         var nudge: PlannedNotification?
         let candidates = slots(settings, calendar: calendar, after: now, through: max(horizon, nudgeDay ?? horizon))
@@ -56,16 +55,14 @@ public enum NotificationPlanner {
                 continue
             }
             guard day <= horizon, isCadenceDay(day, settings.cadence, lastActive: lastActive) else { continue }
-            let clock = FixedClock(date: fireAt, calendar: calendar)
-            let projected = try projections[day] ?? Projection.rebuild(truth, clock: clock)
-            projections[day] = projected
-            let kind = try slotKind(truth: truth, projected: projected, planner: planner, clock: clock)
-            if let kind {
+            if let kind = try slotPlanner.kind(at: fireAt) {
                 questions.append(PlannedNotification(fireAt: fireAt, day: day, kind: kind))
             } else if !settings.onlyWhenQuestionsDue {
                 questions.append(PlannedNotification(fireAt: fireAt, day: day, kind: .reminder))
             }
         }
+        questions += try slotPlanner.snoozeEnds(skipping: Set(questions.map(\.fireAt)))
+        questions.sort { $0.fireAt < $1.fireAt }
         guard let nudge else { return Array(questions.prefix(maxNotifications)) }
         return (questions.prefix(maxNotifications - 1) + [nudge]).sorted { $0.fireAt < $1.fireAt }
     }
@@ -112,21 +109,50 @@ public enum NotificationPlanner {
             lastActive.days(to: day) > 0 && lastActive.days(to: day) % days == 0
         }
     }
+}
 
-    /// The top question and due count at `clock`'s instant, or nil when nothing is due. `projected` is as of
-    /// `clock`'s day (it depends only on the day).
-    private static func slotKind(
-        truth: Truth,
-        projected: Projected,
-        planner: QuestionPlanner,
-        clock: FixedClock
-    ) throws -> PlannedNotification.Kind? {
+/// What a slot asks at an instant, with one projection per habit day.
+private struct SlotPlanner {
+    let truth: Truth
+    let calendar: DayCalendar
+    let planner: QuestionPlanner
+    /// When each current "Later" snooze ends (§4.4).
+    let snoozes: [UUID: Date]
+    private var projections: [DayKey: Projected] = [:]
+
+    init(truth: Truth, calendar: DayCalendar, now: Date) throws {
+        self.truth = truth
+        self.calendar = calendar
+        planner = try QuestionPlanner(settings: truth.settings)
+        snoozes = Snooze.ends(truth.questions, after: now)
+    }
+
+    /// The top question and due count at `fireAt`, or nil when nothing is due. Habits snoozed then are left
+    /// out. With `asking` (a snooze ending), the top question of those habits, or nil when none is shown then.
+    mutating func kind(at fireAt: Date, asking: Set<UUID>? = nil) throws -> PlannedNotification.Kind? {
+        let clock = FixedClock(date: fireAt, calendar: calendar)
+        let projected = try projections[clock.today()] ?? Projection.rebuild(truth, clock: clock)
+        projections[clock.today()] = projected
         let unavailable = try Pauses.unavailable(habits: truth.habits, pauses: truth.pauses, clock: clock)
         let session = try planner.session(
             habits: truth.habits, states: projected.states, records: projected.records,
-            unavailable: unavailable, clock: clock
+            unavailable: unavailable.union(Snooze.snoozed(snoozes, at: fireAt)), clock: clock
         )
-        guard let top = session.questions.first else { return nil }
+        guard let top = session.questions.first(where: { asking?.contains($0.habitID) ?? true }) else { return nil }
         return .question(top, dueCount: session.questions.count + session.queued.count)
+    }
+
+    /// A notification when each snooze ends, asking the snoozed habits again: none at a time in `skipping`
+    /// (a slot fires then), in quiet hours or on a quiet vacation day.
+    mutating func snoozeEnds(skipping: Set<Date>) throws -> [PlannedNotification] {
+        let quietHours = truth.settings.notifications.quietHours
+        return try Set(snoozes.values).sorted().compactMap { end in
+            let day = calendar.dayKey(for: end)
+            guard !skipping.contains(end), !(quietHours?.contains(hour: calendar.hour(of: end)) ?? false),
+                  !Vacation.quietsNotifications(on: day, pauses: truth.pauses),
+                  let kind = try kind(at: end, asking: Set(snoozes.filter { $0.value == end }.keys))
+            else { return nil }
+            return PlannedNotification(fireAt: end, day: day, kind: kind)
+        }
     }
 }

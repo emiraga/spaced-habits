@@ -81,8 +81,8 @@ struct WidgetTests {
         #expect(try processes.store().load().questions == logged)
     }
 
-    /// A CloudKit merge mid-session (§10) drops cards answered elsewhere but keeps "Later" cards hidden;
-    /// returning to the app starts a new session, which brings them back.
+    /// A CloudKit merge mid-session (§10) drops cards answered elsewhere; "Later" cards stay hidden through
+    /// it and through a new session, as their snooze hasn't ended.
     @Test func syncReloadKeepsTheSession() throws {
         let processes = try TwoProcesses()
         defer { processes.cleanUp() }
@@ -97,7 +97,7 @@ struct WidgetTests {
         #expect(processes.app.todayStatus(of: second.habitID) == .done)
 
         try processes.app.reload()
-        #expect(processes.app.questions.map(\.habitID) == [first.habitID])
+        #expect(processes.app.questions.isEmpty)
     }
 
     @Test func timelineHasAnEntryAtTheNextDayBoundary() throws {
