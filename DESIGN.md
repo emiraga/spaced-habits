@@ -564,8 +564,11 @@ yesterday.
    `Cluster` (nil sorts after ordered ones, then by creation or name). A move renumbers the list and
    saves only what changed, habits without a `HabitRevision` (order isn't history).
    `AppModel.activeHabits` is this order flattened, so the watch, widgets and Siri follow it. A
-   long-press on a habit opens a menu: Edit, Pause… (as from habit detail), Archive, Delete…; dragging
-   from the press reorders instead. After an answer, an Undo bar shows (§5.2). Until today is answered its record is
+   long-press on a habit opens a menu: Done today, Edit, Pause… (as from habit detail), Archive, Delete…;
+   dragging from the press reorders instead. "Done today" (also on habit detail, `AppModel.logDoneToday`)
+   answers Yes for today even when the habit isn't due or its due time hasn't come, replacing a "No" for
+   today; it is hidden once today is done or while the habit is paused or blocked, and Undo shows as for a
+   card. It covers today, so an unanswered yesterday before the due time is no longer asked (≈). After an answer, an Undo bar shows (§5.2). Until today is answered its record is
    only the model's guess, so the list shows ○ due or · not due instead (`DayStatus.pending`). ○ marks the
    day being asked about: before a due time that is yesterday, so today shows · and the watch's 7-day
    strip and the status widget put ○ on yesterday (`AppModel.status(of:on:)`, §4.2); history
@@ -577,7 +580,7 @@ yesterday.
    time adds "from <time>", and before the due time its next check-in can be today).
 2. **Habit detail.** Header with current ask interval ("Asking every ~9 days"), adherence 30d (for a
    gated habit both `P(B|A)` "On Gym days" and `P(B)` "All days"), Resumes-on banner if paused (a
-   blocked banner if a parent is), charts (§10), history calendar, dependency list (cluster, depends on,
+   blocked banner if a parent is), "Done today" (as in the Today menu), charts (§10), history calendar, dependency list (cluster, depends on,
    needed by), edit button.
 3. **Habit editor.** Name, emoji (a badge in the habit's color beside the name; tapping it opens the
    emoji keyboard, and picking one closes it), color, importance, due time (off by default, 20:00 when turned on; "Ask

@@ -15,7 +15,10 @@ struct HabitDetailView: View {
     var body: some View {
         if let habit = model.habit(habitID) {
             List {
-                Section { summary(of: habit) }
+                Section {
+                    summary(of: habit)
+                    DoneTodayButton(habitID: habitID)
+                }
                 Section("Charts") {
                     HabitCharts(
                         insights: model.insights(of: habit, filter: AdherenceFilter(includingPaused: includePaused)),

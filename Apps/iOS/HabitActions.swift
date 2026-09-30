@@ -131,6 +131,7 @@ struct HabitMenu: View {
     @Environment(ErrorPresenter.self) private var errors
 
     var body: some View {
+        DoneTodayButton(habitID: habit.id)
         Button("Edit", systemImage: "pencil", action: onEdit)
         Button("Pause…", systemImage: "pause.circle", action: onPause)
         Button("Archive", systemImage: "archivebox") {
@@ -138,5 +139,21 @@ struct HabitMenu: View {
         }
         Divider()
         Button("Delete…", systemImage: "trash", role: .destructive, action: onDelete)
+    }
+}
+
+/// "Done today" on habit detail and in a habit's long-press menu (DESIGN.md §5.1): Yes for today even before
+/// the habit is due. Hidden once today is done, or while the habit is paused or blocked.
+struct DoneTodayButton: View {
+    let habitID: UUID
+    @Environment(AppModel.self) private var model
+    @Environment(ErrorPresenter.self) private var errors
+
+    var body: some View {
+        if model.canLogDoneToday(habitID) {
+            Button("Done today", systemImage: "checkmark.circle") {
+                withAnimation { _ = errors.attempt { try model.logDoneToday(habitID) } }
+            }
+        }
     }
 }

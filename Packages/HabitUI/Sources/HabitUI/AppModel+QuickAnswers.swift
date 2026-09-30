@@ -51,6 +51,29 @@ public extension AppModel {
         try record(question, done ? .done : .notDone, delayReason: .manual, channel: channel)
     }
 
+    /// "Done today" on habit detail or a habit's long-press menu (DESIGN.md §5.1): Yes for today even when the
+    /// habit isn't due or its due time hasn't come, so a habit finished early can be logged. Replaces a "No"
+    /// for today (answers are latest-wins, §4.7); Undo on Today takes it back.
+    func logDoneToday(_ habitID: UUID) throws {
+        try checkAvailable(habitID, on: today)
+        guard canLogDoneToday(habitID) else { throw AnswerRefusal.alreadyCovered(through: today) }
+        let question = Question(
+            habitID: habitID, covers: today ... today, shape: .singleDay, createdAt: clock.now(),
+            presentedAt: clock.now()
+        )
+        try log(question)
+        lastAnswered = try record(question, .done, delayReason: .manual, channel: channel)
+    }
+
+    /// Whether "Done today" is offered: the habit is active and available today, and today isn't done yet.
+    func canLogDoneToday(_ habitID: UUID) -> Bool {
+        guard let habit = habit(habitID), !habit.isArchived else { return false }
+        switch todayStatus(of: habitID) {
+        case .done, .health, .paused, .blocked: return false
+        case .notDone, .aggregated, .inferred, .unknown, .due, .notDue: return true
+        }
+    }
+
     /// Pauses a habit for `days` days from its ask day, like a card delay ("Delay Gym 3 days" in Shortcuts).
     /// Returns the day it resumes.
     @discardableResult
@@ -65,16 +88,18 @@ public extension AppModel {
     internal func checkAnswerable(_ question: Question) throws {
         try question.validate()
         guard question.shape == .singleDay else { throw AnswerRefusal.notSingleDay }
-        guard let habit = habit(question.habitID), !habit.isArchived else {
-            throw AnswerRefusal.habitGone(question.habitID)
-        }
         // Before the coverage check: a paused day counts as covered, but "paused" says why.
-        let day = question.covers.lowerBound
+        try checkAvailable(question.habitID, on: question.covers.lowerBound)
+        if let covered = state(of: question.habitID).lastCoveredDay, covered >= question.covers.lowerBound {
+            throw AnswerRefusal.alreadyCovered(through: covered)
+        }
+    }
+
+    /// Throws `AnswerRefusal` if the habit is archived or deleted, or paused or blocked on `day`.
+    internal func checkAvailable(_ habitID: UUID, on day: DayKey) throws {
+        guard let habit = habit(habitID), !habit.isArchived else { throw AnswerRefusal.habitGone(habitID) }
         if try Pauses.unavailable(on: day, habits: truth.habits, pauses: truth.pauses)[habit.id] != nil {
             throw AnswerRefusal.unavailable(habit.id, day)
-        }
-        if let covered = state(of: habit.id).lastCoveredDay, covered >= question.covers.lowerBound {
-            throw AnswerRefusal.alreadyCovered(through: covered)
         }
     }
 

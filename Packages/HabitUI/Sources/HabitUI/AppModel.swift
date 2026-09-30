@@ -44,7 +44,7 @@ public final class AppModel {
     /// False for widget timelines and intents: planning there is speculative, nobody sees the cards.
     @ObservationIgnored private let logsPresentedQuestions: Bool
     /// Where card answers come from: `.app` on the phone, `.watch` in the watch app.
-    @ObservationIgnored private let channel: Channel
+    @ObservationIgnored let channel: Channel
 
     static let dayOffsetKey = "debug.dayOffset"
 

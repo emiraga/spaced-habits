@@ -131,4 +131,36 @@ struct DueTimeTests {
         #expect(evening.recentStatuses(of: gym).map(\.status).last == .due)
         #expect(evening.recentStatuses(of: gym).map(\.status)[1] != .due)
     }
+
+    /// "Done today" logs today before the due time, while the card asks about yesterday (§5.1).
+    @Test func doneTodayBeforeTheDueTime() throws {
+        let app = try model(hour: 12)
+        #expect(app.canLogDoneToday(gym.id))
+        try app.logDoneToday(gym.id)
+        #expect(app.truth.answers.last?.covers == start ... start)
+        #expect(app.todayStatus(of: gym.id) == .done)
+        #expect(app.questions.isEmpty)
+        #expect(!app.canLogDoneToday(gym.id))
+        #expect(throws: AnswerRefusal.alreadyCovered(through: start)) { try app.logDoneToday(gym.id) }
+        // Undo on Today takes it back.
+        try app.undoLastAnswer()
+        #expect(app.todayStatus(of: gym.id) == .notDue)
+        #expect(app.canLogDoneToday(gym.id))
+    }
+
+    @Test func doneTodayReplacesANo() throws {
+        try model(hour: 18).log(gym.id, done: false, channel: .shortcut)
+        let app = try model(hour: 19)
+        #expect(app.todayStatus(of: gym.id) == .notDone)
+        #expect(app.canLogDoneToday(gym.id))
+        try app.logDoneToday(gym.id)
+        #expect(app.todayStatus(of: gym.id) == .done)
+    }
+
+    @Test func doneTodayIsNotOfferedWhilePaused() throws {
+        let app = try model(hour: 12)
+        try app.pause(gym.id, from: start, through: start.adding(days: 2), reason: .manual)
+        #expect(!app.canLogDoneToday(gym.id))
+        #expect(throws: AnswerRefusal.unavailable(gym.id, start)) { try app.logDoneToday(gym.id) }
+    }
 }
