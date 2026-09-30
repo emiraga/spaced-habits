@@ -136,12 +136,12 @@ struct DependenciesGateTests {
     @Test func perDayListsOnlyParentDoneDays() {
         let gate = Dependencies.gate(
             parentIDs: [gym],
-            covers: window(3),
+            covers: window(2),
             states: [gym: strongState(gym)],
-            records: [gym: records(gym, [2: 1, 1: 0, 0: 1])]
+            records: [gym: records(gym, [1: 0, 0: 1])]
         )
-        let shape = QuestionShape.perDay(days: [today.adding(days: -2), today])
-        #expect(gate == .open(shape: shape, context: ParentContext(parentIDs: [gym], parentDoneDays: 2)))
+        let shape = QuestionShape.perDay(days: [today])
+        #expect(gate == .open(shape: shape, context: ParentContext(parentIDs: [gym], parentDoneDays: 1)))
     }
 
     @Test func countTotalIsParentDoneDays() {
@@ -176,9 +176,9 @@ struct DependenciesGateTests {
     @Test func perDayFallsBackToCountWhenParentDaysAreAggregated() {
         let gate = Dependencies.gate(
             parentIDs: [gym],
-            covers: window(3),
+            covers: window(2),
             states: [gym: strongState(gym)],
-            records: [gym: records(gym, [2: 2.0 / 3, 1: 2.0 / 3, 0: 2.0 / 3], source: .aggregated)]
+            records: [gym: records(gym, [1: 1, 0: 1], source: .aggregated)]
         )
         #expect(gate == .open(shape: .count(total: 2), context: ParentContext(parentIDs: [gym], parentDoneDays: 2)))
     }

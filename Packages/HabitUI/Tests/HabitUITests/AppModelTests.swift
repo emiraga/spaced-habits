@@ -48,7 +48,7 @@ struct AppModelTests {
         #expect(gymCards.keys.sorted() == [1, 2, 3, 4, 5, 8])
         let dayEight = try #require(gymCards[8])
         #expect(dayEight.covers == start.adding(days: 5) ... start.adding(days: 7))
-        #expect(dayEight.shape == .perDay(days: Array(dayEight.covers)))
+        #expect(dayEight.shape == .count(total: 3))
         #expect(readDays == Array(1 ... 8))
         #expect(meditateCards[5]?.shape == .count(total: 4))
         #expect(meditateCards[5]?.covers == start.adding(days: 1) ... start.adding(days: 4))

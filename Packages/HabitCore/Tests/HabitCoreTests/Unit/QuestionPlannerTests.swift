@@ -203,15 +203,11 @@ struct QuestionPlannerShapeTests {
         #expect(try covers(gap: 0) == nil)
         let one = try #require(try covers(gap: 1))
         #expect(QuestionPlanner.shape(for: one) == .singleDay)
+        let two = try #require(try covers(gap: 2))
+        #expect(QuestionPlanner.shape(for: two) == .perDay(days: [today.adding(days: -1), today]))
         let three = try #require(try covers(gap: 3))
         #expect(three == today.adding(days: -2) ... today)
-        #expect(QuestionPlanner.shape(for: three) == .perDay(days: [
-            today.adding(days: -2),
-            today.adding(days: -1),
-            today,
-        ]))
-        let four = try #require(try covers(gap: 4))
-        #expect(QuestionPlanner.shape(for: four) == .count(total: 4))
+        #expect(QuestionPlanner.shape(for: three) == .count(total: 3))
     }
 
     @Test func recallCapLimitsCovers() throws {

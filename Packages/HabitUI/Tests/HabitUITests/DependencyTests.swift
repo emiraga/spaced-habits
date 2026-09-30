@@ -74,14 +74,13 @@ struct DependencyTests {
         let gym = try addHabit(model, "Gym")
         let protein = try addProtein(model, after: gym)
         try model.advanceDay()
-        try model.advanceDay()
-        let days = Array(model.today.adding(days: -2) ... model.today)
+        let days = Array(model.today.adding(days: -1) ... model.today)
         try model.answer(
             #require(model.questions.first { $0.habitID == gym.id }),
-            with: .perDay([days[0]: true, days[1]: false, days[2]: true])
+            with: .perDay([days[0]: false, days[1]: true])
         )
         let question = try #require(model.questions.first { $0.habitID == protein.id })
-        #expect(question.shape == .perDay(days: [days[0], days[2]]))
+        #expect(question.shape == .perDay(days: [days[1]]))
         #expect(QuestionCard.prompt(for: question, today: model.today) == "Which of those days?")
     }
 

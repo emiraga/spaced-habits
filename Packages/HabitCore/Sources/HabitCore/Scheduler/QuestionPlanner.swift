@@ -111,7 +111,7 @@ public struct QuestionPlanner: Sendable {
     public static func shape(for covers: ClosedRange<DayKey>) -> QuestionShape {
         switch covers.count {
         case 1: .singleDay
-        case 2 ... 3: .perDay(days: Array(covers))
+        case 2: .perDay(days: Array(covers))
         default: .count(total: covers.count)
         }
     }

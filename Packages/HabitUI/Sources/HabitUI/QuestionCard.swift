@@ -1,7 +1,7 @@
 import HabitCore
 import SwiftUI
 
-/// One check-in card (DESIGN.md §5.2): Yes/No for a single day, a toggle per day for 2–3 days, or
+/// One check-in card (DESIGN.md §5.2): Yes/No for a single day, a toggle per day for 2 days, or
 /// "N of K" for longer gaps; always with Don't remember, Delay… and Later. A gated habit's card leads with
 /// its parents ("You did Gym on 4 of the last 6 days.") and asks only about those days (§4.5).
 public struct QuestionCard: View {

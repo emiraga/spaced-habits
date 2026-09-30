@@ -348,9 +348,13 @@ gapDays = today - lastCoveredDay            (or today - createdDay + 1 for new h
 coverDays = min(gapDays, habit.maxRecallGapDays)   (default 7, adjustable per habit)
 covers = (today - coverDays + 1) ... today
 shape = coverDays == 1 ? .singleDay
-      : coverDays <= 3 ? .perDay
+      : coverDays == 2 ? .perDay
       : .count(total: coverDays)
 ```
+
+Per-day toggles stop at 2 days: from 3 on, picking the exact days is too much to ask. A count feeds
+the model the same evidence (§4.1: `done` to `alpha`, `total - done` to `beta`); it only loses which
+days, so they are `.aggregated` (§4.7) instead of `.observed`.
 
 Days in the gap **before** `covers` (when `gapDays > maxRecallGapDays`) are not asked about.
 They become `.inferred` with `value = mean` and `confidence = 1 - 2*sd` (clamped), or `.unknown`

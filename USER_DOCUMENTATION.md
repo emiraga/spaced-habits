@@ -37,8 +37,8 @@ habits with a status symbol for today.
 A card asks about the days since you last answered, up to 7 days back (you can change this per habit).
 
 - **One day:** "Did you do it today?" with **Yes** / **No**.
-- **2–3 days:** one toggle per day. If you usually do the habit, the toggles start switched on.
-- **4 or more days:** "How many of the last N days?" with a stepper and quick buttons for
+- **2 days:** one toggle per day. If you usually do the habit, the toggles start switched on.
+- **3 or more days:** "How many of the last N days?" with a stepper and quick buttons for
   *None / Some / Most / All*.
 
 Every card also has:
