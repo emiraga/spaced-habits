@@ -48,7 +48,7 @@ public enum InsightCard: Hashable, Identifiable {
             )
         case let .delayedOften(delayed):
             String(
-                localized: "Delayed \(delayed.delays) times in the last \(Pauses.frequentDelayWindowDays) days. A lower target or a longer pause might fit better.",
+                localized: "Delayed \(delayed.delays) times in the last \(Pauses.frequentDelayWindowDays) days. Fewer days a week or a longer pause might fit better.",
                 bundle: .module
             )
         case .autonomy:

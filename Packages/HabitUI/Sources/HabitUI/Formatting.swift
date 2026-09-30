@@ -60,6 +60,15 @@ public enum DayFormat {
         days == 1 ? String(localized: "1 day", bundle: .module) : String(localized: "\(days) days", bundle: .module)
     }
 
+    /// "Once a week", "3 days a week", "Every day": a habit's target (§5.1), rounded to days per week.
+    public static func target(_ targetAdherence: Double) -> String {
+        switch Habit.daysPerWeek(targetAdherence: targetAdherence) {
+        case 1: String(localized: "Once a week", bundle: .module)
+        case 7: String(localized: "Every day", bundle: .module)
+        case let days: String(localized: "\(days) days a week", bundle: .module)
+        }
+    }
+
     /// "S" for Sunday: the watch's 7-day strip (§7).
     public static func weekdayInitial(_ day: DayKey) -> String {
         noonUTC(day).formatted(Date.FormatStyle(timeZone: .gmt).weekday(.narrow))

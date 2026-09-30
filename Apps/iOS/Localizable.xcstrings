@@ -315,6 +315,9 @@
     "From" : {
 
     },
+    "Goal" : {
+
+    },
     "Group habits you do together, like a morning routine." : {
 
     },
@@ -351,7 +354,7 @@
     "Honest history" : {
 
     },
-    "How often you aim to do this habit. While you're below the target, you'll get a check-in every day. Once you're above it, check-ins become less frequent." : {
+    "How many days a week you aim to do this; the other days are rest days. While you're below your goal, you'll get a check-in every day." : {
 
     },
     "If you haven't answered for a while, the next check-in asks about at most this many recent days. Earlier days aren't asked about; they're estimated from your history." : {
@@ -655,12 +658,6 @@
 
     },
     "Sync" : {
-
-    },
-    "Target" : {
-
-    },
-    "Target: %@ of days" : {
 
     },
     "The habit tracker that asks less the better you do." : {

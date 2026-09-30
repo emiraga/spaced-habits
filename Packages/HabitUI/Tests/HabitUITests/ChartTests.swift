@@ -158,10 +158,11 @@ struct ChartSummaryTests {
         let week = [AdherencePoint(day: day, mean: 0.7, segment: 0)]
         #expect(
             AdherenceChart.summary(month: month, week: week, target: 0.8)
-                == "Adherence now: 30 days 82%, 7 days 70%, target 80%"
+                == "Adherence now: 30 days 82%, 7 days 70%. Goal: 6 days a week"
         )
         #expect(
-            AdherenceChart.summary(month: [], week: [], target: 0.8) == "Adherence: no answered days yet, target 80%"
+            AdherenceChart.summary(month: [], week: [], target: 3.0 / 7)
+                == "Adherence: no answered days yet. Goal: 3 days a week"
         )
     }
 

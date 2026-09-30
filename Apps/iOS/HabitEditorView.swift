@@ -2,8 +2,8 @@ import HabitCore
 import HabitUI
 import SwiftUI
 
-/// Name, emoji, color, importance, due time, vacation behavior, depends-on, cluster, target and recall gap
-/// (DESIGN.md §5.1 screen 3).
+/// Name, emoji, color, importance, goal (days per week), due time, vacation behavior, depends-on, cluster and
+/// recall gap (DESIGN.md §5.1 screen 3).
 struct HabitEditorView: View {
     let isNew: Bool
     @State private var draft: Habit
@@ -42,6 +42,17 @@ struct HabitEditorView: View {
             } footer: {
                 Text("More important habits are asked first when several are due.")
             }
+            Section {
+                Stepper(value: $draft.targetDaysPerWeek, in: 1 ... 7) {
+                    Text(DayFormat.target(draft.targetAdherence))
+                }
+            } header: {
+                Text("Goal")
+            } footer: {
+                Text(
+                    "How many days a week you aim to do this; the other days are rest days. While you're below your goal, you'll get a check-in every day."
+                )
+            }
             dueTimeSection
             Section {
                 Toggle("Keep asking during vacation", isOn: keepOnVacation)
@@ -54,13 +65,6 @@ struct HabitEditorView: View {
             clusterSection
             Section {
                 DisclosureGroup("Advanced") {
-                    VStack(alignment: .leading) {
-                        Text("Target: \(DayFormat.percent(draft.targetAdherence)) of days")
-                        Slider(value: $draft.targetAdherence, in: 0.1 ... 1, step: 0.05)
-                        explanation(
-                            "How often you aim to do this habit. While you're below the target, you'll get a check-in every day. Once you're above it, check-ins become less frequent."
-                        )
-                    }
                     VStack(alignment: .leading) {
                         Stepper(
                             "Look back up to \(draft.maxRecallGapDays) days",

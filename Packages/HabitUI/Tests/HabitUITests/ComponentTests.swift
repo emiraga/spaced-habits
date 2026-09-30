@@ -116,6 +116,13 @@ struct FormattingTests {
         #expect(older.contains("25"))
     }
 
+    @Test func targetsReadAsDaysPerWeek() {
+        #expect(DayFormat.target(1.0 / 7) == "Once a week")
+        #expect(DayFormat.target(3.0 / 7) == "3 days a week")
+        #expect(DayFormat.target(0.8) == "6 days a week")
+        #expect(DayFormat.target(1) == "Every day")
+    }
+
     @Test func rangeCollapsesASingleDay() {
         #expect(DayFormat.range(today, today, today: today) == "Today")
         #expect(DayFormat.range(today, today.adding(days: 1), today: today) == "Today – Tomorrow")

@@ -99,6 +99,9 @@
     "%lld days" : {
 
     },
+    "%lld days a week" : {
+
+    },
     "%lld habits to review" : {
 
     },
@@ -148,17 +151,17 @@
     "Adherence in the latest week: %@" : {
 
     },
-    "Adherence now: 30 days %@, 7 days %@, target %@" : {
+    "Adherence now: 30 days %@, 7 days %@. Goal: %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Adherence now: 30 days %1$@, 7 days %2$@, target %3$@"
+            "value" : "Adherence now: 30 days %1$@, 7 days %2$@. Goal: %3$@"
           }
         }
       }
     },
-    "Adherence: no answered days yet, target %@" : {
+    "Adherence: no answered days yet. Goal: %@" : {
 
     },
     "All" : {
@@ -296,12 +299,12 @@
     "Delay…" : {
 
     },
-    "Delayed %lld times in the last %lld days. A lower target or a longer pause might fit better." : {
+    "Delayed %lld times in the last %lld days. Fewer days a week or a longer pause might fit better." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Delayed %1$lld times in the last %2$lld days. A lower target or a longer pause might fit better."
+            "value" : "Delayed %1$lld times in the last %2$lld days. Fewer days a week or a longer pause might fit better."
           }
         }
       }
@@ -349,6 +352,9 @@
     "Estimated" : {
 
     },
+    "Every day" : {
+
+    },
     "From" : {
 
     },
@@ -359,6 +365,9 @@
 
     },
     "From answered days: yes/no, counts and Health. Estimated days are left out." : {
+
+    },
+    "Goal" : {
 
     },
     "Habit" : {
@@ -443,6 +452,9 @@
     "On parent days" : {
 
     },
+    "Once a week" : {
+
+    },
     "Other" : {
 
     },
@@ -487,9 +499,6 @@
 
     },
     "Taking a break?" : {
-
-    },
-    "Target" : {
 
     },
     "That habit is paused on that day." : {

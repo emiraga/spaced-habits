@@ -88,7 +88,7 @@ struct HabitDetailView: View {
         } else if let next = model.nextCheckIn(of: habit) {
             LabeledContent("Next check-in", value: DayFormat.checkIn(next, dueTime: habit.dueTime, today: model.today))
         }
-        LabeledContent("Target", value: DayFormat.percent(habit.targetAdherence))
+        LabeledContent("Goal", value: DayFormat.target(habit.targetAdherence))
     }
 
     private func adherenceRow(_ label: String, _ adherence: (mean: Double, days: Int)?) -> some View {

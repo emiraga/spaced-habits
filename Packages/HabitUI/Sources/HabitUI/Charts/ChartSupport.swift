@@ -36,7 +36,7 @@ enum ChartLabel {
     static let through = String(localized: "Through", bundle: .module)
     static let habit = String(localized: "Habit", bundle: .module)
     static let adherence = String(localized: "Adherence", bundle: .module)
-    static let target = String(localized: "Target", bundle: .module)
+    static let target = String(localized: "Goal", bundle: .module)
     static let paused = String(localized: "Paused", bundle: .module)
     static let blocked = String(localized: "Blocked", bundle: .module)
 }

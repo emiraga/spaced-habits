@@ -92,14 +92,14 @@ public struct AdherenceChart: View {
         }
     }
 
-    /// "Adherence now: 30 days 82%, 7 days 70%, target 80%".
+    /// "Adherence now: 30 days 82%, 7 days 70%. Goal: 6 days a week".
     nonisolated static func summary(month: [AdherencePoint], week: [AdherencePoint], target: Double) -> String {
-        let target = DayFormat.percent(target)
+        let target = DayFormat.target(target)
         guard let month = month.last, let week = week.last else {
-            return String(localized: "Adherence: no answered days yet, target \(target)", bundle: .module)
+            return String(localized: "Adherence: no answered days yet. Goal: \(target)", bundle: .module)
         }
         return String(
-            localized: "Adherence now: 30 days \(DayFormat.percent(month.mean)), 7 days \(DayFormat.percent(week.mean)), target \(target)",
+            localized: "Adherence now: 30 days \(DayFormat.percent(month.mean)), 7 days \(DayFormat.percent(week.mean)). Goal: \(target)",
             bundle: .module
         )
     }
