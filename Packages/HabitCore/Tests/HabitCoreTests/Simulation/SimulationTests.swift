@@ -64,8 +64,9 @@ struct SimulationTests {
 
     @Test func collapseIsDetectedWithinTenDays() throws {
         let result = try Simulator.run(.collapsing(before: 0.95, after: 0.1, collapseDay: 60))
-        let target = result.habits[0].targetAdherence
-        let detected = try #require((60 ..< 180).first { (result.live[0][$0]?.mean ?? 1) < target })
+        // Rule 2 as the planner applied it: the first day asked because the day before ended below target.
+        let asked = try #require((60 ..< 180).first { result.asks[0][$0]?.reason == .belowTarget })
+        let detected = asked - 1
         #expect(detected - 60 <= 10, "detected on day \(detected)")
     }
 

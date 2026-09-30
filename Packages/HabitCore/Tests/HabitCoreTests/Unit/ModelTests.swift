@@ -33,10 +33,23 @@ private func makeHabit(id: UUID = UUID(), dependencies: [Dependency] = []) throw
 }
 
 struct HabitTests {
+    /// The editor sets the target in days per week; other targets (0.8 from before, imports) round.
+    @Test func targetDaysPerWeekRoundsIntoOneToSeven() throws {
+        var habit = try makeHabit()
+        habit.targetDaysPerWeek = 3
+        #expect(habit.targetAdherence == 3.0 / 7)
+        #expect(habit.targetDaysPerWeek == 3)
+        for (target, days) in [(0.8, 6), (0.75, 5), (0.0, 1), (0.05, 1), (1.0, 7)] {
+            habit.targetAdherence = target
+            #expect(habit.targetDaysPerWeek == days, "\(target)")
+        }
+    }
+
     @Test func defaultsMatchDesign() throws {
         let habit = try makeHabit()
         #expect(habit.kind == .boolean)
-        #expect(habit.targetAdherence == 0.8)
+        #expect(habit.targetAdherence == 6.0 / 7)
+        #expect(habit.targetDaysPerWeek == 6)
         #expect(habit.maxRecallGapDays == 7)
         #expect(habit.vacationBehavior == .pause)
         #expect(!habit.isArchived)

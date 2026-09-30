@@ -17,6 +17,8 @@ public struct AdherenceModel: Sendable, Hashable {
     /// against the habit's target (§4.2 rule 2), so silence alone never makes a habit "struggling":
     /// decay pulls `mean` toward 0.5, but only new answers move this.
     public private(set) var answeredMean: Double?
+    /// `evidence` right after the latest evidence, frozen with `answeredMean`. Nil with no evidence.
+    public private(set) var answeredEvidence: Double?
 
     public enum InputError: Error, Equatable {
         case valueOutOfRange(Double)
@@ -26,16 +28,27 @@ public struct AdherenceModel: Sendable, Hashable {
         case maxDaysNotPositive(Int)
     }
 
-    /// `answeredMean` defaults to the current mean, as if the evidence had just been observed.
-    public init(alpha: Double, beta: Double, answeredMean: Double? = nil) {
+    /// `answeredMean` and `answeredEvidence` default to the current mean and evidence, as if the evidence
+    /// had just been observed.
+    public init(alpha: Double, beta: Double, answeredMean: Double? = nil, answeredEvidence: Double? = nil) {
         self.alpha = alpha
         self.beta = beta
         self.answeredMean = answeredMean ?? Self.defaultAnsweredMean(alpha: alpha, beta: beta)
+        self.answeredEvidence = answeredEvidence ?? Self.defaultAnsweredEvidence(alpha: alpha, beta: beta)
+    }
+
+    static func hasEvidence(alpha: Double, beta: Double) -> Bool {
+        alpha + beta > priorAlpha + priorBeta
     }
 
     /// The mean if there is any evidence beyond the prior, else nil.
     static func defaultAnsweredMean(alpha: Double, beta: Double) -> Double? {
-        alpha + beta > priorAlpha + priorBeta ? alpha / (alpha + beta) : nil
+        hasEvidence(alpha: alpha, beta: beta) ? alpha / (alpha + beta) : nil
+    }
+
+    /// `alpha + beta` if there is any evidence beyond the prior, else nil.
+    static func defaultAnsweredEvidence(alpha: Double, beta: Double) -> Double? {
+        hasEvidence(alpha: alpha, beta: beta) ? alpha + beta : nil
     }
 
     /// Total evidence `alpha + beta`.
@@ -56,9 +69,18 @@ public struct AdherenceModel: Sendable, Hashable {
         variance.squareRoot()
     }
 
-    /// §4.2 rule 2: as of the latest answer, the habit is done less often than `target`.
+    /// §4.2 rule 2: as of the latest answer, the habit is done less often than `target`. The mean is
+    /// compared against `expectedMean(target:evidence:)`, where a user exactly on target would sit, less half
+    /// a standard deviation, so the prior's pull toward 0.5 and a rest day's dip don't count as struggling.
     public func isBelowTarget(_ target: Double) -> Bool {
-        answeredMean.map { $0 < target } ?? false
+        guard let mean = answeredMean, let evidence = answeredEvidence else { return false }
+        let deviation = (mean * (1 - mean) / (evidence + 1)).squareRoot()
+        return mean < Self.expectedMean(target: target, evidence: evidence) - deviation / 2
+    }
+
+    /// The mean of a model holding `evidence` whose answers beyond the prior match `target` exactly.
+    public static func expectedMean(target: Double, evidence: Double) -> Double {
+        (priorAlpha + target * (evidence - priorAlpha - priorBeta)) / evidence
     }
 
     /// Weight of a day with `source` in the model update: 1 for observed/aggregated/health, 0 otherwise (§4.1).
@@ -83,6 +105,7 @@ public struct AdherenceModel: Sendable, Hashable {
         beta += (1 - value) * weight
         if weight > 0 {
             answeredMean = mean
+            answeredEvidence = evidence
         }
     }
 
@@ -129,11 +152,14 @@ public struct AdherenceModel: Sendable, Hashable {
 public extension SchedulerState {
     /// The adherence posterior stored in this state.
     var adherence: AdherenceModel {
-        get { AdherenceModel(alpha: alpha, beta: beta, answeredMean: answeredMean) }
+        get {
+            AdherenceModel(alpha: alpha, beta: beta, answeredMean: answeredMean, answeredEvidence: answeredEvidence)
+        }
         set {
             alpha = newValue.alpha
             beta = newValue.beta
             answeredMean = newValue.answeredMean
+            answeredEvidence = newValue.answeredEvidence
         }
     }
 

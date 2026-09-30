@@ -2,7 +2,8 @@ import Foundation
 
 /// A habit definition (DESIGN.md §3.3). Truth: synced, edited in place (last writer wins).
 public struct Habit: Identifiable, Codable, Sendable, Hashable {
-    public static let defaultTargetAdherence = 0.8
+    /// Six days a week: one rest day (§4.2).
+    public static let defaultTargetAdherence = targetAdherence(daysPerWeek: 6)
     public static let defaultMaxRecallGapDays = 7
     /// What the editor offers when a due time is turned on (§5.1).
     public static let defaultDueTime = TimeOfDay(uncheckedHour: 20, minute: 0)
@@ -21,7 +22,8 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
     /// The time by which a day's behavior is settled (§4.2): before it the habit asks about yesterday, from
     /// it on about today. Nil asks about today all day.
     public var dueTime: TimeOfDay?
-    /// 0...1. Below this mean the scheduler asks daily (§4.2 rule 2).
+    /// 0...1, the share of days the user aims to do the habit. The editor sets it in days per week, `N / 7`.
+    /// Below it the scheduler asks daily (§4.2 rule 2).
     public var targetAdherence: Double
     /// ≥ 1. Questions never cover more than this many days (§4.3).
     public var maxRecallGapDays: Int
@@ -91,6 +93,22 @@ public struct Habit: Identifiable, Codable, Sendable, Hashable {
     /// All parents regardless of mode. For DAG validation only.
     public var allParentIDs: [UUID] {
         dependencies.map(\.parentID)
+    }
+
+    /// `targetAdherence` as days per week, rounded, in `1...7`. A target not set in days per week (0.8, from
+    /// before §5.1 used them) shows as the nearest day count.
+    public var targetDaysPerWeek: Int {
+        get { Self.daysPerWeek(targetAdherence: targetAdherence) }
+        set { targetAdherence = Self.targetAdherence(daysPerWeek: newValue) }
+    }
+
+    public static func targetAdherence(daysPerWeek: Int) -> Double {
+        Double(daysPerWeek) / 7
+    }
+
+    /// `targetAdherence` as days per week, rounded, in `1...7`.
+    public static func daysPerWeek(targetAdherence: Double) -> Int {
+        min(max(Int((targetAdherence * 7).rounded()), 1), 7)
     }
 
     public var isArchived: Bool {

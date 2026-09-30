@@ -170,4 +170,51 @@ struct AdherenceModelTests {
         state.adherence = AdherenceModel(alpha: 4, beta: 2)
         #expect(state.alpha == 4 && state.beta == 2)
     }
+
+    /// §4.2 rule 2 over 12 weeks of daily answers following `pattern` (done on its days of the week): the
+    /// days from week 3 on that end below `days`/7.
+    private func daysBelowTarget(pattern: Set<Int>, days: Int) throws -> Int {
+        var model = AdherenceModel.prior
+        var below = 0
+        for day in 0 ..< 84 {
+            try model.decay(days: 1, rate: rate)
+            try model.observe(value: pattern.contains(day % 7) ? 1 : 0, weight: 1)
+            if day >= 14, model.isBelowTarget(Habit.targetAdherence(daysPerWeek: days)) {
+                below += 1
+            }
+        }
+        return below
+    }
+
+    /// Gym 3 times a week with a 3-day target is on target every day of the week, whether the days are
+    /// together or spread; before, the prior's pull toward 0.5 and each rest day's dip put 5 or 6 days a week
+    /// below 5/7 or 6/7. One day short of the target is below it on most days.
+    @Test func onTargetWeeksAreNeverBelowTarget() throws {
+        for days in 1 ... 7 {
+            let together = Set(0 ..< days)
+            let spread = Set((0 ..< 7).filter { $0 * days / 7 != ($0 + 1) * days / 7 })
+            #expect(spread.count == days)
+            #expect(try daysBelowTarget(pattern: together, days: days) == 0, "\(days) together")
+            #expect(try daysBelowTarget(pattern: spread, days: days) == 0, "\(days) spread")
+            #expect(try daysBelowTarget(pattern: Set(0 ..< days - 1), days: days) >= 56, "\(days - 1) of \(days)")
+        }
+    }
+
+    /// Where a user exactly on target sits: the target once evidence swamps the prior, 0.5 with none.
+    @Test func expectedMeanShrinksTargetTowardPrior() {
+        #expect(isClose(AdherenceModel.expectedMean(target: 0.8, evidence: 2), 0.5))
+        #expect(isClose(AdherenceModel.expectedMean(target: 0.8, evidence: 12), 0.75))
+        #expect(isClose(AdherenceModel.expectedMean(target: 3.0 / 7, evidence: 1e9), 3.0 / 7, tolerance: 1e-6))
+    }
+
+    /// Decay freezes the evidence rule 2 reads along with the mean.
+    @Test func answeredEvidenceIgnoresDecay() throws {
+        #expect(AdherenceModel.prior.answeredEvidence == nil)
+        var model = try model(answering: 1, days: 5)
+        let evidence = model.evidence
+        #expect(model.answeredEvidence == evidence)
+        try model.decay(days: 10, rate: rate)
+        #expect(model.answeredEvidence == evidence)
+        #expect(model.evidence < evidence)
+    }
 }

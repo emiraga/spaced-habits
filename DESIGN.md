@@ -285,11 +285,11 @@ habit becomes due again. Lots of consistent yeses → large `n` → long time be
 threshold. Paused days apply **no decay** (state is frozen).
 
 Decay also pulls `mean` toward 0.5, which says nothing about the user: it is forgetting, not
-evidence of struggling. So the model also keeps **`answeredMean`**: `mean` right after the latest
-day that fed it, left alone by decay and moved only by new evidence (nil before any). §4.2 rule 2
-compares the target against `answeredMean`, never the decayed `mean`. Without the prior's pull
-toward 0.5 (a prior-free evidence ratio was tried), a 50/50 habit that answers "yes" twice looks
-like a 100% habit, so the smoothed mean is what gets frozen.
+evidence of struggling. So the model also keeps **`answeredMean`** and **`answeredEvidence`**: `mean`
+and `n` right after the latest day that fed it, left alone by decay and moved only by new evidence (nil
+before any). §4.2 rule 2 compares the target against these, never the decayed `mean`. Without the
+prior's pull toward 0.5 (a prior-free evidence ratio was tried), a 50/50 habit that answers "yes" twice
+looks like a 100% habit, so the smoothed mean is what gets frozen.
 
 **Ask interval** (`AdherenceModel.askIntervalDays`, stored as
 `SchedulerState.currentIntervalDays`): the number of days, in `1...maxIntervalDays`, until decay
@@ -324,9 +324,18 @@ the due time on screen (§5.1) and in widgets (§6).
 A habit is due if **any** of:
 
 1. `sd > settings.uncertaintyThreshold` (evidence too thin/old) — the normal path.
-2. `answeredMean < habit.targetAdherence` and `lastAskedDay < today` — struggling habits get daily
-   attention. `answeredMean` (§4.1), not the decayed `mean`: a habit is never "struggling" just
-   because it has not been asked for a while.
+2. Below target and `lastAskedDay < today` — struggling habits get daily attention. Below target
+   (`AdherenceModel.isBelowTarget`) is `answeredMean < expectedMean − sd/2`, with
+   `expectedMean = (alpha0 + target·(n − alpha0 − beta0)) / n` and `sd` from `answeredMean` and
+   `n = answeredEvidence` (§4.1): the mean a user exactly on target would have with the same evidence,
+   less half a standard deviation. `answeredMean`, not the decayed `mean`: a habit is never "struggling"
+   just because it has not been asked for a while. Comparing `answeredMean` with the target itself
+   (before M14) flagged users who were exactly on target: the prior's pull toward 0.5 kept a 5- or 6-day-a-week
+   habit below 5/7 or 6/7 on 5–7 days a week, and at any target each rest day's dip crossed the line.
+   With daily answers over 12 weeks, the current rule never flags a user exactly on target from 1 to 7
+   days a week (rest days together or spread), and flags a user one day a week short on ≥ 80% of days
+   (`AdherenceModelTests.onTargetWeeksAreNeverBelowTarget`). The target is `N / 7` for a goal of `N`
+   days a week (§5.1); the default is 6 (one rest day).
 3. `today - lastCoveredDay >= settings.maxIntervalDays` (default 14) — hard ceiling.
 4. `state.forcedReentryCheck` — first day after a pause ends.
 5. Spot check: with probability `settings.spotCheckRate`, only when the ask interval (§4.1) is > 7 days.
@@ -455,7 +464,7 @@ Both features are one primitive: `PauseEvent`.
 - **Silence nudge:** if no answer for `nudgeAfterSilentDays` and no pause is active, a single
   notification offers "Enable vacation mode retroactively".
 - **Delay analytics:** count `PauseEvent`s with `reason == .manual` per habit; ≥ 3 in 60 days
-  surfaces an insight card ("You keep delaying this. Lower the target or archive it?").
+  surfaces an insight card ("You keep delaying this. Lower the goal or archive it?").
 
 ### 4.7 Projection (`HabitCore/Projection`)
 
@@ -508,11 +517,13 @@ up to `sessionBudget` questions truthfully and re-plans after each answer, as th
   covers days through yesterday (none on day 0, §4.2) and the same bound holds.
 - `flaky` (p 0.5) → asked on ≥ 80% of days, and never unasked for more than `maxIntervalDays`.
   Not "every week": a long lucky streak lifts `answeredMean` above target and legitimately earns a
-  break until the next check-in. Seed 42: 170/180 days; a 14-day "yes" run (days 133–146) earned
-  a 10-day break, then 2 of 7 put it back on daily questions.
-- `collapsing` (p 0.95 for 60 days, then 0.1) → the end-of-day mean the engine actually held (not
-  the retrospective projection) drops below target within 10 days. Seed 42: day 62. Detection
-  waits for the next check-in, so it can take up to the ask interval (≤ 14 days) in general.
+  break until the next check-in. Seed 42: 172/180 days; a 10-day "yes" run (days 133–142) earned
+  a 9-day break, then 3 of 7 put it back on daily questions.
+- `collapsing` (p 0.95 for 60 days, then 0.1) → the engine holds the habit below target (§4.2 rule 2,
+  as the planner applied it, not the retrospective projection) within 10 days. Seed 42: day 68. The
+  day-61 check-in saw 2 misses after 58 days of "yes", which rule 2 reads as rest days, not a collapse;
+  the next one (day 68) does. Detection waits for the next check-in, so it can take up to the ask
+  interval (≤ 14 days) in general.
 - `vacation` (p 0.9, paused days 60–73) → no questions during the pause, frozen mean/sd across it,
   exactly one `.reentry` question (day 74) covering only that day.
 - `dependent-pair` (A 0.9, B|A 0.8) → every B question has parent context and a window in which A
@@ -565,8 +576,10 @@ yesterday.
    needed by), edit button.
 3. **Habit editor.** Name, emoji (a badge in the habit's color beside the name; tapping it opens the
    emoji keyboard, and picking one closes it), color, importance, due time (off by default, 20:00 when turned on; "Ask
-   about today from <time>, about yesterday before it"), target adherence and max recall gap (both in a
-   collapsed "Advanced" group, each with a plain-language explanation), vacation
+   about today from <time>, about yesterday before it"), goal (a stepper, "Once a week", "3 days a week" …
+   "Every day", default 6; stored as `targetAdherence = N / 7`, and a target set otherwise, like 0.8 from
+   before M14 or an import, shows as the nearest day count until stepped), max recall gap (in a collapsed
+   "Advanced" group, with a plain-language explanation), vacation
    behavior, depends-on picker (with cycle rejection), cluster, Health binding; for an existing habit
    Archive (hidden from Today, the planner and the watch, history kept) and Delete… (confirmed; deletes
    it and its history on every device, §10), after which its detail screen pops. The picker
@@ -914,7 +927,8 @@ Data is computed in `HabitCore/Insights` (pure, tested), drawn by `HabitUI/Chart
 
 ## 13. Implementation plan
 
-M0–M7 and M9–M12 are done; 0.1.0 is submitted for App Store review. M13 is next. A new
+M0–M7 and M9–M12 are done; 0.1.0 is submitted for App Store review. M13 awaits its manual checkpoint;
+M14 was started before it at the owner's request. A new
 milestone ends with a **checkpoint**: something you can run, tap, or inspect. Don't start the next
 milestone until it passes and `make ci` is green.
 
@@ -940,6 +954,25 @@ Checkpoint:
 - Manually on the phone and watch: give a habit a due time a few minutes ahead; the card and widget
   ask "Done yesterday?"; answer it; at the due time a "Done today?" card appears on the open Today
   screen (phone and watch) and in the widget without a relaunch. Screenshots in `Docs/checkpoints/m13-*.png`.
+
+### M14 — Goal in days per week
+
+"Target 80% of days" becomes a goal anyone understands, "3 days a week", and hitting it exactly no
+longer counts as struggling (§4.2 rule 2). Deliver:
+
+1. **Engine.** `AdherenceModel.answeredEvidence` (§4.1), the rule 2 comparison against where a user on
+   target would sit, `Habit.targetDaysPerWeek`, and a default of 6 days a week.
+2. **App.** The goal stepper in the editor outside "Advanced" (§5.1); "Goal: 3 days a week" on habit
+   detail and in the adherence chart's summary; the chart's target line labeled "Goal".
+
+Checkpoint:
+- Unit tests: daily answers exactly on a 1- to 7-day goal (days together or spread) are never below
+  target, one day short is on ≥ 80% of days; `answeredEvidence` ignores decay; days per week round
+  into `1...7` (0.8 reads as 6). The §4.8 simulations still pass, `collapsing` measured by the planner's
+  rule 2.
+- Manually on the phone: a new habit's editor shows "6 days a week" outside Advanced; stepping to 3
+  and saving shows "Goal: 3 days a week" on its detail screen, and the adherence chart's line sits at
+  43%. An existing 80% habit shows "6 days a week". Screenshots in `Docs/checkpoints/m14-*.png`.
 
 ### M8 — HealthKit — deferred (optional, post-v1)
 
@@ -1015,4 +1048,7 @@ Decide during the relevant milestone, then move the answer into the section it g
   on one shows on the other, no duplicates in `answers.csv`.
 - O7. HealthKit (§9, M8) is deferred as optional post-v1 work because it needs the Health entitlement
   and user permission. Decide whether to build it; if so, run the M8 checkpoint as written.
-
+- O8. Chosen rest days ("not on weekends"): days that are never asked about and feed nothing, like paused
+  days, so the day-of-week heatmap doesn't show them as misses and a regular weekday habit isn't
+  modeled as a 5/7 coin flip (ask interval ~6 days instead of ~14). Not in M14: a goal of 5 days a week
+  covers it for rule 2.

@@ -172,6 +172,7 @@ private struct HabitProjector {
             alpha: model.alpha,
             beta: model.beta,
             answeredMean: model.answeredMean,
+            answeredEvidence: model.answeredEvidence,
             lastCoveredDay: lastCovered,
             lastAskedDay: answers.map(\.covers.upperBound).max(),
             currentIntervalDays: interval(of: model),
