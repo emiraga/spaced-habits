@@ -80,7 +80,8 @@ enum ExportSample {
             ),
             Question(
                 id: id(31), habitID: stretch.id, covers: day(-3) ... day(-1), shape: .perDay(days: [day(-3), day(-1)]),
-                createdAt: time(-1), presentedAt: time(-1), dismissedAt: time(-0.5)
+                createdAt: time(-1), presentedAt: time(-1), dismissedAt: time(-0.5),
+                dismissedVia: .app
             ),
             Question(
                 id: id(32), habitID: shake.id, covers: day(-6) ... day(-1), shape: .count(total: 3),

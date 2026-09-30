@@ -11,8 +11,11 @@ public struct Question: Identifiable, Codable, Sendable, Hashable {
     public let shape: QuestionShape
     public let createdAt: Date
     public var presentedAt: Date?
-    /// "Later": re-planned next session.
+    /// "Later": snoozes the habit (`Snooze`, §4.4), then it is re-planned.
     public var dismissedAt: Date?
+    /// Where "Later" was pressed: after a notification's, a notification asks again when the snooze ends
+    /// (§8); a card comes back quietly. Nil for dismissals logged before it was recorded.
+    public var dismissedVia: Channel?
     /// For gated habits: how many days in `covers` the parents were done (§4.5).
     public var parentContext: ParentContext?
 
@@ -24,6 +27,7 @@ public struct Question: Identifiable, Codable, Sendable, Hashable {
         createdAt: Date,
         presentedAt: Date? = nil,
         dismissedAt: Date? = nil,
+        dismissedVia: Channel? = nil,
         parentContext: ParentContext? = nil
     ) {
         self.id = id
@@ -33,6 +37,7 @@ public struct Question: Identifiable, Codable, Sendable, Hashable {
         self.createdAt = createdAt
         self.presentedAt = presentedAt
         self.dismissedAt = dismissedAt
+        self.dismissedVia = dismissedVia
         self.parentContext = parentContext
     }
 

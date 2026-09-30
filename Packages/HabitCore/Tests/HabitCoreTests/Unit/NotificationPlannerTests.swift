@@ -57,11 +57,11 @@ private func plan(_ truth: Truth, now: Date = noon(today)) throws -> [PlannedNot
     try NotificationPlanner.plan(truth: truth, calendar: calendar, now: now)
 }
 
-/// "Later" on a card for `habit` at `date`.
-private func later(_ habit: Habit, at date: Date) -> Question {
+/// "Later" on a notification (or `via` elsewhere) asking about `habit`, at `date`.
+private func later(_ habit: Habit, at date: Date, via channel: Channel = .notification) -> Question {
     Question(
         habitID: habit.id, covers: today ... today, shape: .singleDay, createdAt: date, presentedAt: date,
-        dismissedAt: date
+        dismissedAt: date, dismissedVia: channel
     )
 }
 
@@ -225,7 +225,8 @@ struct NotificationPlannerTests {
         #expect(try plan(truth([archived])).isEmpty)
     }
 
-    /// "Later" at 19:50: the habit sits out the 20:00 slot and is asked again at 20:05, 15 minutes on.
+    /// "Later" on a notification at 19:50: the habit sits out the 20:00 slot and is asked again at 20:05, 15 minutes
+    /// on.
     @Test func laterSnoozesAHabitForFifteenMinutes() throws {
         let (gym, read) = (habit("Gym"), habit("Read"))
         let dismissed = noon(today).addingTimeInterval(7 * 3600 + 50 * 60)
@@ -251,5 +252,20 @@ struct NotificationPlannerTests {
         #expect(!quiet.contains { $0.fireAt == snoozeEnd })
         let over = try plan(truth([gym], questions: [later(gym, at: dismissed)]), now: snoozeEnd)
         #expect(!over.contains { $0.fireAt <= snoozeEnd })
+    }
+
+    /// "Later" on a card or the watch at 19:50: the habit still sits out the 20:00 slot, but nothing asks
+    /// again at 20:05; the card comes back quietly.
+    @Test func laterOnACardSnoozesQuietly() throws {
+        let (gym, read) = (habit("Gym"), habit("Read"))
+        let dismissed = noon(today).addingTimeInterval(7 * 3600 + 50 * 60)
+        for channel in [Channel.app, .watch] {
+            let planned = try plan(
+                truth([gym, read], questions: [later(gym, at: dismissed, via: channel)]), now: dismissed
+            )
+            #expect(!planned.contains { $0.fireAt == dismissed.addingTimeInterval(Snooze.duration) })
+            let (slot, _) = try #require(planned.first.flatMap(question))
+            #expect(slot.habitID == read.id)
+        }
     }
 }

@@ -394,8 +394,9 @@ appended to `Truth.questions` with `presentedAt` (and `dismissedAt` on "Later") 
 show what was asked; the planner never reads that log. The one exception is outside the planner:
 "Later" snoozes the habit for 15 minutes (`HabitCore` `Snooze`, from `dismissedAt`). Until then the
 habit is passed to the planner as unavailable, in the app and in notification slots, across sessions,
-relaunches and devices. When the snooze ends, an open Today screen replans and the card comes back, and
-a notification asks it again (§8).
+relaunches and devices. When the snooze ends, an open Today screen replans and the card comes back
+quietly. After a notification's Later, a notification also asks again (§8). `Question.dismissedVia`
+records where Later was pressed (a card: `.app` or `.watch`).
 
 ### 4.5 Dependencies
 
@@ -758,9 +759,10 @@ of records is chunked rather than sent one message each): by `sendMessage` (50 p
   n-th day since the last answer (before any, since the first habit's `createdDay`), so it means "if I
   haven't checked in for n days". Slot times follow §3.1.
 - "Later" (a card, the watch or the notification action) snoozes the habit for 15 minutes (§4.4): slots
-  in that time leave it out, and `NotificationPlanner` adds a notification when the snooze ends, asking
-  that habit's question (grouped count as usual). None if the habit is no longer shown then (answered,
-  paused), in quiet hours or on a quiet vacation day.
+  in that time leave it out. After the notification action's Later (`dismissedVia == .notification`),
+  `NotificationPlanner` adds a notification when the snooze ends, asking that habit's question (grouped
+  count as usual). None if the habit is no longer shown then (answered, paused), in quiet hours or on a
+  quiet vacation day. A card's Later brings the card back without a notification.
 - Content: the top-priority question text, so the user can answer without opening anything.
   Group multiple due habits into one notification ("3 habits to review") when > 1.
 - Silence nudge (§4.6) and vacation-quiet toggle both live here. The nudge replaces the first
@@ -843,7 +845,7 @@ Health binding and Settings shows no Health permissions row. See O7.
 - **CSV** (zip of several files): `days.csv` (habit_id, habit_name, day, value, source,
   confidence, conditional_denominator_excluded, question_id), `habits.csv` (ending with list_order, due_time as `HH:mm` or empty), `habit_revisions.csv`
   (revision_id, habit_id, edited_at, then the habit's columns), `answers.csv`, `questions.csv`
-  (including dismissed ones, with presented_at and dismissed_at), `pauses.csv` (with reason),
+  (including dismissed ones, with presented_at, dismissed_at and dismissed_via), `pauses.csv` (with reason),
   `clusters.csv` (id, name, color_hex, list_order), `dependencies.csv` (habit_id, parent_id, mode), `health_observations.csv`.
 - **JSON**: one document `{ schemaVersion, exportedAt, settings, habits, habitRevisions, clusters,
   answers, questions, pauses, healthObservations }`, i.e. the full `Truth` (§4.7). Each habit carries

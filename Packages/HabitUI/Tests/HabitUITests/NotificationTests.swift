@@ -115,6 +115,7 @@ struct NotificationResponseTests {
         #expect(logged.count == 1)
         #expect(logged.first?.presentedAt == eightPM)
         #expect(logged.first?.dismissedAt == eightPM)
+        #expect(logged.first?.dismissedVia == .notification)
         let again = try #require(background.notificationSnapshot().contents().first)
         #expect(again.fireAt == eightPM.addingTimeInterval(Snooze.duration))
         #expect(try question(again).habitID == gym.id)

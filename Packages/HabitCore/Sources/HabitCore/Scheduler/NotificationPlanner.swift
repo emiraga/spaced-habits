@@ -28,7 +28,8 @@ public struct PlannedNotification: Sendable, Hashable {
 ///
 /// A slot's content is what the app would plan at that instant if nothing were answered before it: the
 /// projection and planner run with a clock at the slot, so decay, pauses, gates, spot checks and due times
-/// all apply. A "Later" snooze (§4.4) leaves its habits out of slots until it ends, then asks them again then.
+/// all apply. A "Later" snooze (§4.4) leaves its habits out of slots until it ends; one from a notification asks
+/// again then.
 public enum NotificationPlanner {
     /// Days ahead to plan. Background refresh and every app open extend it.
     public static let horizonDays = 7
@@ -117,7 +118,7 @@ private struct SlotPlanner {
     let calendar: DayCalendar
     let planner: QuestionPlanner
     /// When each current "Later" snooze ends (§4.4).
-    let snoozes: [UUID: Date]
+    let snoozes: [UUID: Snooze.End]
     private var projections: [DayKey: Projected] = [:]
 
     init(truth: Truth, calendar: DayCalendar, now: Date) throws {
@@ -142,15 +143,16 @@ private struct SlotPlanner {
         return .question(top, dueCount: session.questions.count + session.queued.count)
     }
 
-    /// A notification when each snooze ends, asking the snoozed habits again: none at a time in `skipping`
-    /// (a slot fires then), in quiet hours or on a quiet vacation day.
+    /// A notification when each snooze from a notification ends, asking those habits again: none at a time in
+    /// `skipping` (a slot fires then), in quiet hours or on a quiet vacation day.
     mutating func snoozeEnds(skipping: Set<Date>) throws -> [PlannedNotification] {
         let quietHours = truth.settings.notifications.quietHours
-        return try Set(snoozes.values).sorted().compactMap { end in
+        let notifying = snoozes.filter(\.value.notifies)
+        return try Set(notifying.values.map(\.date)).sorted().compactMap { end in
             let day = calendar.dayKey(for: end)
             guard !skipping.contains(end), !(quietHours?.contains(hour: calendar.hour(of: end)) ?? false),
                   !Vacation.quietsNotifications(on: day, pauses: truth.pauses),
-                  let kind = try kind(at: end, asking: Set(snoozes.filter { $0.value == end }.keys))
+                  let kind = try kind(at: end, asking: Set(notifying.filter { $0.value.date == end }.keys))
             else { return nil }
             return PlannedNotification(fireAt: end, day: day, kind: kind)
         }

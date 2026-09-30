@@ -153,6 +153,7 @@ public final class AppModel {
     public func later(_ question: Question) throws {
         var dismissed = question
         dismissed.dismissedAt = clock.now()
+        dismissed.dismissedVia = channel
         try store.save(dismissed, at: clock.now())
         if let index = truth.questions.firstIndex(where: { $0.id == question.id }) {
             truth.questions[index] = dismissed
@@ -278,7 +279,7 @@ public final class AppModel {
         dueHabitIDs = Set(due.map(\.habitID))
         let calendar = try DayCalendar(timeZone: timeZone, dayStartHour: truth.settings.dayStartHour)
         let nextDueTime = calendar.dueDates(dueTimes, after: now, before: now.addingTimeInterval(2 * 86400)).first
-        nextReplan = ([nextDueTime].compactMap(\.self) + snoozes.values).min()?
+        nextReplan = ([nextDueTime].compactMap(\.self) + snoozes.values.map(\.date)).min()?
             .addingTimeInterval(-TimeInterval(dayOffset) * 86400)
         onRefresh?()
     }

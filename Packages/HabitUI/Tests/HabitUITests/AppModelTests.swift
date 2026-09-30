@@ -54,7 +54,8 @@ struct AppModelTests {
         #expect(meditateCards[5]?.covers == start.adding(days: 1) ... start.adding(days: 4))
     }
 
-    /// "Later" snoozes the habit for 15 minutes, across sessions and relaunches, then the card comes back.
+    /// "Later" snoozes the habit for 15 minutes, across sessions and relaunches, then the card comes back
+    /// quietly: no notification asks again.
     @Test func laterSnoozesAHabitForFifteenMinutesAndIsLogged() throws {
         let harness = try Harness()
         let model = try harness.model()
@@ -64,8 +65,12 @@ struct AppModelTests {
         #expect(model.questions.isEmpty)
         #expect(model.dueHabitIDs == [gym.id])
         #expect(model.todayStatus(of: gym.id) == .due)
-        #expect(model.truth.questions.first { $0.id == question.id }?.dismissedAt == noon)
+        let logged = model.truth.questions.first { $0.id == question.id }
+        #expect(logged?.dismissedAt == noon && logged?.dismissedVia == .app)
         #expect(model.nextReplan == noon.addingTimeInterval(Snooze.duration))
+        #expect(try !model.notificationSnapshot().contents().contains {
+            $0.fireAt == noon.addingTimeInterval(Snooze.duration)
+        })
         try model.startSession()
         #expect(model.questions.isEmpty)
         #expect(try harness.model(at: noon.addingTimeInterval(Snooze.duration - 1)).questions.isEmpty)

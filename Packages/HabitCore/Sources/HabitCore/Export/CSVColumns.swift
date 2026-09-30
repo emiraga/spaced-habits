@@ -47,7 +47,7 @@ enum CSVColumns {
 
     static let question = [
         "id", "habit_id", "covers_start", "covers_end", "shape", "days", "total", "created_at", "presented_at",
-        "dismissed_at", "parent_ids", "parent_done_days",
+        "dismissed_at", "dismissed_via", "parent_ids", "parent_done_days",
     ]
 
     static func values(_ question: Question) -> [String] {
@@ -62,6 +62,7 @@ enum CSVColumns {
             question.covers.upperBound.description,
         ] + shape + [
             date(question.createdAt), date(question.presentedAt), date(question.dismissedAt),
+            question.dismissedVia?.rawValue ?? "",
             question.parentContext.map { $0.parentIDs.map(\.uuidString).joined(separator: ";") } ?? "",
             question.parentContext.map { String($0.parentDoneDays) } ?? "",
         ]

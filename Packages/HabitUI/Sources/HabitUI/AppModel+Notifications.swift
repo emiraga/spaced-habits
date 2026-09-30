@@ -41,8 +41,9 @@ public extension AppModel {
             try log(presented)
             try record(presented, action == .done ? .done : .notDone, delayReason: .manual, channel: .notification)
         case .later:
-            // Snoozes the habit (§4.4): its card hides, and the plan asks again when the snooze ends.
+            // Snoozes the habit (§4.4): its card hides, and a notification asks again when the snooze ends.
             presented.dismissedAt = clock.now()
+            presented.dismissedVia = .notification
             try log(presented)
             try refresh()
         }
